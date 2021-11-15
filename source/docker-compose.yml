@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  backend:
+    container_name: sbe-backend
+    build: ./backend
+    ports:
+      - 5001:5001
+    volumes:
+      - ./backend:/source
+  database:
+    container_name: sbe-database
+    image: postgres:latest
+    env_file: db.conf
+    ports:
+      - 5432:5432
+    volumes: 
+      - postgres_data:/var/lib/postgresql
+  # frontend:
+  camunda:
+      container_name: sbe-camunda
+    # TODO :replace with our own
+      image: camunda/camunda-bpm-platform:latest
+      ports:
+        - 8080:8080
+  # camunda-simulator
+
+
+volumes:
+  postgres_data:
