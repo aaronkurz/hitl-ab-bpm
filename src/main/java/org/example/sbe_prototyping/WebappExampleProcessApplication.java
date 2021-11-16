@@ -26,7 +26,7 @@ public class WebappExampleProcessApplication {
 
     @EventListener
     private void processPostDeploy(PostDeployEvent event) {
-        runtimeService.startProcessInstanceByKey("food");
+        runtimeService.startProcessInstanceByKey("food");//can be replaced by "boilerCheck", takeShower", "bathroomRoutine", "food"
         SimulationExecutor.execute(DateTime.now().minusMonths(1).toDate(), DateTime.now().toDate());
     }
 
