@@ -15,9 +15,26 @@
 
 ## Setup
 
-you can run it in 3 different ways, to run it isolated
+you can run it in 2 different ways
 
-## Locally
+## 1-Locally (No Docker)
+
+### postgres
+
+install postgresql and make a database with the following configurations (you can change them in the .env file):
+
+```conf
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=sbe_db
+```
+
+### camunda
+have camunda running on port `8080`
+
+### Flask
 
 install virtualenv
 
@@ -29,19 +46,13 @@ run
 
 `pip install -r requirements.txt`
 
-## Docker
+`python app.y`
 
-run
 
-`docker build -t sbe_prototyping:latest .`
 
-`docker run -d -p 5001:5001 sbe_prototyping`
 
-if you want to enable hot reloading for flask run instead
 
-`docker run -p 5001:5001 -v [ABSOLUTE PATH TO {backend} FOLDER]:/source sbe_prototyping`
-
-## Docker compose
+## 2-Docker compose
 
 to run it bundled with all other services please refer to readme in the `/source` file
 

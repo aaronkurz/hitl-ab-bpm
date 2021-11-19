@@ -9,7 +9,7 @@ app = create_app.create_app()
 
 @app.route('/')
 def index():
-    return 'Hello World!'
+    return 'Hello World!!!'
 
 # TODO: remove (just for demonstration)
 @app.route('/tasks')

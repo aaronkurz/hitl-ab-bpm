@@ -7,7 +7,7 @@ components:
 * Backend (Flask)
 * postgres database
 * camunda process engine  
-<!-- * Frontend (React) -->
+* Frontend (React)
 
 ## Setup
 
@@ -18,6 +18,7 @@ run
 ## Access
 
 * Backend `localhost:5001`
+* Frontend `localhost:3000`
 * postgres `localhost:5432`
 * camunda engine `localhost:8080`
   
