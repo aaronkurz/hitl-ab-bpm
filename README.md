@@ -1,4 +1,7 @@
-Human BPI with Reinforcement Learning project as part of module "(Advanced) Distributed Systems Prototyping" at TU Berlin. 2021/2022
+Human BPI with Reinforcement Learning project as part of module "(Advanced) Distributed Systems Prototyping" at TU Berlin.
+<p align="center">
+<img width="628" alt="Bildschirmfoto 2021-10-28 um 22 37 30" src="https://user-images.githubusercontent.com/41950946/139332212-52ac8834-ca01-4591-9c0b-27c156db9b85.png">
+</p>
 
 Entry here:
 _org/example/sbe_prototyping/WebappExampleProcessApplication.java_
@@ -13,7 +16,7 @@ loads a bpmn file from the _src/main/resources_ dir, drag it to the Modeler to h
 ##Create the Camunda Spring Boot project
 Create an empty Maven project named sbe_prototyping and groupId org.example
 
-##Configuring Maven dependencies
+## Configuring Maven dependencies
 Next add the Maven dependency, which needs to be added to the `pom.xml` file in the project root directory.  We need to add the Spring Boot dependency to "Dependency Management", and then add Camunda Spring Boot Starter as a dependency, which will provide the Camunda process engine and its own WebApp;  For simplicity, the database uses an embedded H2 database;  Finally, add `spring-boot-Maven-plugin`, which packages spring Boot projects together.  The final result is as follows:  
 ```<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -83,7 +86,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 </project>
 ```
 
-##Add the main class for the project
+## Add the main class for the project
 Next, we'll add a main class for the application to run. Create the class under `src/main/java` named `WebappExampleProcessApplication`
 The main class of SpringBoot needs to add the @SpringBootApplication annotation. The resulting effect is as follows:
 ```package org.example.loanapproval;
