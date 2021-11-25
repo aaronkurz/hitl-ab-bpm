@@ -22,11 +22,10 @@ services:
       - 3000:3000
   camunda:
       container_name: sbe-camunda
-    # TODO :replace with our own
-      image: camunda/camunda-bpm-platform:latest
+      build: ./camunda_engine
       ports:
         - 8080:8080
-  # camunda-simulator
+  
 
 
 volumes:
