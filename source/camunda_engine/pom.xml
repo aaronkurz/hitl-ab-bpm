@@ -77,12 +77,7 @@
 
 
 
-    <!--  -->
-<!-- <dependency>
-  <groupId>org.apache.tomcat</groupId>
-  <artifactId>tomcat-jasper</artifactId>
-  <version>9.0.46</version>
-</dependency> -->
+
 
 
 
@@ -96,59 +91,7 @@
         <version>2.5.4</version>
       </plugin>
 
-      <!-- <plugin> -->
-        <!-- Build an executable JAR -->
-        <!-- <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.0</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>com.example.workflow.Application</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin> -->
-
-      <!-- bundle all deps into jar file -->
-      <!-- <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.4</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin> -->
-
-      <!-- <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>com.example.workflow.Application</mainClass>
-            </manifest>
-          </archive>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id> 
-            <phase>package</phase> 
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin> -->
+     
       
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
