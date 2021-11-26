@@ -7,6 +7,8 @@ services:
       - 5001:5001
     volumes:
       - ./backend:/source
+    depends_on:
+      - database
   database:
     container_name: sbe-database
     image: bitnami/postgresql:latest
