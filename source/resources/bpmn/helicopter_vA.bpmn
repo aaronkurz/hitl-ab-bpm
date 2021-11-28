@@ -66,7 +66,8 @@
     <bpmn:userTask id="Activity_1oqt0jw" name="Schedule">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1,3))}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(1)}" />
+          <camunda:property name="cost" value="25" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1g09mb8</bpmn:incoming>
@@ -75,8 +76,9 @@
     <bpmn:userTask id="Activity_0zfk0ry" name="Eligibility Test">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.normal(&#34;eligibility&#34;,4, 0.5))}" />
-          <camunda:property name="simGeneratePayload" value="passed=${generator.uniformBoolean()}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1, 3))}" />
+          <camunda:property name="simGeneratePayload" value="passed=${generator.normalFromArgs2(false, true,1.66, 0.5)}" />
+          <camunda:property name="cost" value="190" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1pn5s6e</bpmn:incoming>
@@ -85,8 +87,9 @@
     <bpmn:userTask id="Activity_0pdxwkf" name="Medical Exam">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.normal(&#34;medical&#34;, 5.5, 1.5))}" />
-          <camunda:property name="simGeneratePayload" value="passed=${generator.uniformBoolean()}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1, 3))}" />
+          <camunda:property name="simGeneratePayload" value="passed=${generator.normalFromArgs2(false, true,1.66, 0.5)}" />
+          <camunda:property name="cost" value="75" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_17bnry0</bpmn:incoming>
@@ -95,7 +98,8 @@
     <bpmn:userTask id="Activity_0zb2ygx" name="Schedule">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1,3))}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(1)}" />
+          <camunda:property name="cost" value="25" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0w4zi4v</bpmn:incoming>
@@ -104,7 +108,8 @@
     <bpmn:userTask id="Activity_0dh9ooa" name="Schedule">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(2,5))}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(1)}" />
+          <camunda:property name="cost" value="25" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0w2iod4</bpmn:incoming>
@@ -113,8 +118,9 @@
     <bpmn:userTask id="Activity_0oy22w1" name="Theory Test">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.normal(&#34;theory&#34;,7.5, 0.5))}" />
-          <camunda:property name="simGeneratePayload" value="passed=${generator.uniformBoolean()}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(14, 35))}" />
+          <camunda:property name="simGeneratePayload" value="passed=${generator.normalFromArgs2(false, true, 0.76, 0.5)}" />
+          <camunda:property name="cost" value="455" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0zh60lw</bpmn:incoming>
@@ -123,8 +129,9 @@
     <bpmn:userTask id="Activity_03lfdb0" name="Practical Test">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.normal(&#34;practical&#34;,13, 5))}" />
-          <camunda:property name="simGeneratePayload" value="passed=${generator.uniformBoolean()}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(7, 14))}" />
+          <camunda:property name="simGeneratePayload" value="passed=${generator.normalFromArgs2(false, true, 0.23, 0.5)}" />
+          <camunda:property name="cost" value="1145" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0n2gbgf</bpmn:incoming>
@@ -133,7 +140,8 @@
     <bpmn:userTask id="Activity_0zj5c6n" name="Schedule">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(3,7))}" />
+          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(1)}" />
+          <camunda:property name="cost" value="25" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0rgjb3s</bpmn:incoming>
@@ -142,7 +150,8 @@
     <bpmn:userTask id="Activity_0xewah1" name="Approve">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1,2))}" />
+          <camunda:property name="simNextComplete" value="${generator.now()}" />
+          <camunda:property name="cost" value="100" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_05kc16z</bpmn:incoming>
@@ -151,7 +160,8 @@
     <bpmn:userTask id="Activity_15y14xe" name="Reject">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="simNextComplete" value="${generator.nowPlusSeconds(generator.uniformInt(1,2))}" />
+          <camunda:property name="simNextComplete" value="${generator.now()}" />
+          <camunda:property name="cost" value="0" />
         </camunda:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1fq7sbm</bpmn:incoming>
