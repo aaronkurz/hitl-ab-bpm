@@ -3,4 +3,4 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package
 EXPOSE 8080
-ENTRYPOINT [ "java","-cp","target/lib/*","-jar","target/camunda_simulator-1.0.0-SNAPSHOT.jar" ]
+ENTRYPOINT java -cp "target/lib/*:target/classes" com.example.workflow.Application
