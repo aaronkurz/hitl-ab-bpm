@@ -1,12 +1,12 @@
 version: "3.9"
 services:
   backend:
-    container_name: sbe-backend
-    build: ./backend
+    container_name: sbe-bprl
+    build: backend/bprl
     ports:
       - 5001:5001
     volumes:
-      - ./backend:/source
+      - ./bprl:/source
     depends_on:
       - database
   database:

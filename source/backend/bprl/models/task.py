@@ -1,5 +1,5 @@
 
-from models import db
+from bprl.models import db
 # https://docs.camunda.org/manual/7.5/reference/rest/task/get/
 class Task(db.Model):
     __tablename__='tasks'

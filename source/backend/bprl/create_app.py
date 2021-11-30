@@ -1,6 +1,6 @@
 from flask import Flask
-from models import db
-import config
+from bprl.models import db
+from bprl import config
 import time
 
 

@@ -1,9 +1,9 @@
 
 from flask import request,jsonify
-import create_app,config
-from camunda.client import CamundaClient
-from models import db
-from models.task import Task
+from bprl import create_app,config
+from bprl.camunda.client import CamundaClient
+from bprl.models import db
+from bprl.models.task import Task
 
 app = create_app.create_app()
 
