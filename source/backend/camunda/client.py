@@ -120,3 +120,15 @@ class CamundaClient:
                 processDuration = (end_datetime - start_datetime)
 
 
+"""
+#lines 107-109 could be deleted. 
+#Or "processDefinitionId" = processDefinitionId
+
+        data = {
+            "processDefinitionId" = elem.get('processDefinitionId')
+            "processDefinitionKey" = elem.get('processDefinitionKey')
+            "processDefinitionName" = elem.get('processDefinitionName')
+        }
+
+        return data
+"""
