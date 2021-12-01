@@ -34,4 +34,4 @@ jobs:
           pip install -r requirements.txt
           cd ..
           pip install -e .
-          pytest --cov
+          pytest --cov==bprl
