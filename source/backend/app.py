@@ -7,6 +7,8 @@ from models.task import Task
 
 app = create_app.create_app()
 
+client=CamundaClient(config.CAMUNDA_ENGINE_URI)
+
 @app.route('/')
 def index():
     return 'Hello World!!!'
@@ -43,6 +45,56 @@ def create_task_db():
     db.session.commit()
     
     return jsonify(task.name)
+
+
+
+
+@app.route('/task/deploy_process',methods=['POST'])
+def deploy_process():
+    
+    bpmn_file='food_testing_2.bpmn'
+
+
+    pid=client.deploy_process(bpmn_file)
+
+    return {'pid':pid}
+
+@app.route('/task/deploy_processes',methods=['POST'])
+def deploy_processes():
+    
+    bpmn_files=['food_testing_2.bpmn','food_testing.bpmn','testCheckProcess.bpmn']
+
+
+    pids=client.deploy_processes(bpmn_files)
+
+    return {'pid':str(pids)}
+
+
+@app.route('/task/start_instance',methods=['POST'])
+def start_instance():
+
+    data=request.json
+    pid=data['pid']
+
+
+
+    client.start_instance(pid)
+
+    return {'status':'200'}
+
+@app.route('/task/start_instances',methods=['POST'])
+def start_instance():
+
+    data=request.json
+    pid=data['pid']
+    instance_count=data['count']
+
+
+
+    client.start_instances(pid,instance_count)
+
+    return {'status':'200'}
+
 
 
 

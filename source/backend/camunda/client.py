@@ -1,5 +1,5 @@
 import requests
-
+import os
 
 class CamundaClient:
     def __init__(self, url):
@@ -34,9 +34,11 @@ class CamundaClient:
 # Deploying a single process
     def deploy_process(self,bpmn_file: str):
 
+        
+
         multipart_form_data = { 
         'deployment-name': (None, 'store'),
-        'data': (bpmn_file, open(bpmn_file, 'r')),
+        'data': (bpmn_file, open(os.getcwd()+'/'+bpmn_file, 'r')),
 }
         response = requests.post(self.url + "/deployment/create", files=multipart_form_data)
         assert(self.status_code_successful(response.status_code))
@@ -59,7 +61,7 @@ class CamundaClient:
 # Starting a single instance
     def start_instance(self,process_id: int):
         headers = {'Content-Type': 'application/json'}
-        response = requests.post("http://localhost:8080/engine-rest/process-definition/" + str(process_id)+ "/start", headers=headers)
+        response = requests.post(self.url+"/process-definition/" + str(process_id)+ "/start", headers=headers)
         assert(self.status_code_successful(response.status_code))
 
 
