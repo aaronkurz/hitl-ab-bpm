@@ -71,6 +71,19 @@ class CamundaClient:
             self.start_instance(process_id)
 
 
+# Terminating an instance
+#1
+    def terminate_instance(self, process_id: int):
+       RuntimeService.deleteProcessInstance(process_id)
+
+#2
+    def terminate_instance2(self, process_id: int):
+
+        delete = requests.post(self.url + str(process_id) + "/terminate")
+
+        return delete
+
+
 ### Section: Data Management ###
 
 # Deleting all data
@@ -120,6 +133,7 @@ class CamundaClient:
                 end_datetime = parser.parse(elem2.get('endTime'))
                 start_datetime = parser.parse(elem2.get('startTime'))
                 processDuration = (end_datetime - start_datetime)
+
 
 
 """

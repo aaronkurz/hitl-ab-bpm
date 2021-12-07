@@ -96,6 +96,29 @@ def start_instance():
     return {'status':'200'}
 
 
+@app.route('/task/delete_all_data',methods=['POST'])
+def delete_all_data():
+
+    target = "process-instance"
+
+    pid = client.delete_all_data(target)
+
+    return {'status': '200'}
+
+
+@app.route('/task/clean_process_data',methods=['POST'])
+def clean_process_data():
+
+    return {'status': '200'}
+
+
+@app.route('/task/retrieve_data',methods=['POST'])
+def retrieve_data():
+
+    return {'status': '200'}
+
+
+
 
 
 if __name__ == "__main__":
