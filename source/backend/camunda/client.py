@@ -56,7 +56,7 @@ class CamundaClient:
     def deploy_processes(self,bpmn_files: list):
         new_process_ids=[]
         for bpmn_file in bpmn_files:
-            new_process_ids+=self.deploy_process(bpmn_file)
+            new_process_ids.append(self.deploy_process(bpmn_file))
         return new_process_ids
 
 
