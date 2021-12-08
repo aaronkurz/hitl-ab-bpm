@@ -49,7 +49,7 @@ def create_task_db():
 
 
 
-@app.route('/task/deploy_process',methods=['POST'])
+@app.route('/process/deploy',methods=['POST'])
 def deploy_process():
     
     bpmn_file='food_testing_2.bpmn'
@@ -59,10 +59,10 @@ def deploy_process():
 
     return {'pid':pid}
 
-@app.route('/task/deploy_processes',methods=['POST'])
+@app.route('/process/deploy_many',methods=['POST'])
 def deploy_processes():
     
-    bpmn_files=['food_testing_2.bpmn','food_testing.bpmn','testCheckProcess.bpmn']
+    bpmn_files=['food_testing.bpmn','testCheckProcess.bpmn']
 
 
     pids=client.deploy_processes(bpmn_files)
@@ -70,7 +70,7 @@ def deploy_processes():
     return {'pid':str(pids)}
 
 
-@app.route('/task/start_instance',methods=['POST'])
+@app.route('/process/start_instance',methods=['POST'])
 def start_instance():
 
     data=request.json
@@ -82,11 +82,13 @@ def start_instance():
 
     return {'status':'200'}
 
-@app.route('/task/start_instances',methods=['POST'])
-def start_instance():
+@app.route('/process/start_instances',methods=['POST'])
+def start_instances():
 
     data=request.json
+    
     pid=data['pid']
+    
     instance_count=data['count']
 
 
@@ -96,26 +98,28 @@ def start_instance():
     return {'status':'200'}
 
 
-@app.route('/task/delete_all_data',methods=['POST'])
-def delete_all_data():
+@app.route('/process/delete/<target>',methods=['DELETE'])
+def delete_all_data(target):
 
-    target = "process-instance"
 
-    pid = client.delete_all_data(target)
+    client.delete_all_data(target)
 
     return {'status': '200'}
 
 
-@app.route('/task/clean_process_data',methods=['POST'])
+@app.route('/process/delete/all',methods=['DELETE'])
 def clean_process_data():
 
+    client.clean_process_data()
+
     return {'status': '200'}
 
 
-@app.route('/task/retrieve_data',methods=['POST'])
+@app.route('/process/history',methods=['GET'])
 def retrieve_data():
 
-    return {'status': '200'}
+    return jsonify(client.retrieve_data())
+
 
 
 

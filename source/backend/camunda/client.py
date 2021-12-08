@@ -1,5 +1,7 @@
 import requests
 import os
+from datetime import datetime
+
 
 class CamundaClient:
     def __init__(self, url):
@@ -71,10 +73,7 @@ class CamundaClient:
             self.start_instance(process_id)
 
 
-# Terminating an instance
-#1
-    def terminate_instance(self, process_id: int):
-       RuntimeService.deleteProcessInstance(process_id)
+
 
 #2
     def terminate_instance2(self, process_id: int):
@@ -91,6 +90,9 @@ class CamundaClient:
         POSSIBLE_TARGETS = ["process-instance", "process-definition", "deployment", "decision-definition"]
         if target not in POSSIBLE_TARGETS:
             raise Exception(str(target) + "not a valid data deletion target")
+
+        if target == 'process-definition':
+            self.delete_all_data(target="process-instance")
         
         get_response = requests.get(self.url + "/" + target)
         assert(self.status_code_successful(get_response.status_code))
@@ -117,22 +119,34 @@ class CamundaClient:
 
     def retrieve_data(self):
 
-        # Getting the ID, Key and Name of the process from the json file
-        for elem in proc_def_response.json():
-            processDefinitionId = elem.get('processDefinitionId')
-            processDefinitionKey = elem.get('processDefinitionKey')
-            processDefinitionName = elem.get('processDefinitionName')
+        proc_def_response = requests.get(self.url + "/history/process-definition/cleanable-process-instance-report").json()
 
+        
+
+        proc_def_history=proc_def_response
+
+
+        # Getting the ID, Key and Name of the process from the json file
+        for elem in proc_def_history:
+            processDefinitionId = elem.get('processDefinitionId')
+            
             params = {'processDefinitionId': str(processDefinitionId)}
             proc_inst_response = requests.get(self.url + "/history/process-instance", params=params)
 
-            assert (status_code_successful(proc_inst_response.status_code))
-
+            assert (self.status_code_successful(proc_inst_response.status_code))
+            
+            associated_instances=[]
             # Calculating the duration of the process
             for elem2 in proc_inst_response.json():
-                end_datetime = parser.parse(elem2.get('endTime'))
-                start_datetime = parser.parse(elem2.get('startTime'))
-                processDuration = (end_datetime - start_datetime)
+                associated_instances.append(elem2)
+                # end_datetime = datetime.strptime(elem2.get('endTime'),'%b %d %Y %I:%M%p')
+                # start_datetime = datetime.strptime(elem2.get('startTime'),'%b %d %Y %I:%M%p')
+                # process_duration = (end_datetime - start_datetime)
+                # associated_instances.append(process_duration)
+
+            elem['associated_instances']=associated_instances
+
+        return proc_def_history
 
 
 
@@ -141,9 +155,9 @@ class CamundaClient:
 #Or "processDefinitionId" = processDefinitionId
 
         data = {
-            "processDefinitionId" = elem.get('processDefinitionId')
-            "processDefinitionKey" = elem.get('processDefinitionKey')
-            "processDefinitionName" = elem.get('processDefinitionName')
+            "processDefinitionId" : elem.get('processDefinitionId'),
+            "processDefinitionKey" : elem.get('processDefinitionKey'),
+            "processDefinitionName" : elem.get('processDefinitionName')
         }
 
         return data
