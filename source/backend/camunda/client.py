@@ -36,8 +36,6 @@ class CamundaClient:
 # Deploying a single process
     def deploy_process(self,bpmn_file: str):
 
-        
-
         multipart_form_data = { 
         'deployment-name': (None, 'store'),
         'data': (bpmn_file, open(os.getcwd()+'/'+bpmn_file, 'r')),
@@ -148,7 +146,7 @@ class CamundaClient:
 
         return proc_def_history
 
-
+f
 
 """
 #lines 107-109 could be deleted. 
