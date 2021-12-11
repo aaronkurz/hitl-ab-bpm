@@ -3,4 +3,4 @@ requests==2.26.0
 Flask-SQLAlchemy==2.5.1
 psycopg2-binary==2.9.2
 python-dotenv==0.19.2
-flask-swagger-ui==3.36.0
+flask-swagger-ui==3.36.0 
