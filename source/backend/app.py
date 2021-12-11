@@ -4,8 +4,11 @@ import create_app,config
 from camunda.client import CamundaClient
 from models import db
 from models.task import Task
+from process_bandit.batch_policy import batch_policy_api
 
 app = create_app.create_app()
+
+app.register_blueprint(batch_policy_api, url_prefix="/batch-policy")
 
 @app.route('/')
 def index():
