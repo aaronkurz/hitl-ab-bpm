@@ -64,13 +64,16 @@ class CamundaClient:
     def start_instance(self,process_id: int):
         headers = {'Content-Type': 'application/json'}
         response = requests.post(self.url+"/process-definition/" + str(process_id)+ "/start", headers=headers)
-        assert(self.status_code_successful(response.status_code))
+        return self.status_code_successful(response.status_code)
 
 
 # Starting multiple instances
     def start_instances(self,process_id: int,instance_count: int):
+        all_instances_successful=True
         for _ in range(instance_count):
-            self.start_instance(process_id)
+            all_instances_successful=all_instances_successful and self.start_instance(process_id)
+        
+        return all_instances_successful
 
 
 

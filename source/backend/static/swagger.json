@@ -21,6 +21,7 @@
                         "200":{
                             "description": "OK"
                         }
+                        
                     }
                 }
             }
@@ -45,6 +46,9 @@
                 "responses": {
                     "200":{
                         "description": "OK"
+                    }
+                    ,"400":{
+                        "description":"process does not exist"
                     }
                 }
             }
@@ -83,6 +87,9 @@
                     "200":{
                         "description": "OK"
                     }
+                }
+                ,"400":{
+                    "description":"process does not exist"
                 }
             }
         }
