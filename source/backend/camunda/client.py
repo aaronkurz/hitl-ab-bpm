@@ -137,16 +137,16 @@ class CamundaClient:
             # Calculating the duration of the process
             for elem2 in proc_inst_response.json():
                 associated_instances.append(elem2)
-                # end_datetime = datetime.strptime(elem2.get('endTime'),'%b %d %Y %I:%M%p')
-                # start_datetime = datetime.strptime(elem2.get('startTime'),'%b %d %Y %I:%M%p')
-                # process_duration = (end_datetime - start_datetime)
-                # associated_instances.append(process_duration)
+                #end_datetime = datetime.strptime(elem2.get('endTime'),'%b %d %Y %I:%M%p')
+                #start_datetime = datetime.strptime(elem2.get('startTime'),'%b %d %Y %I:%M%p')
+                #process_duration = (end_datetime - start_datetime)
+                #associated_instances.append(process_duration)
 
             elem['associated_instances']=associated_instances
 
         return proc_def_history
 
-f
+
 
 """
 #lines 107-109 could be deleted. 

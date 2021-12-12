@@ -40,7 +40,7 @@ class RlEnv:
         logging.debug(f'step done {n}')
 
     def get_reward(self, context, action):
-        if action == 'A':
+        if context == 'A':
             return self.USER_LIKED_ARTICLE
         else:
             return self.USER_DISLIKED_ARTICLE
