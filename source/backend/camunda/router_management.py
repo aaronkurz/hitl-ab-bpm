@@ -3,9 +3,10 @@ import pandas as pd
 from threading import Thread, Event
 from time import sleep
 from vowpalwabbit import pyvw
+from dateutil import parser
 
-from backend.camunda.client import CamundaClient
-from backend.camunda.contextual_bandit import RlEnv
+from client import CamundaClient
+from contextual_bandit import RlEnv
 
 logging.basicConfig(level=logging.DEBUG,
                     format='(%(threadName)-9s) %(message)s', )
@@ -22,7 +23,8 @@ class RouterManager:
     #batch_policy_probability_A = 0.5
     #batch_policy_probability_B = 0.5
 
-    mean_duration_results = {'A': None, 'B': None}
+    # format: {'A': float, 'B': float} (in seconds)
+    mean_duration_results = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,11 +58,25 @@ class RouterManager:
         logging.debug('Wait for termination')
         # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
         sleep(120)
-        logging.debug('Dont waiting!')
+        logging.debug('Done waiting!')
         data = self.client.retrieve_data()
-        print(data[0])
-        #print(data[1])
+        mean_durations = []
+        for process_history in data:
+            instances = process_history.get('associated_instances')
+            durations = []
+            for instance in instances:
+                start = parser.parse(instance.get('startTime'))
+                end = parser.parse(instance.get('endTime'))
+                duration = (end-start).total_seconds()
+                durations.append(duration)
+            mean_duration = sum(durations) / len(durations)
+            mean_durations.append(mean_duration)
 
+        self.mean_duration_results['A'] = mean_durations[0]
+        self.mean_duration_results['B'] = mean_durations[1]
+
+        print('Average times versions: ')
+        print(str(self.mean_duration_results))
 
 
 
