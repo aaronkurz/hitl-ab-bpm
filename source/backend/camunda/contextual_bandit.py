@@ -4,6 +4,7 @@ import numpy
 import pandas
 import logging
 import random
+from router_management import RouterManager
 
 from vowpalwabbit import pyvw
 
@@ -41,9 +42,9 @@ class RlEnv:
 
     def get_reward(self, context, action):
         if action == 'A':
-            return self.USER_LIKED_ARTICLE
-        else:
-            return self.USER_DISLIKED_ARTICLE
+            return -(RouterManager.mean_duration_results['A'])
+        elif action == 'B':
+            return -(RouterManager.mean_duration_results['B'])
 
     # This function modifies (context, action, cost, probability) to VW friendly format
     def to_vw_example_format(self, context, actions, cb_label=None):
