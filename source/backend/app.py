@@ -4,12 +4,15 @@ import create_app, config
 from camunda.client import CamundaClient
 from models import db
 from models.task import Task
+from process_bandit.batch_policy import batch_policy_api
 from flask_swagger_ui import get_swaggerui_blueprint
 
 app = create_app.create_app()
 
+app.register_blueprint(batch_policy_api, url_prefix="/batch-policy")
+
 SWAGGER_URL = "/swagger"
-API_URL = "/static/swagger.json"
+API_URL = "/static/swagger.yaml"
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
     SWAGGER_URL, API_URL, config={"app_name": "sbe_prototyping_backend"}
 )
