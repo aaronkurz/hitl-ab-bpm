@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  description: SBE Prototyping Backend
+  version: 1.0.0
+  title: Human-in-the-Loop AB-BPM
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  /process/deploy:
+    post:
+      summary: deploys certain processes to engine
+      responses:
+        '200':
+          description: OK
+  /process/{process_id}/start_instance:
+    post:
+      summary: start a process instance in the engine
+      parameters:
+        - in: path
+          name: process_id
+          required: true
+          description: id of process definition to start instance of
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: could not create instance
+  /process/definition:
+    delete:
+      summary: deletes all process definitions
+      responses:
+        '200':
+          description: OK
+  /process/instance:
+    delete:
+      summary: deletes all process instance
+      responses:
+        '200':
+          description: OK
+  /process/all:
+    delete:
+      summary: deletes all process data from engine
+      responses:
+        '200':
+          description: OK
+  /process/history:
+    get:
+      summary: polls engine history service
+      responses:
+        '200':
+          description: OK
+  /process/{process_id}/start_instances:
+    post:
+      summary: start a process instance a certain number of times in the engine
+      parameters:
+        - in: path
+          name: process_id
+          required: true
+          description: id of process definition to start instance of
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+  /batch-policy:
+    post:
+      summary: Set a new batch policy
+      tags:
+        - Batch Policy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batchSize:
+                  type: integer
+                processDefinitionIdA:
+                  type: string
+                processDefinitionIdB:
+                  type: string
+                executionStrategy:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      customerCategory:
+                        type: string
+                      explorationProbabilityA:
+                        type: number
+                      explorationProbabilityB:
+                        type: number
+      responses:
+        '200':
+          description: Success
+  /batch-policy/latest:
+    get:
+      summary: Get the latest (so the currently active) batch policy proposal
+      tags:
+        - Batch Policy
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lastModified:
+                    type: string
+                  batchSize:
+                    type: integer
+                  processDefinitionIdA:
+                    type: string
+                  processDefinitionIdB:
+                    type: string
+                  executionStrategy:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        customerCategory:
+                          type: string
+                        explorationProbabilityA:
+                          type: number
+                        explorationProbabilityB:
+                          type: number
+  /batch-policy/count:
+    get:
+      summary: Get the latest (so the currently active) batch policy proposal
+      tags:
+        - Batch Policy
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batchPolicyCount:
+                    type: integer
