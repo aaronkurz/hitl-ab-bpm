@@ -74,11 +74,14 @@ def deploy_process():
 @app.route("/process/<process_id>/start_instance", methods=["POST"])
 def start_instance(process_id):
 
+
     started=client.start_instance(process_id)
 
     
     if(started):
-        return Response(response="succesfully started instance",status_code=200)
+        return Response(response="succesfully started instance",status=200)
+    else:
+        return Response(response="couldn't create instance",status=400)
     
 
 
@@ -89,9 +92,12 @@ def start_instances(process_id):
 
     instance_count = data["count"]
 
-    client.start_instances(process_id, instance_count)
+    started=client.start_instances(process_id, instance_count)
 
-    return {"status": "200"}
+    if(started):
+        return Response(response="succesfully started instances",status=200)
+    else:
+        return Response(response="couldn't create instances",status=400)
 
 
 @app.route("/process/definition", methods=["DELETE"])
@@ -99,7 +105,7 @@ def delete_process_definitions():
 
     client.delete_all_data("process-definition")
 
-    return {"status": "200"}
+    return Response(response="succesfully all process definitions",status=200)
 
 
 @app.route("/process/instances", methods=["DELETE"])
@@ -107,7 +113,7 @@ def delete_process_instances():
 
     client.delete_all_data("process-instance")
 
-    return {"status": "200"}
+    return Response(response="succesfully deleted all process instances",status=200)
 
 
 @app.route("/process/all", methods=["DELETE"])
@@ -115,7 +121,7 @@ def clean_process_data():
 
     client.clean_process_data()
 
-    return {"status": "200"}
+    return Response(response="succesfully deleted all data",status=200)
 
 
 @app.route("/process/history", methods=["GET"])

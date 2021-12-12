@@ -48,7 +48,7 @@
                         "description": "OK"
                     }
                     ,"400":{
-                        "description":"process does not exist"
+                        "description":"could not create instance"
                     }
                 }
             }
@@ -69,27 +69,45 @@
                         "type":"string"
                     }
                   }
-                ,
+                
 
-                {
-                    "in":"body",
-                    "name":"count",
-                    "required":"true",
-                    "description":"number of instances to start",
-                    "schema" :{
-                        "type":"integer"
-                    }
-                  }
+           
                 
                 
                 ],
+
+
+                "requestBody":{
+                    "content": {
+                        "application/json":{
+                            "schema":{
+                                "type":"object",
+                                "properties":{
+                                    "count":{
+                                        "type":"integer"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                ,
+                
+
+
+
+
+
+
+
+
                 "responses": {
                     "200":{
                         "description": "OK"
                     }
                 }
                 ,"400":{
-                    "description":"process does not exist"
+                    "description":"could not create some/all instances"
                 }
             }
         }
