@@ -16,7 +16,7 @@ class RlEnv:
     USER_DISLIKED_ARTICLE = 0.0
 
     orgas = ['gov', 'public']
-    #cost_profiles = ['relevant', 'irrelevant']
+    # cost_profiles = ['relevant', 'irrelevant']
     actions = ["A", "B"]
 
     def __init__(self, *args, **kwargs):
@@ -29,6 +29,7 @@ class RlEnv:
     def set_manager(self, manager):
         self.manager = manager
 
+    # Just for testing here, delete later
     def step(self, n):
         self.event_manager.set()
         self.event_rl.clear()
@@ -78,25 +79,23 @@ class RlEnv:
     def choose_orga(self, orgas):
         return random.choice(orgas)
 
-
     def generate_input_data(self):
         # start simulation
         return
 
-
-    def run_simulation(self, vw, num_iterations, orgas, actions, reward_function, do_learn = True):
+    def run_simulation(self, vw, num_iterations, orgas, actions, reward_function, do_learn=True):
         reward_sum = 0.
         acc_reward = []
 
-        for i in range(1, num_iterations+1):
+        for i in range(1, num_iterations + 1):
             # 1. In each simulation choose a user
             organisation = self.choose_orga(orgas)
             # 2. Choose time of day for a given user
             # Do not use for now
-            #time_of_day = choose_time_of_day(times_of_day)
+            # time_of_day = choose_time_of_day(times_of_day)
 
             # 3. Pass context to vw to get an action
-            #context = {'orga': user, 'cost_profile': time_of_day}
+            # context = {'orga': user, 'cost_profile': time_of_day}
             context = {'orga': organisation}
             action, prob = self.get_action(vw, context, actions)
 
@@ -106,18 +105,19 @@ class RlEnv:
 
             if do_learn:
                 # 5. Inform VW of what happened so we can learn from it
-                vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),pyvw.vw.lContextualBandit)
+                vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),
+                                     pyvw.vw.lContextualBandit)
                 # 6. Learn
                 vw.learn(vw_format)
                 # 7. Let VW know you're done with these objects
                 vw.finish_example(vw_format)
 
             # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
-            acc_reward.append(reward_sum/i)
+            acc_reward.append(reward_sum / i)
 
         return acc_reward
 
-    #def plot_ctr(num_iterations, acc_reward):
+    # def plot_ctr(num_iterations, acc_reward):
     #    plt.plot(range(1,num_iterations+1), ctr)
     #    plt.xlabel('num_iterations', fontsize=14)
     #    plt.ylabel('ctr', fontsize=14)

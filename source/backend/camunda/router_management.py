@@ -1,9 +1,10 @@
 import logging
-
+import pandas as pd
 from threading import Thread, Event
 from time import sleep
 from vowpalwabbit import pyvw
 
+from backend.camunda.client import CamundaClient
 from backend.camunda.contextual_bandit import RlEnv
 
 logging.basicConfig(level=logging.DEBUG,
@@ -11,8 +12,21 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 class RouterManager:
+
+    process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn', '../resources/bpmn/helicopter_license/helicopter_vB.bpmn']
+
+    # Configure
+    BATCH_SIZE = 50
+    NUMBER_OF_VARIANTS = 2
+    # Initially 0.5/0.5. Subject to change.
+    #batch_policy_probability_A = 0.5
+    #batch_policy_probability_B = 0.5
+
+
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.client = CamundaClient('http://localhost:8080/engine-rest')
 
     def set_events(self, event_rl, event_manager):
         self.event_rl = event_rl
@@ -21,6 +35,7 @@ class RouterManager:
     def set_RLEnv(self, rl_env):
         self.rl_env = rl_env
 
+    # Just for testing here, delete later
     def on_simulation_termination(self, message):
         self.event_rl.set()
         self.event_manager.clear()
@@ -29,7 +44,26 @@ class RouterManager:
         self.event_manager.wait(1)
         logging.debug(f'router stopped waiting for action')
 
-        logging.debug(f'Doing something very important {message}')
+        logging.debug(f'Doing some clean up {message}')
+
+    def simulate_batch(self):
+        # Deploy process variants
+        process_ids = self.client.deploy_processes(self.process_variant_keys)
+
+        # Start instances
+        for elem in process_ids:
+            self.client.start_instances(elem, int(self.BATCH_SIZE/self.NUMBER_OF_VARIANTS))
+        logging.debug('Wait for termination')
+        # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
+        sleep(120)
+        logging.debug('Dont waiting!')
+        data = self.client.retrieve_data()
+        print(data[0]['associated_instances'])
+        #print(data[1])
+
+
+
+
 
 
 def main():
@@ -67,18 +101,21 @@ def main():
 
     # Init both threads
     rl_thread = Thread(name='RL Thread', target=thread_rl, args=())
-    router_thread = Thread(name='Router Thread', target=thread_router, args=())
+    #router_thread = Thread(name='Router Thread', target=thread_router, args=())
 
     # Starting threads
     rl_thread.start()
-    router_thread.start()
+    #router_thread.start()
 
     logging.debug('Threads started.')
 
-    for n in range(6):
-        router.on_simulation_termination(str(n))
+    #for n in range(6):
+    #    router.on_simulation_termination(str(n))
+    router.simulate_batch()
+    #router.client.clean_process_data()
 
-    logging.debug('Main terminated.')
+    while True:
+        sleep(0.5)
 
 
 if __name__ == "__main__":
