@@ -22,7 +22,7 @@ class RouterManager:
     #batch_policy_probability_A = 0.5
     #batch_policy_probability_B = 0.5
 
-
+    mean_duration_results = {'A': None, 'B': None}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -58,7 +58,7 @@ class RouterManager:
         sleep(120)
         logging.debug('Dont waiting!')
         data = self.client.retrieve_data()
-        print(data[0]['associated_instances'])
+        print(data[0])
         #print(data[1])
 
 
