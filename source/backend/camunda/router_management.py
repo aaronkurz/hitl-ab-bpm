@@ -60,6 +60,8 @@ class RouterManager:
         sleep(120)
         logging.debug('Done waiting!')
         data = self.client.retrieve_data()
+
+        # TODO: ensure order of processes is actually first A then B?
         mean_durations = []
         for process_history in data:
             instances = process_history.get('associated_instances')

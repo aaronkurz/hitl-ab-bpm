@@ -41,6 +41,7 @@ class RlEnv:
         logging.debug(f'step done {n}')
 
     def get_reward(self, context, action):
+        # TODO: very unsure about this
         if action == 'A':
             return -(RouterManager.mean_duration_results['A'])
         elif action == 'B':
