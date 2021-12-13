@@ -4,7 +4,7 @@ import numpy
 import pandas
 import logging
 import random
-from router_management import RouterManager
+from matplotlib import pyplot as plt
 
 from vowpalwabbit import pyvw
 
@@ -13,15 +13,14 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 class RlEnv:
-    USER_LIKED_ARTICLE = 1.0
-    USER_DISLIKED_ARTICLE = 0.0
-
+    # Context
     orgas = ['gov', 'public']
-    # cost_profiles = ['relevant', 'irrelevant']
+    # Actions
     actions = ["A", "B"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.mean_durations = {}
 
     def set_events(self, event_rl, event_manager):
         self.event_rl = event_rl
@@ -30,22 +29,18 @@ class RlEnv:
     def set_manager(self, manager):
         self.manager = manager
 
-    # Just for testing here, delete later
-    def step(self, n):
-        self.event_manager.set()
-        self.event_rl.clear()
-        logging.debug("Rl_env waiting for simulation info")
-        self.event_rl.wait()
-        logging.debug(f'Rl_env stopped waiting')
-        logging.debug(f'Reward {random.randint(0, 10)}')
-        logging.debug(f'step done {n}')
+    def update_mean_durations(self, mean_duration):
+        self.mean_durations = mean_duration
 
     def get_reward(self, context, action):
-        # TODO: very unsure about this
-        if action == 'A':
-            return -(RouterManager.mean_duration_results['A'])
-        elif action == 'B':
-            return -(RouterManager.mean_duration_results['B'])
+        if context == 'public' and action == 'A':
+            return -(self.mean_durations['A'])
+        elif context == 'public' and action == 'B':
+            return -(self.mean_durations['B'])
+        elif context == 'gov' and action == 'A':
+            return -(self.mean_durations['A'])
+        else:
+            return -(self.mean_durations['B'])
 
     # This function modifies (context, action, cost, probability) to VW friendly format
     def to_vw_example_format(self, context, actions, cb_label=None):
@@ -81,46 +76,49 @@ class RlEnv:
     def choose_orga(self, orgas):
         return random.choice(orgas)
 
-    def generate_input_data(self):
-        # start simulation
-        return
+    def init_step(self, vw):
+        self.event_manager.set()
+        self.event_rl.clear()
+        logging.debug("Rl_env waiting for simulation info")
+        self.event_rl.wait()
+        logging.debug(f'Rl_env stopped waiting')
+        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn=True)
+        return reward
 
-    def run_simulation(self, vw, num_iterations, orgas, actions, reward_function, do_learn=True):
+    def run_simulation(self, vw, orgas, actions, reward_function, do_learn=True):
         reward_sum = 0.
         acc_reward = []
 
-        for i in range(1, num_iterations + 1):
-            # 1. In each simulation choose a user
-            organisation = self.choose_orga(orgas)
-            # 2. Choose time of day for a given user
-            # Do not use for now
-            # time_of_day = choose_time_of_day(times_of_day)
+        # 1. In each simulation choose a user
+        organisation = self.choose_orga(orgas)
+        # 2. Choose time of day for a given user
+        # Do not use for now
+        # time_of_day = choose_time_of_day(times_of_day)
+        # 3. Pass context to vw to get an action
+        # context = {'orga': user, 'cost_profile': time_of_day}
+        context = {'orga': organisation}
+        action, prob = self.get_action(vw, context, actions)
+        print(f'Action: {action}, Prob: {prob}')
+        # 4. Get reward of the action we chose
+        reward = reward_function(context, action)
+        print(f'Reward: {reward}')
+        #reward_sum += reward
+        if do_learn:
+            # 5. Inform VW of what happened so we can learn from it
+            vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),
+                                 pyvw.vw.lContextualBandit)
+            # 6. Learn
+            vw.learn(vw_format)
+            # 7. Let VW know you're done with these objects
+            vw.finish_example(vw_format)
+        # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
+        #acc_reward.append(-1 * reward_sum / i)
+        #return acc_reward
+        #print(f'Reward sum: {reward_sum}')
+        return reward
 
-            # 3. Pass context to vw to get an action
-            # context = {'orga': user, 'cost_profile': time_of_day}
-            context = {'orga': organisation}
-            action, prob = self.get_action(vw, context, actions)
-
-            # 4. Get reward of the action we chose
-            reward = reward_function(context, action)
-            reward_sum += reward
-
-            if do_learn:
-                # 5. Inform VW of what happened so we can learn from it
-                vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),
-                                     pyvw.vw.lContextualBandit)
-                # 6. Learn
-                vw.learn(vw_format)
-                # 7. Let VW know you're done with these objects
-                vw.finish_example(vw_format)
-
-            # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
-            acc_reward.append(reward_sum / i)
-
-        return acc_reward
-
-    # def plot_ctr(num_iterations, acc_reward):
-    #    plt.plot(range(1,num_iterations+1), ctr)
-    #    plt.xlabel('num_iterations', fontsize=14)
-    #    plt.ylabel('ctr', fontsize=14)
-    #    plt.ylim([0,1])
+    def plot_cum_mean_reward(self, num_iterations, acc_reward):
+        plt.plot(range(1, num_iterations + 1), acc_reward)
+        plt.xlabel('num_iterations', fontsize=14)
+        plt.ylabel('ctr', fontsize=14)
+        plt.ylim([0, 1])
