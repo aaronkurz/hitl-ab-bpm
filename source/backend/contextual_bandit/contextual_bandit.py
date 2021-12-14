@@ -1,7 +1,3 @@
-from threading import Thread, Event
-from time import sleep
-import numpy
-import pandas
 import logging
 import random
 from matplotlib import pyplot as plt
@@ -17,6 +13,8 @@ class RlEnv:
     orgas = ['gov', 'public']
     # Actions
     actions = ["A", "B"]
+    # Store every action taken
+    actions_list = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -89,36 +87,32 @@ class RlEnv:
         reward_sum = 0.
         acc_reward = []
 
+        # Set random seed
+        #random.seed(1)
         # 1. In each simulation choose a user
         organisation = self.choose_orga(orgas)
-        # 2. Choose time of day for a given user
-        # Do not use for now
-        # time_of_day = choose_time_of_day(times_of_day)
-        # 3. Pass context to vw to get an action
-        # context = {'orga': user, 'cost_profile': time_of_day}
+        # 2. Pass context to vw to get an action
         context = {'orga': organisation}
         action, prob = self.get_action(vw, context, actions)
-        print(f'Action: {action}, Prob: {prob}')
-        # 4. Get reward of the action we chose
+        print(f'Action: {action}, Prob: {prob}, Context: {context}')
+        self.actions_list.append(action)
+        # 3. Get reward of the action we chose
         reward = reward_function(context, action)
         print(f'Reward: {reward}')
-        #reward_sum += reward
+
         if do_learn:
-            # 5. Inform VW of what happened so we can learn from it
-            vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),
-                                 pyvw.vw.lContextualBandit)
-            # 6. Learn
+            # 4. Inform VW of what happened so we can learn from it
+            vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)), pyvw.vw.lContextualBandit)
+            # 5. Learn
             vw.learn(vw_format)
-            # 7. Let VW know you're done with these objects
+            # 6. Let VW know you're done with these objects
             vw.finish_example(vw_format)
         # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
-        #acc_reward.append(-1 * reward_sum / i)
-        #return acc_reward
-        #print(f'Reward sum: {reward_sum}')
         return reward
 
-    def plot_cum_mean_reward(self, num_iterations, acc_reward):
-        plt.plot(range(1, num_iterations + 1), acc_reward)
+    # Deprecated
+    def plot_cum_mean_reward(self, num_iterations, data_frame, counter):
+        plt.plot(range(1, num_iterations + 1), data_frame['Acc_Reward'])
         plt.xlabel('num_iterations', fontsize=14)
         plt.ylabel('ctr', fontsize=14)
-        plt.ylim([0, 1])
+        plt.savefig(f'../source/backend/rl_agent/results/reward_{counter}.pdf')

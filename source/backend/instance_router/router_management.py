@@ -5,8 +5,8 @@ from time import sleep
 from vowpalwabbit import pyvw
 from dateutil import parser
 
-from client import CamundaClient
-from contextual_bandit import RlEnv
+from backend.camunda.client import CamundaClient
+from backend.contextual_bandit.contextual_bandit import RlEnv
 
 logging.basicConfig(level=logging.DEBUG,
                     format='(%(threadName)-9s) %(message)s', )
@@ -21,6 +21,7 @@ class RouterManager:
     NUMBER_OF_VARIANTS = 2
 
     # format: {'A': float, 'B': float} (in seconds)
+    # TODO Store in db and train on historical data
     mean_duration_results = {}
 
     def __init__(self, *args, **kwargs):
@@ -34,7 +35,6 @@ class RouterManager:
     def set_RLEnv(self, rl_env):
         self.rl_env = rl_env
 
-    # Just for testing here, delete later
     def start_simulation(self):
         self.simulate_batch()
         logging.debug('BATCH SIMULATED.')
@@ -47,7 +47,7 @@ class RouterManager:
 
         logging.debug(f'Doing some clean up.')
 
-    def calculate_mean_batch_duration(self, data):
+    def calculate_mean_variant_duration(self, data):
         # TODO: ensure order of processes is actually first A then B?
         mean_durations = []
         for process_history in data:
@@ -79,7 +79,7 @@ class RouterManager:
         # Get the data from the Camunda engine
         data = self.client.retrieve_data()
         # Calculate the mean reward for each variant
-        self.calculate_mean_batch_duration(data)
+        self.calculate_mean_variant_duration(data)
 
         # Update local variable according to the simulation results
         self.rl_env.update_mean_durations(self.mean_duration_results)
@@ -89,39 +89,33 @@ class RouterManager:
 
 
 def main():
-    logger = logging.getLogger('my_logger')
-    logger.propagate = False
+    counter = 2
+    NUM_ITERATIONS = 20
+
     # Router
     router = RouterManager()
-
     # Init rl_env
     rl_env = RlEnv()
 
     def thread_rl():
         # Instantiate learner in VW
         vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
-#
-        num_iterations = 6
+        #vw = pyvw.vw("--cb 2 --epsilon 0.2")
+
+        num_iterations = 20
         acc_reward = []
         reward_sum = 0.0
-        #acc_reward = rl_env.run_simulation(vw, num_iterations, rl_env.orgas, rl_env.actions, rl_env.get_reward)
-#
-        #rl_env.plot_cum_mean_reward(num_iterations, acc_reward)
-        for i in range(10):
+
+        for i in range(NUM_ITERATIONS):
             reward = rl_env.init_step(vw)
             reward_sum += reward
             acc_reward.append((-1 * reward_sum / (i+1)))
-            #print(f'Iteration {i}: Reward {(-1 * reward / i)}')
-            print(f'Reward Sum: {reward_sum}')
-        print(acc_reward)
-        df = pd.DataFrame(acc_reward)
-        df.to_csv('rewards_list.csv')
-        #rl_env.plot_cum_mean_reward(num_iterations, acc_reward)
+            print(f'Reward Sum: {reward_sum}, Iteration: {i}')
 
-    def thread_router():
-        # Infinite loop in order to leave the client running in the background
-        while True:
-            sleep(0.5)
+        print(acc_reward)
+        df = pd.DataFrame(acc_reward, columns=['Acc_Reward'])
+        df.to_csv(f'../rl_agent/results/rewards_{counter}.csv')
+        print(rl_env.actions_list)
 
     # Init multithreading events
     event_rl = Event()
@@ -133,18 +127,18 @@ def main():
     router.set_events(event_rl, event_manager)
     rl_env.set_events(event_rl, event_manager)
 
-    # Init both threads
+    # Init RL thread
     rl_thread = Thread(name='RL Thread', target=thread_rl, args=())
-    # router_thread = Thread(name='Router Thread', target=thread_router, args=())
 
-    # Starting threads
+    # Starting thread
     rl_thread.start()
-    # router_thread.start()
 
-    logging.debug('Threads started.')
+    logging.debug('Thread started.')
+    #router.client.clean_process_data()
 
-    for n in range(10):
+    for n in range(NUM_ITERATIONS):
         router.start_simulation()
+
 
     while True:
         sleep(0.5)
