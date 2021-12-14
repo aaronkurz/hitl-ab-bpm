@@ -7,7 +7,7 @@ class CamundaClient:
     def __init__(self, url):
         self.url = url
 
-# TODO: remove just for demonstration
+    # TODO: remove just for demonstration
     def get_task(self, task):
         response = requests.get(self.url + f"/task/{task}")
         return response
@@ -23,25 +23,25 @@ class CamundaClient:
     def list_tasks(self):
         response = requests.get(self.url + "/task")
         return response
-# END TODO: remove just for demonstration
+    # END TODO: remove just for demonstration
 
 
-# Status
+    # Status
     def status_code_successful(self,status_code: int):
         return str(status_code)[0] == '2'
 
 
-### Section: Deployment & Starting ##
+    ### Section: Deployment & Starting ##
 
-# Deploying a single process
+    # Deploying a single process
     def deploy_process(self,bpmn_file: str):
 
-        
 
-        multipart_form_data = { 
-        'deployment-name': (None, 'store'),
-        'data': (bpmn_file, open(os.getcwd()+'/'+bpmn_file, 'r')),
-}
+
+        multipart_form_data = {
+            'deployment-name': (None, 'store'),
+            'data': (bpmn_file, open(os.getcwd()+'/'+bpmn_file, 'r')),
+        }
         response = requests.post(self.url + "/deployment/create", files=multipart_form_data)
         assert(self.status_code_successful(response.status_code))
 
@@ -52,7 +52,7 @@ class CamundaClient:
         return new_process_id
 
 
-# Deploying multiple processes
+    # Deploying multiple processes
     def deploy_processes(self,bpmn_files: list):
         new_process_ids=[]
         for bpmn_file in bpmn_files:
@@ -60,25 +60,25 @@ class CamundaClient:
         return new_process_ids
 
 
-# Starting a single instance
+    # Starting a single instance
     def start_instance(self,process_id: int):
         headers = {'Content-Type': 'application/json'}
         response = requests.post(self.url+"/process-definition/" + str(process_id)+ "/start", headers=headers)
         return self.status_code_successful(response.status_code)
 
 
-# Starting multiple instances
+    # Starting multiple instances
     def start_instances(self,process_id: int,instance_count: int):
         all_instances_successful=True
         for _ in range(instance_count):
             all_instances_successful=all_instances_successful and self.start_instance(process_id)
-        
+
         return all_instances_successful
 
 
 
 
-#2
+    #2
     def terminate_instance2(self, process_id: int):
 
         delete = requests.post(self.url + str(process_id) + "/terminate")
@@ -86,9 +86,9 @@ class CamundaClient:
         return delete
 
 
-### Section: Data Management ###
+    ### Section: Data Management ###
 
-# Deleting all data
+    # Deleting all data
     def delete_all_data(self,target: str):
         POSSIBLE_TARGETS = ["process-instance", "process-definition", "deployment", "decision-definition"]
         if target not in POSSIBLE_TARGETS:
@@ -96,7 +96,7 @@ class CamundaClient:
 
         if target == 'process-definition':
             self.delete_all_data(target="process-instance")
-        
+
         get_response = requests.get(self.url + "/" + target)
         assert(self.status_code_successful(get_response.status_code))
 
@@ -105,26 +105,26 @@ class CamundaClient:
             del_response = requests.delete(self.url + "/" + target + "/" + str(current_id))
             assert(self.status_code_successful(del_response.status_code))
 
-    
+
         get_response = requests.get(self.url + "/" + target)
         assert(self.status_code_successful(get_response.status_code))
-        assert(len(get_response.json()) == 0)   
+        assert(len(get_response.json()) == 0)
 
 
-# Cleaning Data
+    # Cleaning Data
     def clean_process_data(self):
 
         for elem in ["process-instance", "process-definition", "deployment", "decision-definition"]:
             self.delete_all_data(elem)
 
-    
-# Retrieving Data
+
+    # Retrieving Data
 
     def retrieve_data(self):
 
         proc_def_response = requests.get(self.url + "/history/process-definition/cleanable-process-instance-report").json()
 
-        
+
 
         proc_def_history=proc_def_response
 
@@ -132,12 +132,12 @@ class CamundaClient:
         # Getting the ID, Key and Name of the process from the json file
         for elem in proc_def_history:
             processDefinitionId = elem.get('processDefinitionId')
-            
+
             params = {'processDefinitionId': str(processDefinitionId)}
             proc_inst_response = requests.get(self.url + "/history/process-instance", params=params)
 
             assert (self.status_code_successful(proc_inst_response.status_code))
-            
+
             associated_instances=[]
             # Calculating the duration of the process
             for elem2 in proc_inst_response.json():
@@ -156,12 +156,10 @@ class CamundaClient:
 """
 #lines 107-109 could be deleted. 
 #Or "processDefinitionId" = processDefinitionId
-
         data = {
             "processDefinitionId" : elem.get('processDefinitionId'),
             "processDefinitionKey" : elem.get('processDefinitionKey'),
             "processDefinitionName" : elem.get('processDefinitionName')
         }
-
         return data
 """
