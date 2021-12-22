@@ -31,14 +31,14 @@ jobs:
           sleep 15s
 
       - name: Prepare and run API tests
-          run: |
+        run: |
             cd ..
             cd api-tests
             pip install -r requirements.txt
             pytest
 
       - name: Stop docker containers
-          run: |
+        run: |
             cd ..
             cd source
             docker compose stop
