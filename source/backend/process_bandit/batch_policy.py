@@ -9,7 +9,7 @@ batch_policy_api = Blueprint('batch_policy_api', __name__)
 
 
 # TODO: add sanity checks of data (percentages add up e.g.)
-@batch_policy_api.route('/', methods=['POST'])
+@batch_policy_api.route('', methods=['POST'])
 def set_batch_policy():
     """ Set new batch policy """
     json = request.json
@@ -72,3 +72,11 @@ def get_batch_policy_count():
     }
     json_data = jsonify(data)
     return json_data
+
+
+@batch_policy_api.route('', methods=['DELETE'])
+def delete_batch_policy_rows():
+    db.session.query(ExecutionStrategyBaPol).delete()
+    db.session.query(BatchPolicy).delete()
+    db.session.commit()
+    return "Success"
