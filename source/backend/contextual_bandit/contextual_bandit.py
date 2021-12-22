@@ -1,12 +1,14 @@
 import logging
 import random
+import sys
+
 from matplotlib import pyplot as plt
 
 from vowpalwabbit import pyvw
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s', )
-
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='(%(threadName)-9s) %(message)s', )
+logging.basicConfig(level=logging.INFO)
 
 class RlEnv:
     # Context
@@ -37,8 +39,13 @@ class RlEnv:
             return -(self.mean_durations['B'])
         elif context == 'gov' and action == 'A':
             return -(self.mean_durations['A'])
-        else:
+        elif context == 'gov' and action == 'B':
             return -(self.mean_durations['B'])
+        else:
+            # TODO: not good here
+            return -(self.mean_durations['B'])
+            # logging.error('ERROR: Not enough sample for action == "B"')
+            # sys.exit()
 
     # This function modifies (context, action, cost, probability) to VW friendly format
     def to_vw_example_format(self, context, actions, cb_label=None):
@@ -77,9 +84,9 @@ class RlEnv:
     def init_step(self, vw):
         self.event_manager.set()
         self.event_rl.clear()
-        logging.debug("Rl_env waiting for simulation info")
+        logging.info("Rl_env waiting for simulation info")
         self.event_rl.wait()
-        logging.debug(f'Rl_env stopped waiting')
+        logging.info(f'Rl_env stopped waiting')
         reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn=True)
         return reward
 
