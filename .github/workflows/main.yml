@@ -23,7 +23,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Build and run docker containers; run API tests
+      - name: Build and run docker containers
         run: |
           cd source
           docker compose build
@@ -32,13 +32,11 @@ jobs:
 
       - name: Prepare and run API tests
         run: |
-            cd ..
             cd api-tests
             pip install -r requirements.txt
             pytest
 
       - name: Stop docker containers
         run: |
-            cd ..
             cd source
             docker compose stop
