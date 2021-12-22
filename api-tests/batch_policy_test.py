@@ -5,18 +5,23 @@ from config import BASE_URL
 
 
 @pytest.fixture(autouse=True)
-def run_before_and_after_tests():
+def run_before_each_test():
     assert requests.delete(BASE_URL + "/batch-policy").status_code == requests.codes.OK
+    # ^ before test
     yield
+    # v after test
 
 
 def test_count():
+    # when
     response = requests.get(BASE_URL + "/batch-policy/count").json()
+    # then
     assert "batchPolicyCount" in response, "Key 'batchPolicyProposal' not found."
     assert response.get("batchPolicyCount") == 0
 
 
 def test_set_bapol():
+    # when
     bapol_json = json.loads("""{
     "batchSize": 200,
     "processDefinitionIdA": "testProcessDefinitionIdA",
@@ -35,13 +40,16 @@ def test_set_bapol():
     ]
     }""")
     response = requests.post(BASE_URL + "/batch-policy", json=bapol_json, headers={"Content-Type": "application/json"})
+    # then
     assert response.status_code == requests.codes.ok
     assert requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount") == 1
 
 
 def test_get_latest():
+    # when
     test_set_bapol()
     response = requests.get(BASE_URL + "/batch-policy/latest")
+    # then
     assert response.status_code == requests.codes.ok
     response_json = response.json()
     assert response_json.get("batchSize") == 200
