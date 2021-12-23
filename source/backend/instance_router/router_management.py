@@ -9,20 +9,21 @@ from dateutil import parser
 from vowpalwabbit import pyvw
 
 logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s', )
+                    format='%(message)s', )
 
 
 class RouterManager:
     # TODO
-    process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
-                            '../resources/bpmn/helicopter_license/helicopter_vB.bpmn']
+    process_variant_keys = ['source/backend/resources/bpmn/helicopter_license/helicopter_vA.bpmn',
+                            'source/backend/resources/bpmn/helicopter_license/helicopter_vB.bpmn']
 
     # format: {'A': float, 'B': float} (in seconds)
     # TODO Store in db and train on historical data
     mean_duration_results = {}
 
     # Configure the vowpal wabbit algorithm and methods
-    vw = pyvw.vw("--cb 2")
+    vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
+    #vw = pyvw.vw("--cb 2")
     # Init utility class methods
     # TODO
     client = CamundaClient('http://localhost:8080/engine-rest')
@@ -62,7 +63,7 @@ class RouterManager:
             mean_duration = sum(durations) / len(durations)
             mean_durations.append(mean_duration)
 
-        # TODO: Prepare for more than 2 variants
+        # TODO: Refactor to handle more then 2 variants
         self.mean_duration_results['A'] = mean_durations[0]
         self.mean_duration_results['B'] = mean_durations[1]
 
@@ -82,7 +83,8 @@ class RouterManager:
 
         # Get the data from the Camunda engine
         data = self.client.retrieve_data()
-        print(data)
+        logging.debug(data)
+        
         # Calculate the mean reward for each variant
         self.calculate_mean_duration(data)
 
@@ -93,7 +95,10 @@ class RouterManager:
         self.client.clean_process_data()
 
 def main():
-    num_iterations = 20
+    # Adjust accordingly
+    logging.getLogger().setLevel(logging.CRITICAL)
+    
+    num_iterations = 1
 
     # Init rl_env
     rl_env = RlEnv()
@@ -101,8 +106,10 @@ def main():
     # Router
     router = RouterManager(rl_env, 200, 2)
 
-    # For debugging, dividing by 0 error
+    # For debugging, dividing by 0 error solution
     router.client.clean_process_data()
+
+    print(f"Setup completed. Start learning...\n")
 
     acc_reward = []
     reward_sum = 0.0
@@ -110,11 +117,14 @@ def main():
         reward = router.start_simulation()
         reward_sum += reward
         acc_reward.append((-1 * reward_sum / (i + 1)))
-        print(f'Reward Sum: {reward_sum}, Iteration: {i}')
+        print(f'Iteration {i} -> Reward Sum: {reward_sum} \n')
+    
     print(acc_reward)
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
-    df.to_csv(f'../rl_agent/results/testing_refactor.csv')
+    df.to_csv('source/backend/contextual_bandit/results/testing_refactor.csv')
     print(rl_env.actions_list)
+
+    print(f"Finished learning.\n")
 
     while True:
         sleep(0.5)

@@ -1,12 +1,8 @@
-import logging
 import random
+
 from matplotlib import pyplot as plt
 
 from vowpalwabbit import pyvw
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s', )
-
 
 class RlEnv:
     # Context
@@ -29,7 +25,7 @@ class RlEnv:
         self.mean_durations = mean_duration
 
     def get_reward(self, context, action):
-        """[summary]
+        """Returns a reward ∈ [0;1] given a list of contexts and an action.
 
         Args:
             context ([type]): [description]
@@ -102,11 +98,11 @@ class RlEnv:
         :param vw:
         :return:
         """
-        reward = self.run_simulation(vw, self.orgas, self.actions: List[String], self.get_reward, do_learn=True)
+        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn =True)
 
         return reward
 
-    def run_simulation(self, vw, orgas, actions, reward_function, do_learn=True):
+    def run_simulation(self, vw, orgas, actions, reward_function: get_reward, do_learn: bool =True):
         """[summary]
 
         Args:
