@@ -39,13 +39,8 @@ class RlEnv:
             return -(self.mean_durations['B'])
         elif context == 'gov' and action == 'A':
             return -(self.mean_durations['A'])
-        elif context == 'gov' and action == 'B':
-            return -(self.mean_durations['B'])
         else:
-            # TODO: not good here
             return -(self.mean_durations['B'])
-            # logging.error('ERROR: Not enough sample for action == "B"')
-            # sys.exit()
 
     # This function modifies (context, action, cost, probability) to VW friendly format
     def to_vw_example_format(self, context, actions, cb_label=None):
