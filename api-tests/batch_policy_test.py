@@ -13,6 +13,8 @@ def run_before_each_test():
 
 
 def test_count():
+    """ Test if count of batch policies is zero when relevant db tables empty """
+    # given (just fixture)
     # when
     response = requests.get(BASE_URL + "/batch-policy/count").json()
     # then
@@ -21,7 +23,8 @@ def test_count():
 
 
 def test_set_bapol():
-    # when
+    """ Test if setting of new batch policy works """
+    # given
     bapol_json = json.loads("""{
     "batchSize": 200,
     "processDefinitionIdA": "testProcessDefinitionIdA",
@@ -39,6 +42,7 @@ def test_set_bapol():
         }
     ]
     }""")
+    # when
     response = requests.post(BASE_URL + "/batch-policy", json=bapol_json, headers={"Content-Type": "application/json"})
     # then
     assert response.status_code == requests.codes.ok
@@ -46,8 +50,10 @@ def test_set_bapol():
 
 
 def test_get_latest():
-    # when
+    """ Test if retrieval of latest set batch policy works """
+    # given
     test_set_bapol()
+    # when
     response = requests.get(BASE_URL + "/batch-policy/latest")
     # then
     assert response.status_code == requests.codes.ok
