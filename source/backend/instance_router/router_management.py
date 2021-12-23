@@ -8,6 +8,8 @@ from dateutil import parser
 
 from camunda.client import CamundaClient
 from contextual_bandit.contextual_bandit import RlEnv
+from instance_router.activityUtils import instance_terminated, fetch_acticity_duration, cal_time_based_cost
+
 COST={'Schedule':25,
       'Eligibility Test':190,
       'Medical Exam':75,
@@ -77,19 +79,7 @@ class RouterManager:
         self.mean_duration_results['A'] = mean_durations[0]
         self.mean_duration_results['B'] = mean_durations[1]
 
-    def instance_terminated(self):
-        instance_not_terminated = True
-        while (instance_not_terminated):
-            get_instances = pycamunda.processinst.GetList(url)
-            instances = get_instances()
-            # instance list is empty, all terminated, proceed
-            if not instances:
-                instance_not_terminated = False
-            sleep(1)
-        return False
-
     def simulate_batch(self, n):
-
         # Deploy process variants
         process_ids = self.client.deploy_processes(self.process_variant_keys)
 
@@ -99,8 +89,9 @@ class RouterManager:
         logging.info(f'Wait for termination, simulate_batch iteration {n+1}')
         # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
         # sleep(120)
-
-        if self.instance_terminated():
+        fetch_acticity_duration()
+        cal_time_based_cost(self.BATCH_SIZE)
+        if instance_terminated():
             # Get the data from the Camunda engine
             data = self.client.retrieve_data()
             # Calculate the mean reward for each variant
