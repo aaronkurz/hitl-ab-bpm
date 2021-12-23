@@ -8,9 +8,8 @@ from backend.contextual_bandit.rl_env import RlEnv
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(message)s', )
-
+logging.basicConfig(level=logging.INFO,
+                    format='(INFO) %(message)s', )
 
 class RouterManager:
     # TODO
@@ -22,6 +21,7 @@ class RouterManager:
     mean_duration_results = {}
 
     # Configure the vowpal wabbit algorithm and methods
+    vw = pyvw.vw("--cb_explore_adf -q UA --epsilon 0.2")
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
     #vw = pyvw.vw("--cb 2")
     # Init utility class methods
@@ -77,7 +77,8 @@ class RouterManager:
         for elem in process_ids:
             self.client.start_instances(elem, int(self.batch_size / self.number_of_variants))
 
-        logging.debug('Wait for termination')
+        logging.info('Waiting for termination.\n')
+        
         # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
         sleep(120)
 
@@ -91,14 +92,14 @@ class RouterManager:
         # Update local variable according to the simulation results
         self.rl_env.update_mean_durations(self.mean_duration_results)
 
-        # Clean engine after retrieving the duration
+        # Clean engine after retrieving the duration data.
         self.client.clean_process_data()
 
 def main():
     # Adjust accordingly
-    logging.getLogger().setLevel(logging.CRITICAL)
+    logging.getLogger().setLevel(logging.DEBUG)
     
-    num_iterations = 1
+    num_iterations = 1  
 
     # Init rl_env
     rl_env = RlEnv()
@@ -109,7 +110,8 @@ def main():
     # For debugging, dividing by 0 error solution
     router.client.clean_process_data()
 
-    print(f"Setup completed. Start learning...\n")
+    print(f"Setup completed. Start learning...")
+    logging.debug('\n')
 
     acc_reward = []
     reward_sum = 0.0
@@ -117,14 +119,16 @@ def main():
         reward = router.start_simulation()
         reward_sum += reward
         acc_reward.append((-1 * reward_sum / (i + 1)))
-        print(f'Iteration {i} -> Reward Sum: {reward_sum} \n')
+        logging.info(f'Iteration {i} -> Reward Sum: {reward_sum} \n')
     
     print(acc_reward)
+    print(rl_env.actions_list)
+    
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
     df.to_csv('source/backend/contextual_bandit/results/testing_refactor.csv')
-    print(rl_env.actions_list)
+    
 
-    print(f"Finished learning.\n")
+    print(f"\nFinished learning.\n")
 
     while True:
         sleep(0.5)

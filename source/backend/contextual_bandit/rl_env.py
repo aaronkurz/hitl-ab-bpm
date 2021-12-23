@@ -1,8 +1,10 @@
 import random
+import logging
 
 from matplotlib import pyplot as plt
-
 from vowpalwabbit import pyvw
+
+logging.basicConfig(level=logging.INFO)
 
 class RlEnv:
     # Context
@@ -125,11 +127,11 @@ class RlEnv:
         # 2. Pass context to vw to get an action
         context = {'orga': organisation}
         action, prob = self.get_action(vw, context, actions)
-        print(f'Action: {action}, Prob: {prob}, Context: {context}')
+        logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
         self.actions_list.append(action)
         # 3. Get reward of the action we chose
         reward = reward_function(context, action)
-        print(f'Reward: {reward}')
+        logging.info(f'Reward: {reward}')
 
         if do_learn:
             # 4. Inform VW of what happened so we can learn from it
