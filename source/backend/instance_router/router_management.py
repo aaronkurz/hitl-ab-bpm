@@ -6,9 +6,9 @@ from time import sleep
 from vowpalwabbit import pyvw
 from dateutil import parser
 
-from camunda.client import CamundaClient
-from contextual_bandit.contextual_bandit import RlEnv
-from instance_router.activityUtils import instance_terminated, fetch_acticity_duration, cal_time_based_cost
+from backend.camunda.client import CamundaClient
+from backend.contextual_bandit.contextual_bandit import RlEnv
+from activityUtils import instance_terminated, fetch_acticity_duration, cal_time_based_cost
 
 COST={'Schedule':25,
       'Eligibility Test':190,
@@ -24,8 +24,8 @@ logging.basicConfig(level=logging.INFO)
 url = 'http://camunda:8080/engine-rest'
 
 class RouterManager:
-    process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
-                            '../resources/bpmn/helicopter_license/helicopter_vB.bpmn']
+    process_variant_keys = ['source/backend/resources/bpmn/helicopter_license/helicopter_vA.bpmn',
+                            'source/backend/resources/bpmn/helicopter_license/helicopter_vA.bpmn']
 
     # Configure
     BATCH_SIZE = 200
@@ -130,7 +130,7 @@ def main():
 
         print(acc_reward)
         df = pd.DataFrame(acc_reward, columns=['Acc_Reward'])
-        df.to_csv(f'../rl_agent/results/rewards_{counter}.csv')
+        df.to_csv(f'source/backend/contextual_bandit/results/testing_refactor.csv')
         print(rl_env.actions_list)
 
     # Init multithreading events
@@ -150,7 +150,7 @@ def main():
     rl_thread.start()
 
     logging.info('Thread started.')
-    #router.client.clean_process_data()
+    router.client.clean_process_data()
 
     for n in range(NUM_ITERATIONS):
         router.start_simulation(n)
