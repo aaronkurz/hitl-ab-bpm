@@ -2,6 +2,7 @@ import time
 import pycamunda.processinst
 import pycamunda.activityinst
 import requests
+import logging
 
 url = 'http://localhost:8080/engine-rest'
 COST={'Schedule':25,
@@ -67,8 +68,8 @@ def fetch_acticity_duration():
                 # print(activity_dict)
         time.sleep(0.1)
         if len(instances) == 0:
-            print('time_elapsed:')
-            print(time_elapsed)
+            logging.info('time_elapsed:')
+            logging.info(time_elapsed)
             return(time_elapsed)
 
 def cal_time_based_cost(batch_size):
@@ -84,6 +85,6 @@ def cal_time_based_cost(batch_size):
         if time_elapsed[k]!=0:
             dict[k] = (dict[k]*batch_size)/time_elapsed[k]
 
-    print('time_based_cost')
-    print(dict)
+    logging.info('time_based_cost')
+    logging.info(dict)
     return(dict)
