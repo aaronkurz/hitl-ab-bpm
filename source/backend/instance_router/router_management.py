@@ -44,8 +44,9 @@ class RouterManager:
         start_time = time.perf_counter()
         self.simulate_batch(iteration_n)
         end_time = time.perf_counter()
-        print(f'Simulation time: {end_time - start_time} Seconds')
+        logging.info(f'Simulation time: {end_time - start_time} Seconds')
         
+        # Train the agent and retrieve the reward to log
         reward = self.rl_env.init_step(self.vw)
 
         return reward
