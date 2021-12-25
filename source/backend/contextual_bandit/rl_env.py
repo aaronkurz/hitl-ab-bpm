@@ -4,7 +4,7 @@ import logging
 from matplotlib import pyplot as plt
 from vowpalwabbit import pyvw
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
 class RlEnv:
     # Context

@@ -1,20 +1,22 @@
 import logging
+import time
 import pandas as pd
-import pycamunda.processinst
 
 from time import sleep
 from backend.camunda.client import CamundaClient
 from backend.contextual_bandit.rl_env import RlEnv
 from dateutil import parser
 from vowpalwabbit import pyvw
-from activityUtils import instance_terminated, fetch_acticity_duration, cal_time_based_cost
 
-logging.basicConfig(level=logging.INFO)
+from activityUtils import (cal_time_based_cost, fetch_acticity_duration,
+                           instance_terminated)
+
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
 
 class RouterManager:
-    # TODO Absolute paths? Soruce folder sbe_prototyping
-    process_variant_keys = ['source/backend/resources/bpmn/helicopter_license/helicopter_vA.bpmn',
-                            'source/backend/resources/bpmn/helicopter_license/helicopter_vB.bpmn']
+    # TODO Absolute paths? Source folder sbe_prototyping
+    process_variant_keys = ['source/backend/resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
+                            'source/backend/resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
     # format: {'A': float, 'B': float} (in seconds)
     # TODO Store in db and train on historical data
@@ -23,9 +25,8 @@ class RouterManager:
     # Configure the vowpal wabbit algorithm and methods
     # TODO delete --quiet for additional information 
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
-    #vw = pyvw.vw("--cb 2")
+    
     # Init utility class method
-    # TODO
     client = CamundaClient('http://localhost:8080/engine-rest')
 
     def __init__(self, rl_env,batch_size, number_of_variants):
@@ -33,13 +34,18 @@ class RouterManager:
         self.batch_size = batch_size
         self.number_of_variants = number_of_variants
 
-    def start_simulation(self, n):
+    def start_simulation(self, iteration_n):
         """[summary]
 
         Returns:
             [type]: [description]
         """
-        self.simulate_batch(n)
+        # Track the time the simulation and calculations take
+        start_time = time.perf_counter()
+        self.simulate_batch(iteration_n)
+        end_time = time.perf_counter()
+        print(f'Simulation time: {end_time - start_time} Seconds')
+        
         reward = self.rl_env.init_step(self.vw)
 
         return reward
@@ -67,7 +73,7 @@ class RouterManager:
         self.mean_duration_results['A'] = mean_durations[0]
         self.mean_duration_results['B'] = mean_durations[1]
 
-    def simulate_batch(self, n):
+    def simulate_batch(self, iteration_n):
         """[summary]
         """
         # Deploy process variants
@@ -77,7 +83,7 @@ class RouterManager:
         for elem in process_ids:
             self.client.start_instances(elem, int(self.batch_size / self.number_of_variants))
         
-        logging.info(f'Wait for termination, simulate_batch iteration {n}')
+        logging.info(f'Wait for termination, simulate_batch iteration {iteration_n}')
         
         # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
         # sleep(120)
@@ -100,7 +106,7 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    logging.getLogger().setLevel(logging.CRITICAL)
+    #logging.getLogger().setLevel(logging.INFO)
     
     num_iterations = 1  
 
