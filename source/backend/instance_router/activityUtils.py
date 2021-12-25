@@ -3,7 +3,7 @@ import pycamunda.processinst
 import pycamunda.activityinst
 import requests
 
-url = 'http://camunda:8080/engine-rest'
+url = 'http://localhost:8080/engine-rest'
 COST={'Schedule':25,
       'Eligibility Test':190,
       'Medical Exam':75,
