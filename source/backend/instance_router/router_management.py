@@ -3,20 +3,21 @@ import time
 import pandas as pd
 
 from time import sleep
-from backend.camunda.client import CamundaClient
-from backend.contextual_bandit.rl_env import RlEnv
+from camunda.client import CamundaClient
+from contextual_bandit.rl_env import RlEnv
 from dateutil import parser
 from vowpalwabbit import pyvw
 
 from activity_utils import (cal_time_based_cost, fetch_activity_duration,
                             instance_terminated)
 
-logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
 
 class RouterManager:
     # TODO Absolute paths? Source folder sbe_prototyping
-    process_variant_keys = ['source/backend/resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
-                            'source/backend/resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
+    process_variant_keys = ['../resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
+                            '../resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
     # format: {'A': float, 'B': float} (in seconds)
     # TODO Store in db and train on historical data
@@ -29,7 +30,7 @@ class RouterManager:
     # Init utility class method
     client = CamundaClient('http://localhost:8080/engine-rest')
 
-    def __init__(self, rl_env,batch_size, number_of_variants):
+    def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
         self.batch_size = batch_size
         self.number_of_variants = number_of_variants
@@ -105,9 +106,10 @@ class RouterManager:
             # Clean engine after retrieving the duration
             self.client.clean_process_data()
 
+
 def main():
     # Adjust accordingly
-    #logging.getLogger().setLevel(logging.INFO)
+    # logging.getLogger().setLevel(logging.INFO)
 
     num_iterations = 1
 
@@ -135,8 +137,7 @@ def main():
     print(rl_env.actions_list)
 
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
-    df.to_csv('source/backend/contextual_bandit/results/testing_refactor.csv')
-
+    df.to_csv('../contextual_bandit/results/testing_refactor.csv')
 
     print(f"\nFinished learning.\n")
 
