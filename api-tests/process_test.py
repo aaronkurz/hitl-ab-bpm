@@ -22,21 +22,21 @@ def after_all():
 
 def test_set_process():
     """ Test if setting of new process with variants works """
-    utils.set_processes_a_b("helicopter_license",
-                            "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                            "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    assert requests.get(BASE_URL + "/process-variants/count").json().get("processesCount") == 1
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    assert utils.get_process_count() == 1
 
 
 def test_set_2_processes():
     """ Test if setting of new process with variants works """
-    utils.set_processes_a_b("helicopter_license",
-                            "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                            "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.set_processes_a_b("helicopter_license_fast",
-                            "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                            "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
-    assert requests.get(BASE_URL + "/process-variants/count").json().get("processesCount") == 2
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
+    assert utils.get_process_count() == 2
 
 
 def test_get_active_process_metadata():
@@ -67,5 +67,44 @@ def test_get_active_process_variants_files():
         assert response.headers['Content-Disposition'].split(";")[0] == "attachment"
         assert response.headers['Content-Disposition'].split(";")[1].split(".")[1] == "bpmn"
 
-# TODO: test overwriting process
-# TODO: check if files are deleted from filesystem after tests
+
+def test_files_are_overwritten():
+    # given
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    # when
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    # then
+    assert utils.get_process_count() == 1
+
+
+def test_cascading_delete_bapol():
+    # given
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    utils.post_bapol({
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 1.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+        })
+    assert utils.get_process_count() == 1
+    assert utils.get_bapol_count() == 1
+    # when
+    utils.remove_all_process_rows()
+    # then
+    assert utils.get_process_count() == 0
+    assert utils.get_bapol_count() == 0

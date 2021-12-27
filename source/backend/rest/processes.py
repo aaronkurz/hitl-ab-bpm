@@ -1,7 +1,5 @@
 import os
 import shutil
-from pathlib import Path
-from time import sleep
 
 from flask import Blueprint
 from flask import abort, request, send_from_directory
@@ -39,15 +37,19 @@ def set_process(process_name):
     # Path
     path = os.path.join(parent_dir, directory)
     # Create the directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+    if len(os.listdir(path)) != 0:
+        abort(500, "Directory for bpmn files with process name should be empty")
     path_variant_a = os.path.join(path, variant_a_file.filename)
     path_variant_b = os.path.join(path, variant_b_file.filename)
 
-    # if file with same name in same directory already exists, delete it before saving the new file
-    for file in [Path(path_variant_a), Path(path_variant_b)]:
-        if file.is_file():
-            file.unlink()
+    existing = db.session.query(ProcessVariants).filter(ProcessVariants.name == process_name)
+    if existing.count() == 1:
+        db.session.delete(existing.first())
+    elif existing.count() > 1:
+        abort(500, "There should not be more than one row in process_variant db table with same name")
 
     variant_a_file.save(path_variant_a)
     variant_b_file.save(path_variant_b)
@@ -69,6 +71,7 @@ def set_process(process_name):
     db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True)).update(dict(active=False))
     db.session.add(process_variant)
     db.session.commit()
+    # TODO: return new row
     return "Success"
 
 
@@ -160,5 +163,3 @@ def get_process_variant_files(a_or_b):
             abort(404)
     else:
         abort(400, description='requested variant must be a or b (e.g. process-variants/variant_file/a)')
-
-# TODO: get current processes via api and internally

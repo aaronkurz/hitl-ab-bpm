@@ -1,9 +1,7 @@
 import pytest
 import requests
-import json
 
 import utils
-from process_test import test_set_2_processes
 from config import BASE_URL
 
 
@@ -32,38 +30,34 @@ def test_count():
     response = requests.get(BASE_URL + "/batch-policy/count").json()
     # then
     assert "batchPolicyCount" in response, "Key 'batchPolicyProposal' not found."
-    assert response.get("batchPolicyCount") == 0
+    assert utils.get_bapol_count() == 0
 
 
 def test_set_bapol():
     """ Test if setting of new batch policy works """
     # given
-    utils.set_processes_a_b("helicopter_license",
-                            "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                            "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.set_processes_a_b("helicopter_license_fast",
-                            "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                            "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
-    bapol_json = json.loads("""{
-    "batchSize": 200,
-    "executionStrategy": [
-        {
-            "customerCategory": "public",
-            "explorationProbabilityA": 1.3,
-            "explorationProbabilityB": 0.7
-        },
-        {
-            "customerCategory": "gov",
-            "explorationProbabilityA": 0.7,
-            "explorationProbabilityB": 0.3
-        }
-    ]
-    }""")
-    # when
-    response = requests.post(BASE_URL + "/batch-policy", json=bapol_json, headers={"Content-Type": "application/json"})
-    # then
-    assert response.status_code == requests.codes.ok
-    assert requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount") == 1
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
+    utils.post_bapol({
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 1.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+        })
+    assert utils.get_bapol_count() == 1
 
 
 def test_get_latest():
@@ -81,6 +75,5 @@ def test_get_latest():
         assert type(response_json.get("executionStrategy")[i].get("customerCategory")) == str
         assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityA")) == float
         assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityB")) == float
-
 
 # TODO add test to check if cascading delete works
