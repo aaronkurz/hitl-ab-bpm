@@ -5,10 +5,9 @@ class BatchPolicy(db.Model):
     __tablename__ = 'batch_policy'
     id = db.Column(db.Integer, primary_key=True)
     batch_size = db.Column(db.Integer, nullable=False)
-    process_definition_id_a = db.Column(db.String(100), nullable=False)
-    process_definition_id_b = db.Column(db.String(100), nullable=False)
+    process_id = db.Column(db.Integer, db.ForeignKey('process_variant.id'))
     last_modified = db.Column(db.DateTime, nullable=False)
-    execution_strategies = db.relationship('ExecutionStrategyBaPol', backref='batch_policy')
+    execution_strategies = db.relationship('ExecutionStrategyBaPol', backref='batch_policy', cascade="all, delete")
 
 
 class ExecutionStrategyBaPol(db.Model):
