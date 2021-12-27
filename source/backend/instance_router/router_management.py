@@ -110,7 +110,7 @@ def main():
     # Adjust accordingly
     # logging.getLogger().setLevel(logging.INFO)
 
-    num_iterations = 1
+    num_iterations = 20
 
     # Init rl_env
     rl_env = RlEnv()

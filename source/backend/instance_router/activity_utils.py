@@ -70,7 +70,7 @@ def fetch_activity_duration():
         instances = get_instances()
         for instance in instances:
             get_activity_instance = pycamunda.processinst.GetActivityInstance(URL, instance.id_)
-            response = requests.get(get_activity_instance.URL)
+            response = requests.get(get_activity_instance.url)
             if instance.id_ not in instance_batch_list:
                 instance_batch_list.append(instance.id_)
             if 'childActivityInstances' in response.json():
