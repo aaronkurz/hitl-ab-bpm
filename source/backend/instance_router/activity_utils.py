@@ -5,6 +5,7 @@ import requests
 import logging
 from xml.etree import ElementTree
 
+URL = 'http://camunda:8080/engine-rest'
 
 def extract_cost_from_bpmn(path: str):
     ns = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL',
@@ -24,7 +25,6 @@ def extract_cost_from_bpmn(path: str):
     return cost
 
 
-url = 'http://localhost:8080/engine-rest'
 COST = extract_cost_from_bpmn('../resources/bpmn/helicopter_license/helicopter_vA.bpmn')
 time_elapsed = {'Schedule': 0,
                 'Eligibility Test': 0,
@@ -48,7 +48,7 @@ def instance_terminated():
     """
     instance_not_terminated = True
     while instance_not_terminated:
-        get_instances = pycamunda.processinst.GetList(url)
+        get_instances = pycamunda.processinst.GetList(URL)
         instances = get_instances()
         # instance list is empty, all terminated, proceed
         if not instances:
@@ -66,11 +66,11 @@ def fetch_activity_duration():
     time_start = time.time()
     instance_batch_list = []
     while True:
-        get_instances = pycamunda.processinst.GetList(url)
+        get_instances = pycamunda.processinst.GetList(URL)
         instances = get_instances()
         for instance in instances:
-            get_activity_instance = pycamunda.processinst.GetActivityInstance(url, instance.id_)
-            response = requests.get(get_activity_instance.url)
+            get_activity_instance = pycamunda.processinst.GetActivityInstance(URL, instance.id_)
+            response = requests.get(get_activity_instance.URL)
             if instance.id_ not in instance_batch_list:
                 instance_batch_list.append(instance.id_)
             if 'childActivityInstances' in response.json():

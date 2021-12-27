@@ -9,10 +9,9 @@ from dateutil import parser
 from vowpalwabbit import pyvw
 
 from activity_utils import (cal_time_based_cost, fetch_activity_duration,
-                            instance_terminated)
+                            instance_terminated, URL)
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-
 
 class RouterManager:
     # TODO Absolute paths? Source folder sbe_prototyping
@@ -28,7 +27,7 @@ class RouterManager:
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
     # Init utility class method
-    client = CamundaClient('http://localhost:8080/engine-rest')
+    client = CamundaClient(URL)
 
     def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
