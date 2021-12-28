@@ -1,6 +1,5 @@
 import pytest
 import requests
-
 import utils
 from config import BASE_URL
 
@@ -75,5 +74,3 @@ def test_get_latest():
         assert type(response_json.get("executionStrategy")[i].get("customerCategory")) == str
         assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityA")) == float
         assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityB")) == float
-
-# TODO add test to check if cascading delete works

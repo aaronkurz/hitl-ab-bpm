@@ -1,8 +1,8 @@
 import requests
-
 from config import BASE_URL
 
 
+# PROCESS VARIANTS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str):
     # given
     files_in = {
@@ -19,6 +19,7 @@ def remove_all_process_rows():
     assert requests.delete(BASE_URL + "/process-variants").status_code == requests.codes.OK
 
 
+# BATCH POLICY API
 def get_process_count():
     return requests.get(BASE_URL + "/process-variants/count").json().get("processesCount")
 

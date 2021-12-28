@@ -17,7 +17,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    assert requests.delete(BASE_URL + "/process-variants").status_code == requests.codes.OK
+    utils.remove_all_process_rows()
 
 
 def test_set_process():
@@ -52,6 +52,7 @@ def test_get_active_process_metadata():
 
 
 def test_get_active_process_variants_files():
+    """ Test of retrieval of active bpmn files works """
     # given
     test_set_2_processes()
     for version in ["a", "b"]:
@@ -69,6 +70,10 @@ def test_get_active_process_variants_files():
 
 
 def test_files_are_overwritten():
+    """
+    When a process with the same name is posted, the old one should be replaced
+    in the filesystem as well as in the db.
+    """
     # given
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
@@ -82,6 +87,10 @@ def test_files_are_overwritten():
 
 
 def test_cascading_delete_bapol():
+    """ Test if the cascading delete works
+
+    If I delete a process, the corresponding bapols should be deleted too
+    """
     # given
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
