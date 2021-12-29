@@ -14,7 +14,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  Build-Run-Test:
+  Test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -23,10 +23,16 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: General preparations
+        # create empty source/backend/resources/bpmn folder necessary for running certain functionalities
+        run: |
+          cd source/backend
+          mkdir -p resources/bpmn
+          pip install -r requirements.txt
+
       - name: Run backend unit tests
         run: |
           cd source/backend
-          pip install -r requirements.txt
           export PYTHONPATH=. pytest
           pytest -v
 
