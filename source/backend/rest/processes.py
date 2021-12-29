@@ -55,11 +55,8 @@ def set_process(process_name):
     variant_b_file.save(path_variant_b)
 
     # deploy processes to camunda
-    print("done 0")
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
-    print("done 1")
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
-    print("done 2")
 
     process_variant = ProcessVariants(name=process_name,
                                       variant_a_path=path_variant_a,
@@ -140,8 +137,6 @@ def get_process_variant_files(a_or_b):
             directory = active_process_entry.variant_a_path.split('/')
             directory.pop()
             directory = "/".join(directory)
-            print(directory)
-            print(path)
             return send_from_directory(directory=directory,
                                        path=path,
                                        as_attachment=True)
@@ -154,8 +149,6 @@ def get_process_variant_files(a_or_b):
             directory = active_process_entry.variant_b_path.split('/')
             directory.pop()
             directory = "/".join(directory)
-            print(directory)
-            print(path)
             return send_from_directory(directory=directory,
                                        path=path,
                                        as_attachment=True)
