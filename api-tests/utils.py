@@ -16,8 +16,8 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str):
 
 
 def remove_all_process_rows():
-    response = requests.delete(BASE_URL + "/process-variants").status_code
-    assert response == requests.codes.OK, "Deletion of process rows failed: " + str(response)
+    response = requests.delete(BASE_URL + "/process-variants")
+    assert response.status_code == requests.codes.OK, "Deletion of process rows failed: " + str(response)
 
 
 # BATCH POLICY API
