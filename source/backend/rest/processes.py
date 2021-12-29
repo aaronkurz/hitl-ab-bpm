@@ -88,7 +88,7 @@ def delete_process_variants_rows():
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
         except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
+            abort(500, 'Failed to delete %s. Reason: %s' % (file_path, e))
     # remove db rows
     results = db.session.query(ProcessVariants).all()
     for result in results:
@@ -130,7 +130,7 @@ def get_process_variant_files(a_or_b):
         abort(400, description='id query parameter not specified')
     active_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.id == requested_id)
     if active_process_entry_query.count() == 0:
-        abort(400, description='No process with specified id found')
+        abort(404, description='No process with specified id found')
 
     active_process_entry = active_process_entry_query.first()
     if a_or_b == 'a':
@@ -146,7 +146,7 @@ def get_process_variant_files(a_or_b):
                                        path=path,
                                        as_attachment=True)
         except FileNotFoundError:
-            abort(404)
+            abort(500)
     elif a_or_b == 'b':
         try:
             path = active_process_entry.variant_b_path.split('/')[
