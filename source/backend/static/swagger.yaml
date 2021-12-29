@@ -110,7 +110,9 @@ paths:
           description: Success
   /batch-policy/latest:
     get:
-      summary: Get the latest (so the currently active) batch policy proposal
+      summary: Get the latest batch policy proposal
+      description: >
+        Get the latest (so the currently active) batch policy proposal of the currently active process
       tags:
         - Batch Policy
       responses:

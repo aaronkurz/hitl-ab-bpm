@@ -13,7 +13,7 @@ def run_before_each_test():
     # v after each test
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def after_all():
     # ^ Will be executed before the first test
     yield

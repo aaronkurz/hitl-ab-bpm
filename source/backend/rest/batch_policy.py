@@ -1,5 +1,5 @@
-from flask import Blueprint
-from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol
+from flask import Blueprint, abort
+from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol
 from models.processes import ProcessVariants
 from flask import request
 from datetime import datetime
@@ -43,25 +43,17 @@ def set_batch_policy():
 
 @batch_policy_api.route('/latest', methods=['GET'])
 def get_batch_policy():
-    """ Get latest batch policy """
-    latest_bapol: BatchPolicy = BatchPolicy.query.order_by(BatchPolicy.last_modified.desc()).first()
-    exec_strats_rows: [ExecutionStrategyBaPol] = latest_bapol.execution_strategies
-    exec_strats_dict = []
-    for elem in exec_strats_rows:
-        exec_strat = {
-            "customerCategory": elem.customer_category,
-            "explorationProbabilityA": elem.exploration_probability_a,
-            "explorationProbabilityB": elem.exploration_probability_b
-        }
-        exec_strats_dict.append(exec_strat)
-    data = {
-        "lastModified": latest_bapol.last_modified,
-        "batchSize": latest_bapol.batch_size,
-        "processId": latest_bapol.process_id,
-        "executionStrategy": exec_strats_dict
-    }
-    data_json = jsonify(data)
-    return data_json
+    """ Get latest batch policy of currently active process """
+    active_pv_query = db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True))
+    active_pv = None
+    if active_pv_query.count() == 0:
+        abort(404, "No currently active process.")
+    elif active_pv_query.count() > 1:
+        abort(500, "Internal server error: More than one active process")
+    elif active_pv_query.count() == 1:
+        active_pv = active_pv_query.first()
+    data_dict = get_current_bapol(active_pv.id)
+    return data_dict
 
 
 @batch_policy_api.route('/count', methods=['GET'])

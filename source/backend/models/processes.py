@@ -16,16 +16,26 @@ class ProcessVariants(db.Model):
     batch_policies = relationship("BatchPolicy", cascade="all, delete")
 
 
-def get_active_process():
-    active_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True))
-    assert active_process_entry_query.count() == 1, "Active processes != 1"
-    active_process_entry = active_process_entry_query.first()
+def get_process_metadata(process_id: int) -> dict:
+    """ Get data about specified process """
+    relevant_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.id == process_id)
+    assert relevant_process_entry_query.count() == 1, "Active processes != 1"
+    relevant_process_entry = relevant_process_entry_query.first()
     ap_info = {
-        'name': active_process_entry.name,
-        'variant_a_path': active_process_entry.variant_a_path,
-        'variant_b_path': active_process_entry.variant_b_path,
-        'variant_a_camunda_id': active_process_entry.variant_a_camunda_id,
-        'variant_b_camunda_id': active_process_entry.variant_b_camunda_id
+        'id': relevant_process_entry.id,
+        'name': relevant_process_entry.name,
+        'variant_a_path': relevant_process_entry.variant_a_path,
+        'variant_b_path': relevant_process_entry.variant_b_path,
+        'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
+        'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id
     }
     return ap_info
+
+
+def get_active_process_metadata() -> dict:
+    """ Get data about currently active process """
+    active_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True))
+    assert active_process_entry_query.count() == 1, "Active processes != 1"
+    active_process_entry_id = active_process_entry_query.first().id
+    return get_process_metadata(active_process_entry_id)
 

@@ -1,0 +1,1 @@
+truncate process_variant, execution_strategy_bapol, batch_policy, tasks;
