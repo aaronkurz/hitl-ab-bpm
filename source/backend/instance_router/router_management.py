@@ -15,9 +15,7 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 
 class RouterManager:
-    # # TODO Absolute paths? Source folder sbe_prototyping
-    # process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
-    #                         '../resources/bpmn/helicopter_license/helicopter_vA.bpmn']
+    # TODO Absolute paths? Source folder sbe_prototyping
     process_variant_keys = ['../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
                             '../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
