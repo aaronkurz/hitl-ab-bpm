@@ -1,11 +1,13 @@
-import time
-import pycamunda.processinst
-import pycamunda.activityinst
-import requests
 import logging
+import time
 from xml.etree import ElementTree
 
+import pycamunda.activityinst
+import pycamunda.processinst
+import requests
+
 BASE_URL = 'http://camunda:8080/engine-rest'
+
 
 def extract_cost_from_bpmn(path: str):
     ns = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL',
@@ -26,15 +28,17 @@ def extract_cost_from_bpmn(path: str):
 
 
 COST = extract_cost_from_bpmn('../resources/bpmn/helicopter_license/helicopter_vA.bpmn')
-
-# time_elapsed = {'Schedule': 0,
-#                 'Eligibility Test': 0,
-#                 'Medical Exam': 0,
-#                 'Theory Test': 0,
-#                 'Practical Test': 0,
-#                 'Approve': 0,
-#                 'Reject': 0
-#                 }
+'''
+helicopter fixed cost:
+COST={'Schedule':25,
+      'Eligibility Test':190,
+      'Medical Exam':75,
+      'Theory Test':455,
+      'Practical Test':1145,
+      'Approve':100,
+      'Reject':0
+}
+'''
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -101,7 +105,9 @@ def cal_time_based_cost(batch_size, time_elapsed):
     Offers an additional dimension to compare the variants. This also helps in terms of finding useful parameters for
     the human expert.
     :param batch_size:
-    :return: dict of time based cost
+    :return: dict of time based cost, for example:
+    {'Schedule': 6.868131868131868, 'Eligibility Test': 38.97435897435897, 'Medical Exam': 19.18158567774936, 'Theory Test': 252.77777777777777, 'Practical Test': 444.6601941747573, 'Approve': 277.77777777777777, 'Reject': 0.0}
+    for Schedule we have 728 cost/milliseconds for one batch/iteration
     """
     cost_dict = COST.copy()
     for k, v in COST.items():
@@ -122,20 +128,22 @@ def fetch_history_activity_duration(time_stamp):
     history_url = '/history/activity-instance?'
     query_url = BASE_URL + history_url + time_query
     result = requests.get(query_url)
-    dic = {}
+    history_activity_duration_dict = {}
     logging.info('fetch_history_activity_duration')
     logging.info(time_stamp)
     logging.info(result.json())
     for instance in result.json():
-        dic[instance['id']] =[instance['activityName'], instance['durationInMillis']]
-    logging.info(dic.values())
-    return dic
+        history_activity_duration_dict[instance['id']] = [instance['activityName'], instance['durationInMillis']]
+    logging.info(history_activity_duration_dict.values())
+    return history_activity_duration_dict
 
 
 def sumup_history_activity_duration(time_stamp):
     '''
     sum up dict of time elapsed for a batch of instances, values retrieved from history service
-    :return: dict(time_elapsed)
+    :return: dict(time_elapsed), for example:
+    {'Schedule': 728, 'Eligibility Test': 975, 'Medical Exam': 782, 'Theory Test': 360, 'Practical Test': 515, 'Approve': 72, 'Reject': 779}
+    for Schedule we have 728 milliseconds for one batch/iteration, which is summed up from all the instances from this batch
     '''
     time_elapsed = {}
     for key in COST.keys():
@@ -152,11 +160,17 @@ def sumup_history_activity_duration(time_stamp):
     logging.info(time_elapsed)
     return time_elapsed
 
+
 def get_format_timestamp():
     '''
-    Formatted timestamps used for API calls
+    Formatted timestamps used for API calls, used to retrieve per activity duration from history service
     By default, the date must have the format yyyy-MM-dd'T'HH:mm:ss.SSSZ, e.g., 2013-01-23T14:42:45.000+0200.
-    Didn't find a way to express milliseconds, use .999 instead(deprecated)
-    :return: formatted timestamp string
+
+    :return: formatted timestamp string, for example:
+    '2021-12-30T15:14:48.999%2b0800'
     '''
-    return(time.strftime("%Y-%m-%dT%H:%M:%Smilliseconds%z", time.localtime()).replace('+', '%2b').replace('milliseconds', str(".%03d" %((time.time() - int(time.time())) * 1000))))
+    return (
+        time.strftime("%Y-%m-%dT%H:%M:%Smilliseconds%z", time.localtime()).replace('+', '%2b').replace('milliseconds',
+                                                                                                       str(".%03d" % ((
+                                                                                                    time.time() - int(
+                                                                                              time.time())) * 1000))))

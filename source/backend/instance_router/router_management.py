@@ -1,18 +1,18 @@
 import logging
 import time
-import pandas as pd
-
 from time import sleep
-from camunda.client import CamundaClient
-from contextual_bandit.rl_env import RlEnv
+
+import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from activity_utils import (cal_time_based_cost, fetch_activity_duration,
-                            instance_terminated, BASE_URL, get_format_timestamp, fetch_history_activity_duration,
+from activity_utils import (cal_time_based_cost, instance_terminated, BASE_URL, get_format_timestamp,
                             sumup_history_activity_duration)
+from camunda.client import CamundaClient
+from contextual_bandit.rl_env import RlEnv
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+
 
 class RouterManager:
     # # TODO Absolute paths? Source folder sbe_prototyping
@@ -110,6 +110,7 @@ class RouterManager:
             # fetch_history_activity_duration(batch_start_timestamp)
             time_elapsed = sumup_history_activity_duration(batch_start_timestamp)
             cal_time_based_cost(self.batch_size, time_elapsed)
+
             # Clean engine after retrieving the duration
             self.client.clean_process_data()
 
