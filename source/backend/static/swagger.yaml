@@ -76,6 +76,7 @@ paths:
   /batch-policy:
     post:
       summary: Set a new batch policy
+      description: This endpoint will assign a new batch policy to the currently active process in the process_variant db table.
       tags:
         - Batch Policy
       requestBody:
@@ -86,10 +87,6 @@ paths:
               properties:
                 batchSize:
                   type: integer
-                processDefinitionIdA:
-                  type: string
-                processDefinitionIdB:
-                  type: string
                 executionStrategy:
                   type: array
                   items:
@@ -104,9 +101,18 @@ paths:
       responses:
         '200':
           description: Success
+    delete:
+      summary: Delete all batch policies.
+      tags:
+        - Batch Policy
+      responses:
+        '200':
+          description: Success
   /batch-policy/latest:
     get:
-      summary: Get the latest (so the currently active) batch policy proposal
+      summary: Get the latest batch policy proposal
+      description: >
+        Get the latest (so the currently active) batch policy proposal of the currently active process
       tags:
         - Batch Policy
       responses:
@@ -138,11 +144,11 @@ paths:
                           type: number
   /batch-policy/count:
     get:
-      summary: Get the latest (so the currently active) batch policy proposal
+      summary: Get the amount of Batch Policies in the db.
       tags:
         - Batch Policy
       responses:
-        '200':
+        200:
           description: OK
           content:
             application/json:
@@ -151,3 +157,121 @@ paths:
                 properties:
                   batchPolicyCount:
                     type: integer
+  /process-variants/{process_name}:
+    post:
+      summary: Add a new process with two variants.
+      description: >
+        They are deployed to camunda automagically.
+      tags:
+        - Process Variants
+      parameters:
+        - name: process_name
+          in: path
+          description: Process Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                variantA:
+                  type: string
+                  format: binary
+                variantB:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Success
+        400:
+          # TODO improve these with more details and the options?
+          description: Client error
+        500:
+          description: Server error
+  /process-variants:
+    delete:
+      summary: Delete all processes from db and files from filesystem of backend.
+      tags:
+        - Process Variants
+      responses:
+        200:
+          description: Success
+        500:
+          description: Server error
+  /process-variants/count:
+    get:
+      summary: Get amount of processes deployed via our backend.
+      tags:
+        - Process Variants
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processesCount:
+                    type: integer
+  /process-variants/active-meta:
+    get:
+      summary: Get metadata about currently active process.
+      tags:
+        - Process Variants
+      description: >
+        id is the id in our backend, not in the camunda engine.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  added:
+                    type: string
+  /process-variants/variant-file/{a_or_b}:
+    get:
+      summary: Get the bpmn file of a certain process.
+      description: >
+        You can get the relevant currently active process id via
+        this api call: /process-variants/active-meta
+      tags:
+        - Process Variants
+      parameters:
+        - name: a_or_b
+          in: path
+          description: Enter a or b, to get the specified version of the process
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          # TODO improve this so file can be downloaded from swagger UI
+          description: OK, bpmn file is downloaded
+        400:
+          description: Client error
+        404:
+          description: No process with that id
+        500:
+          description: Server error
+
+
+
+
+
+
+

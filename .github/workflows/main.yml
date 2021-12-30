@@ -1,4 +1,4 @@
-name: API-Test
+name: API-Unit-Test
 
 # Controls when the workflow will run
 on:
@@ -14,7 +14,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  Build-Run-Test:
+  Test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -23,12 +23,25 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: General preparations
+        # create empty source/backend/resources/bpmn folder necessary for running certain functionalities
+        run: |
+          cd source/backend
+          mkdir -p resources/bpmn
+          pip install -r requirements.txt
+
+      - name: Run backend unit tests
+        run: |
+          cd source/backend
+          export PYTHONPATH=. pytest
+          pytest -v
+
       - name: Build and run docker containers
         run: |
           cd source
           docker compose build
           docker compose up -d
-          sleep 15s
+          sleep 25s
 
       - name: Prepare and run API tests
         run: |

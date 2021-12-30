@@ -25,3 +25,5 @@ website](https://docs.pytest.org/en/6.2.x/).
 To make requests to our backend, you can use the `requests` package. The base url of the backend is stored on the
 config.py module. Please use that module to store anything relevant for all the API-tests.
 
+`utils.py` contains useful methods for multiple test modules. If you need to use similar/the same logic in
+multiple test modules, put that code in utils (instead if referencing from one test module to another).
