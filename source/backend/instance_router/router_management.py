@@ -10,7 +10,6 @@ from activity_utils import (cal_time_based_cost, instance_terminated, get_format
                             sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
-from config import CAMUNDA_ENGINE_URI
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
