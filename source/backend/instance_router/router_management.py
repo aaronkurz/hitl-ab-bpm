@@ -31,7 +31,7 @@ class RouterManager:
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
     # Init utility class method
-    client = CamundaClient(CAMUNDA_ENGINE_URI)
+    client = CamundaClient()
 
     def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
