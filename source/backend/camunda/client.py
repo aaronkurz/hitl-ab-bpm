@@ -3,7 +3,7 @@ import config
 
 
 class CamundaClient:
-    def __init__(self, url=config.CAMUNDA_ENGINE_URI):
+    def __init__(self, url=config.CAMUNDA_ENGINE_URI.replace("'", "")):
         self.url = url
 
     # TODO: remove just for demonstration
