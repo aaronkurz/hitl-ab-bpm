@@ -1,12 +1,10 @@
-import logging
 import random
-from matplotlib import pyplot as plt
+import logging
 
+from matplotlib import pyplot as plt
 from vowpalwabbit import pyvw
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s', )
-
+logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
 class RlEnv:
     # Context
@@ -20,17 +18,24 @@ class RlEnv:
         super().__init__(*args, **kwargs)
         self.mean_durations = {}
 
-    def set_events(self, event_rl, event_manager):
-        self.event_rl = event_rl
-        self.event_manager = event_manager
-
-    def set_manager(self, manager):
-        self.manager = manager
-
     def update_mean_durations(self, mean_duration):
+        """[summary]
+
+        Args:
+            mean_duration ([type]): [description]
+        """
         self.mean_durations = mean_duration
 
     def get_reward(self, context, action):
+        """Returns a reward ∈ [0;1] given a list of contexts and an action.
+
+        Args:
+            context ([type]): [description]
+            action ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
         if context == 'public' and action == 'A':
             return -(self.mean_durations['A'])
         elif context == 'public' and action == 'B':
@@ -42,6 +47,16 @@ class RlEnv:
 
     # This function modifies (context, action, cost, probability) to VW friendly format
     def to_vw_example_format(self, context, actions, cb_label=None):
+        """[summary]
+
+        Args:
+            context ([type]): [description]
+            actions ([type]): [description]
+            cb_label ([type], optional): [description]. Defaults to None.
+
+        Returns:
+            [type]: [description]
+        """
         if cb_label is not None:
             chosen_action, cost, prob = cb_label
         example_string = ""
@@ -72,18 +87,36 @@ class RlEnv:
         return actions[chosen_action_index], prob
 
     def choose_orga(self, orgas):
+        """
+        Choose an organisation randomly from organisations list
+        :param orgas:
+        :return:
+        """
         return random.choice(orgas)
 
     def init_step(self, vw):
-        self.event_manager.set()
-        self.event_rl.clear()
-        logging.debug("Rl_env waiting for simulation info")
-        self.event_rl.wait()
-        logging.debug(f'Rl_env stopped waiting')
-        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn=True)
+        """
+
+        :param vw:
+        :return:
+        """
+        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn =True)
+
         return reward
 
-    def run_simulation(self, vw, orgas, actions, reward_function, do_learn=True):
+    def run_simulation(self, vw, orgas, actions, reward_function: get_reward, do_learn: bool =True):
+        """[summary]
+
+        Args:
+            vw (contextual_bandit): contextual bandit model to be trained
+            orgas (List[String]): List of organsiation the agent can choose from
+            actions (List[String]): List of actions the agent can choose from 
+            reward_function (int): [description]
+            do_learn (bool, optional): [description]. Defaults to True.
+
+        Returns:
+            [type]: [description]
+        """
         reward_sum = 0.
         acc_reward = []
 
@@ -94,11 +127,11 @@ class RlEnv:
         # 2. Pass context to vw to get an action
         context = {'orga': organisation}
         action, prob = self.get_action(vw, context, actions)
-        print(f'Action: {action}, Prob: {prob}, Context: {context}')
+        logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
         self.actions_list.append(action)
         # 3. Get reward of the action we chose
         reward = reward_function(context, action)
-        print(f'Reward: {reward}')
+        logging.info(f'Reward: {reward}')
 
         if do_learn:
             # 4. Inform VW of what happened so we can learn from it
@@ -109,10 +142,3 @@ class RlEnv:
             vw.finish_example(vw_format)
         # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
         return reward
-
-    # Deprecated
-    def plot_cum_mean_reward(self, num_iterations, data_frame, counter):
-        plt.plot(range(1, num_iterations + 1), data_frame['Acc_Reward'])
-        plt.xlabel('num_iterations', fontsize=14)
-        plt.ylabel('ctr', fontsize=14)
-        plt.savefig(f'../source/backend/rl_agent/results/reward_{counter}.pdf')
