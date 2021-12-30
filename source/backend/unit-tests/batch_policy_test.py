@@ -17,8 +17,6 @@ def before_all():
                  process_id=5)
     BatchPolicy.query = MagicMock()
     BatchPolicy.query.order_by.return_value.filter.return_value.first.return_value = bapol
-
-    db.session.query.return_value.filter.return_value.first.return_value = Mock(id=5)
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
