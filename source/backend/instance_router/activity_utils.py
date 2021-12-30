@@ -8,7 +8,6 @@ import requests
 
 from config import CAMUNDA_ENGINE_URI
 
-#BASE_URL = 'http://localhost:8080/engine-rest'
 
 def extract_cost_from_bpmn(path: str):
     ns = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL',
