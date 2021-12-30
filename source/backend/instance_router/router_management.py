@@ -6,7 +6,7 @@ import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from activity_utils import (cal_time_based_cost, instance_terminated, BASE_URL, get_format_timestamp,
+from activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
                             sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
@@ -15,11 +15,9 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 
 class RouterManager:
-    # # TODO Absolute paths? Source folder sbe_prototyping
-    # process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
-    #                         '../resources/bpmn/helicopter_license/helicopter_vA.bpmn']
-    process_variant_keys = ['../resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
-                            '../resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
+    # TODO Absolute paths? Source folder sbe_prototyping
+    process_variant_keys = ['../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
+                            '../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
     # format: {'A': float, 'B': float} (in seconds)
     # TODO Store in db and train on historical data
@@ -30,7 +28,7 @@ class RouterManager:
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
     # Init utility class method
-    client = CamundaClient(BASE_URL)
+    client = CamundaClient()
 
     def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
@@ -117,17 +115,17 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    # logging.getLogger().setLevel(logging.INFO)
+    #logging.getLogger().setLevel(logging.INFO)
 
-    num_iterations = 20
+    num_iterations = 1
 
     # Init rl_env
     rl_env = RlEnv()
 
     # Router
-    router = RouterManager(rl_env, 200, 2)
+    router = RouterManager(rl_env, 50, 2)
 
-    # For debugging, dividing by 0 error solution
+    # For debugging, clean camund engine before deploying anything
     router.client.clean_process_data()
 
     print(f"Setup completed. Start learning...")
@@ -145,7 +143,7 @@ def main():
     print(rl_env.actions_list)
 
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
-    df.to_csv('../contextual_bandit/results/testing_refactor.csv')
+    df.to_csv('contextual_bandit/results/testing_reward.csv')
 
     print(f"\nFinished learning.\n")
 
