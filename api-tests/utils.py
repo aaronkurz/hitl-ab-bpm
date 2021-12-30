@@ -12,7 +12,7 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str):
     # when
     response = requests.post(BASE_URL + "/process-variants/" + process_name, files=files_in)
     # then
-    assert response.status_code == requests.codes.ok
+    assert response.status_code == requests.codes.ok, "Setting of process failed: " + str(response.content)
 
 
 def remove_all_process_rows():
