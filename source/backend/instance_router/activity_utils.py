@@ -9,7 +9,6 @@ import requests
 from config import CAMUNDA_ENGINE_URI
 
 #BASE_URL = 'http://localhost:8080/engine-rest'
-BASE_URL = CAMUNDA_ENGINE_URI
 
 def extract_cost_from_bpmn(path: str):
     ns = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL',
@@ -55,7 +54,7 @@ def instance_terminated():
     """
     instance_not_terminated = True
     while instance_not_terminated:
-        get_instances = pycamunda.processinst.GetList(BASE_URL)
+        get_instances = pycamunda.processinst.GetList(CAMUNDA_ENGINE_URI)
         instances = get_instances()
         # instance list is empty, all terminated, proceed
         if not instances:
@@ -76,10 +75,10 @@ def fetch_activity_duration():
     time_start = time.time()
     instance_batch_list = []
     while True:
-        get_instances = pycamunda.processinst.GetList(BASE_URL)
+        get_instances = pycamunda.processinst.GetList(CAMUNDA_ENGINE_URI)
         instances = get_instances()
         for instance in instances:
-            get_activity_instance = pycamunda.processinst.GetActivityInstance(BASE_URL, instance.id_)
+            get_activity_instance = pycamunda.processinst.GetActivityInstance(CAMUNDA_ENGINE_URI, instance.id_)
             response = requests.get(get_activity_instance.url)
             if instance.id_ not in instance_batch_list:
                 instance_batch_list.append(instance.id_)
@@ -128,7 +127,7 @@ def fetch_history_activity_duration(time_stamp):
     '''
     time_query = 'finishedAfter=' + time_stamp
     history_url = '/history/activity-instance?'
-    query_url = BASE_URL + history_url + time_query
+    query_url = CAMUNDA_ENGINE_URI + history_url + time_query
     result = requests.get(query_url)
     history_activity_duration_dict = {}
     logging.info('fetch_history_activity_duration')
@@ -152,7 +151,7 @@ def sumup_history_activity_duration(time_stamp):
         time_elapsed[key] = 0
     time_query = 'finishedAfter=' + time_stamp
     history_url = '/history/activity-instance?'
-    query_url = BASE_URL + history_url + time_query
+    query_url = CAMUNDA_ENGINE_URI + history_url + time_query
     activity_name_query = 'activityName='
     for key in time_elapsed.keys():
         result = requests.get(query_url + time_query + '&' + activity_name_query + key)
