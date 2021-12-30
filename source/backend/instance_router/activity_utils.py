@@ -26,14 +26,15 @@ def extract_cost_from_bpmn(path: str):
 
 
 COST = extract_cost_from_bpmn('../resources/bpmn/helicopter_license/helicopter_vA.bpmn')
-time_elapsed = {'Schedule': 0,
-                'Eligibility Test': 0,
-                'Medical Exam': 0,
-                'Theory Test': 0,
-                'Practical Test': 0,
-                'Approve': 0,
-                'Reject': 0
-                }
+
+# time_elapsed = {'Schedule': 0,
+#                 'Eligibility Test': 0,
+#                 'Medical Exam': 0,
+#                 'Theory Test': 0,
+#                 'Practical Test': 0,
+#                 'Approve': 0,
+#                 'Reject': 0
+#                 }
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -62,6 +63,9 @@ def fetch_activity_duration():
     get the duration of each task for all instances
     :return: a dict of time_elapsed of each task for all instances in one batch
     """
+    time_elapsed = {}
+    for key in COST.keys():
+        time_elapsed[key] = 0
     activity_dict = {}
     time_start = time.time()
     instance_batch_list = []
@@ -133,6 +137,9 @@ def sumup_history_activity_duration(time_stamp):
     sum up dict of time elapsed for a batch of instances, values retrieved from history service
     :return: dict(time_elapsed)
     '''
+    time_elapsed = {}
+    for key in COST.keys():
+        time_elapsed[key] = 0
     time_query = 'finishedAfter=' + time_stamp
     history_url = '/history/activity-instance?'
     query_url = BASE_URL + history_url + time_query
