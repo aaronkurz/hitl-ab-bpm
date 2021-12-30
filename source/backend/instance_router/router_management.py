@@ -9,12 +9,15 @@ from dateutil import parser
 from vowpalwabbit import pyvw
 
 from activity_utils import (cal_time_based_cost, fetch_activity_duration,
-                            instance_terminated, URL)
+                            instance_terminated, BASE_URL, get_format_timestamp, fetch_history_activity_duration,
+                            sumup_history_activity_duration)
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 class RouterManager:
-    # TODO Absolute paths? Source folder sbe_prototyping
+    # # TODO Absolute paths? Source folder sbe_prototyping
+    # process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
+    #                         '../resources/bpmn/helicopter_license/helicopter_vA.bpmn']
     process_variant_keys = ['../resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
                             '../resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
@@ -27,7 +30,7 @@ class RouterManager:
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
     # Init utility class method
-    client = CamundaClient(URL)
+    client = CamundaClient(BASE_URL)
 
     def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
@@ -75,6 +78,8 @@ class RouterManager:
         self.mean_duration_results['B'] = mean_durations[1]
 
     def simulate_batch(self, iteration_n):
+        batch_start_timestamp = get_format_timestamp()
+
         """[summary]
         """
         # Deploy process variants
@@ -89,9 +94,9 @@ class RouterManager:
         # Wait 2 min to let the instances terminate. Hacky but check not implemented yet.
         # sleep(120)
 
-        fetch_activity_duration()
-
-        cal_time_based_cost(self.batch_size)
+        # deprecated
+        # time_elapsed = fetch_activity_duration()
+        # cal_time_based_cost(self.batch_size, time_elapsed)
 
         if instance_terminated():
             # Get the data from the Camunda engine
@@ -102,6 +107,9 @@ class RouterManager:
             # Update local variable according to the simulation results
             self.rl_env.update_mean_durations(self.mean_duration_results)
 
+            # fetch_history_activity_duration(batch_start_timestamp)
+            time_elapsed = sumup_history_activity_duration(batch_start_timestamp)
+            cal_time_based_cost(self.batch_size, time_elapsed)
             # Clean engine after retrieving the duration
             self.client.clean_process_data()
 

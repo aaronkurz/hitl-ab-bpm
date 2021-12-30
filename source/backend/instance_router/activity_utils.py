@@ -5,7 +5,7 @@ import requests
 import logging
 from xml.etree import ElementTree
 
-URL = 'http://camunda:8080/engine-rest'
+BASE_URL = 'http://camunda:8080/engine-rest'
 
 def extract_cost_from_bpmn(path: str):
     ns = {'bpmn': 'http://www.omg.org/spec/BPMN/20100524/MODEL',
@@ -48,7 +48,7 @@ def instance_terminated():
     """
     instance_not_terminated = True
     while instance_not_terminated:
-        get_instances = pycamunda.processinst.GetList(URL)
+        get_instances = pycamunda.processinst.GetList(BASE_URL)
         instances = get_instances()
         # instance list is empty, all terminated, proceed
         if not instances:
@@ -66,10 +66,10 @@ def fetch_activity_duration():
     time_start = time.time()
     instance_batch_list = []
     while True:
-        get_instances = pycamunda.processinst.GetList(URL)
+        get_instances = pycamunda.processinst.GetList(BASE_URL)
         instances = get_instances()
         for instance in instances:
-            get_activity_instance = pycamunda.processinst.GetActivityInstance(URL, instance.id_)
+            get_activity_instance = pycamunda.processinst.GetActivityInstance(BASE_URL, instance.id_)
             response = requests.get(get_activity_instance.url)
             if instance.id_ not in instance_batch_list:
                 instance_batch_list.append(instance.id_)
@@ -91,7 +91,7 @@ def fetch_activity_duration():
             return time_elapsed
 
 
-def cal_time_based_cost(batch_size):
+def cal_time_based_cost(batch_size, time_elapsed):
     """
     COST*batch_size/time_elapsed
     Offers an additional dimension to compare the variants. This also helps in terms of finding useful parameters for
@@ -106,3 +106,50 @@ def cal_time_based_cost(batch_size):
     logging.info('time_based_cost')
     logging.info(cost_dict)
     return cost_dict
+
+
+def fetch_history_activity_duration(time_stamp):
+    '''
+    For debug use
+    :param time_stamp:
+    :return:
+    '''
+    time_query = 'finishedAfter=' + time_stamp
+    history_url = '/history/activity-instance?'
+    query_url = BASE_URL + history_url + time_query
+    result = requests.get(query_url)
+    dic = {}
+    logging.info('fetch_history_activity_duration')
+    logging.info(time_stamp)
+    logging.info(result.json())
+    for instance in result.json():
+        dic[instance['id']] =[instance['activityName'], instance['durationInMillis']]
+    logging.info(dic.values())
+    return dic
+
+
+def sumup_history_activity_duration(time_stamp):
+    '''
+    sum up dict of time elapsed for a batch of instances, values retrieved from history service
+    :return: dict(time_elapsed)
+    '''
+    time_query = 'finishedAfter=' + time_stamp
+    history_url = '/history/activity-instance?'
+    query_url = BASE_URL + history_url + time_query
+    activity_name_query = 'activityName='
+    for key in time_elapsed.keys():
+        result = requests.get(query_url + time_query + '&' + activity_name_query + key)
+        for instance in result.json():
+            time_elapsed[key] += instance['durationInMillis']
+    logging.info('time_elapsed:')
+    logging.info(time_elapsed)
+    return time_elapsed
+
+def get_format_timestamp():
+    '''
+    Formatted timestamps used for API calls
+    By default, the date must have the format yyyy-MM-dd'T'HH:mm:ss.SSSZ, e.g., 2013-01-23T14:42:45.000+0200.
+    Didn't find a way to express milliseconds, use .999 instead(deprecated)
+    :return: formatted timestamp string
+    '''
+    return(time.strftime("%Y-%m-%dT%H:%M:%Smilliseconds%z", time.localtime()).replace('+', '%2b').replace('milliseconds', str(".%03d" %((time.time() - int(time.time())) * 1000))))
