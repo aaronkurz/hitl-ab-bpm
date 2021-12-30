@@ -6,10 +6,11 @@ import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from activity_utils import (cal_time_based_cost, instance_terminated, BASE_URL, get_format_timestamp,
+from activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
                             sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
+from config import CAMUNDA_ENGINE_URI
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
@@ -30,7 +31,7 @@ class RouterManager:
     vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
     # Init utility class method
-    client = CamundaClient(BASE_URL)
+    client = CamundaClient(CAMUNDA_ENGINE_URI)
 
     def __init__(self, rl_env, batch_size, number_of_variants):
         self.rl_env = rl_env
@@ -117,7 +118,7 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    logging.getLogger().setLevel(logging.INFO)
+    #logging.getLogger().setLevel(logging.INFO)
 
     num_iterations = 1
 
