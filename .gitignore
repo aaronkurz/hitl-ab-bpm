@@ -38,4 +38,4 @@ build/
 .vscode/
 
 ### Jupyter ###
-jupyter/.ipynb_checkpoints
+playground/.ipynb_checkpoints
