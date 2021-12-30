@@ -42,6 +42,7 @@ jobs:
           docker compose build
           docker compose up -d
           sleep 15s
+          printenv
 
       - name: Prepare and run API tests
         run: |
