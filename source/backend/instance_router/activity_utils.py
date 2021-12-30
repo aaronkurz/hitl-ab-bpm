@@ -6,7 +6,7 @@ import pycamunda.activityinst
 import pycamunda.processinst
 import requests
 
-BASE_URL = 'http://camunda:8080/engine-rest'
+BASE_URL = 'http://localhost:8080/engine-rest'
 
 
 def extract_cost_from_bpmn(path: str):
@@ -27,7 +27,7 @@ def extract_cost_from_bpmn(path: str):
     return cost
 
 
-COST = extract_cost_from_bpmn('../resources/bpmn/helicopter_license/helicopter_vA.bpmn')
+COST = extract_cost_from_bpmn('../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn')
 '''
 helicopter fixed cost:
 COST={'Schedule':25,

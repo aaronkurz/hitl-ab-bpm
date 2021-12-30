@@ -18,8 +18,8 @@ class RouterManager:
     # # TODO Absolute paths? Source folder sbe_prototyping
     # process_variant_keys = ['../resources/bpmn/helicopter_license/helicopter_vA.bpmn',
     #                         '../resources/bpmn/helicopter_license/helicopter_vA.bpmn']
-    process_variant_keys = ['../resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
-                            '../resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
+    process_variant_keys = ['../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn',
+                            '../../test_resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn']
 
     # format: {'A': float, 'B': float} (in seconds)
     # TODO Store in db and train on historical data
@@ -117,17 +117,17 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    # logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
 
-    num_iterations = 20
+    num_iterations = 1
 
     # Init rl_env
     rl_env = RlEnv()
 
     # Router
-    router = RouterManager(rl_env, 200, 2)
+    router = RouterManager(rl_env, 50, 2)
 
-    # For debugging, dividing by 0 error solution
+    # For debugging, clean camund engine before deploying anything
     router.client.clean_process_data()
 
     print(f"Setup completed. Start learning...")
@@ -145,7 +145,7 @@ def main():
     print(rl_env.actions_list)
 
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
-    df.to_csv('../contextual_bandit/results/testing_refactor.csv')
+    df.to_csv('contextual_bandit/results/testing_reward.csv')
 
     print(f"\nFinished learning.\n")
 
