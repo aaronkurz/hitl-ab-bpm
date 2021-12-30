@@ -55,8 +55,9 @@ def set_process(process_name):
     variant_b_file.save(path_variant_b)
 
     # deploy processes to camunda
-    camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
-    camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
+    # TODO: replace static url with flexible approach from backend/config.py (didn't work)
+    camunda_id_a = CamundaClient("http://localhost:8080/engine-rest").deploy_process(path_bpmn_file=path_variant_a)
+    camunda_id_b = CamundaClient("http://localhost:8080/engine-rest").deploy_process(path_bpmn_file=path_variant_b)
 
     process_variant = ProcessVariants(name=process_name,
                                       variant_a_path=path_variant_a,
