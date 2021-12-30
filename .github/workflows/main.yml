@@ -41,8 +41,7 @@ jobs:
           cd source
           docker compose build
           docker compose up -d
-          sleep 15s
-          printenv
+          sleep 25s
 
       - name: Prepare and run API tests
         run: |
