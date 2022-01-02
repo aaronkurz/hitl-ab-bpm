@@ -1,5 +1,6 @@
-FROM node:16
+FROM python:3.7-slim
 WORKDIR /source
-COPY . . 
-RUN npm install
-CMD npm start
+COPY . /source/
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+CMD streamlit run sl-ui.py

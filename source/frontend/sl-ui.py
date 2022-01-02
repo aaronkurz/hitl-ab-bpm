@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import requests
 
-BACKEND_BASE_URL = "http://localhost:5001"
+BACKEND_BASE_URL = "http://backend:5001"
 
 
 def upload_files():
