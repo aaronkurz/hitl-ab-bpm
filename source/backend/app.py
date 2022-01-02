@@ -6,12 +6,16 @@ from models import db
 from models.task import Task
 from rest.batch_policy import batch_policy_api
 from rest.processes import process_variants_api
+from rest.instance_router import instance_router_api
+
 from flask_swagger_ui import get_swaggerui_blueprint
 
 app = create_app.create_app()
 
 app.register_blueprint(batch_policy_api, url_prefix="/batch-policy")
 app.register_blueprint(process_variants_api, url_prefix="/process-variants")
+app.register_blueprint(instance_router_api, url_prefix="/instance-router")
+
 
 
 SWAGGER_URL = "/swagger"
