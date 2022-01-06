@@ -63,7 +63,7 @@ def test_get_active_process_variants_files():
         assert response_given_json.get("name") == "helicopter_license_fast"
         # when
         param = {"id": response_given_json.get("id")}
-        response = requests.get(BASE_URL + "/process-variants/variant_file/" + version, params=param)
+        response = requests.get(BASE_URL + "/process-variants/variant-file/" + version, params=param)
         # then
         assert response.headers['Content-Disposition'].split(";")[0] == "attachment"
         assert response.headers['Content-Disposition'].split(";")[1].split(".")[1] == "bpmn"
