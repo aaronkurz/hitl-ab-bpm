@@ -49,10 +49,10 @@ def start_process():
     # not even know they are part of an experiment)
     return {
         "instantiated": True,
-        "camunda_instance_id": camunda_instance_id}
+        "camundaInstanceId": camunda_instance_id}
 
 
-@instance_router_api.route('/aggregate', methods=['GET'])
+@instance_router_api.route('/aggregate-data', methods=['GET'])
 def count_a_b():
     process_id = request.args.get('process-id')
     a_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,

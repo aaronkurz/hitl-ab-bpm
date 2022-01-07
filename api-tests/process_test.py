@@ -12,7 +12,7 @@ def run_before_each_test():
     # v after each test
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def after_all():
     # ^ Will be executed before the first test
     yield
@@ -112,10 +112,20 @@ def test_cascading_delete_bapol():
             }
         ]
         })
+    # create process instances/start the process x times
+    currently_active_p_id = utils.get_currently_active_process_id()
+    for i in range(10):
+        response = utils.new_processes_instance(currently_active_p_id,
+                                                utils.get_random_customer_category(["public", "gov"]))
+        assert response.json().get("instantiated") is True
+        assert "camundaInstanceId" in response.json().keys()
+
     assert utils.get_process_count() == 1
     assert utils.get_bapol_count() == 1
+    assert utils.get_sum_of_instances(currently_active_p_id) == 10
     # when
     utils.remove_all_process_rows()
     # then
     assert utils.get_process_count() == 0
     assert utils.get_bapol_count() == 0
+    assert utils.get_sum_of_instances(currently_active_p_id) == 0
