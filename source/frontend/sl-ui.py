@@ -2,8 +2,7 @@ import json
 
 import streamlit as st
 import requests
-
-BACKEND_BASE_URL = "http://localhost:5001"
+from config import BACKEND_URI
 
 
 def upload_files():
@@ -19,7 +18,7 @@ def upload_files():
                         "variantB": f_b
                     }
                     # when
-                    response = requests.post(BACKEND_BASE_URL + "/process-variants/" + process_name, files=files_in)
+                    response = requests.post(BACKEND_URI + "/process-variants/" + process_name, files=files_in)
                     # then
                     if response.status_code == requests.codes.ok:
                         st.write("✅ Files uploaded, continue below.")
@@ -55,7 +54,7 @@ def set_bapol():
                 if bapol_input.replace(" ", "") != "":
                     try:
                         bapol_json = json.loads(bapol_input)
-                        response = requests.post(BACKEND_BASE_URL + "/batch-policy", json=bapol_json,
+                        response = requests.post(BACKEND_URI + "/batch-policy", json=bapol_json,
                                                  headers={"Content-Type": "application/json"})
                         if response.status_code == requests.codes.ok:
                             st.write("✅ Batch Policy uploaded, continue below.")
