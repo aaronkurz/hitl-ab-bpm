@@ -1,6 +1,7 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from models import processes
 from camunda.client import CamundaClient
+from process_bandit import rl_env
 
 instance_router_api = Blueprint('instance_router_api', __name__)
 
@@ -14,14 +15,20 @@ def start_process():
 
     process = processes.get_process_metadata(process_id)
 
-    # get rl env decision
+    # get decision from process bandit
+    decision = rl_env.get_decision(process_id, customer_category)
 
-    # give back running process on camunda id?
-
+    # instantiate according to decision
     client = CamundaClient()
+    camunda_instance_id = None
+    if decision == 'a':
+        variant_a_camunda_id = process['variant_a_camunda_id']
+        camunda_instance_id = client.start_instance(variant_a_camunda_id)
+    elif decision == 'b':
+        variant_a_camunda_id = process['variant_a_camunda_id']
+        camunda_instance_id = client.start_instance(variant_a_camunda_id)
+    else:
+        abort(500, 'Unexpected decision by reinforcement learning environment')
 
-    variant_a_camunda_id = process['variant_a_camunda_id']
-
-    camunda_instance_id = client.start_instance(variant_a_camunda_id)
-
+    # return instance id
     return {"camunda_instance_id": camunda_instance_id}
