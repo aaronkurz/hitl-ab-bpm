@@ -14,6 +14,7 @@ class ProcessVariants(db.Model):
     variant_a_camunda_id = db.Column(db.String, nullable=False)
     variant_b_camunda_id = db.Column(db.String, nullable=False)
     batch_policies = relationship("BatchPolicy", cascade="all, delete")
+    process_instances = relationship("ProcessInstance", cascade="all, delete")
 
 
 def get_process_metadata(process_id: int) -> dict:

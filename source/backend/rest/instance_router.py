@@ -1,7 +1,9 @@
-from flask import Blueprint, request, abort
+from flask import Blueprint, request, abort, jsonify
 from models import processes
 from camunda.client import CamundaClient
 from process_bandit import process_bandit
+from models.process_instance import ProcessInstance
+from models import db
 
 instance_router_api = Blueprint('instance_router_api', __name__)
 
@@ -34,12 +36,32 @@ def start_process():
 
     variant_a_camunda_id = process[variant_key]
     camunda_instance_id = client.start_instance(variant_a_camunda_id)
-    # TODO: write decision in database
 
-    # return instance id
+    # add info to database
+    process_instance = ProcessInstance(process_id=process_id,
+                                       decision=decision,
+                                       camunda_instance_id=camunda_instance_id)
+    db.session.add(process_instance)
+    db.session.commit()
+
+    # return instance id (client does not need to know decision etc./maybe should
+    # not even know they are part of an experiment)
     return {
         "instantiated": True,
         "camunda_instance_id": camunda_instance_id}
 
 
-# TODO: API endpoints to retrieve decision history
+@instance_router_api.route('/aggregate', methods=['GET'])
+def count_a_b():
+    process_id = request.args.get('process_id')
+    a_amount = ProcessInstance.query.filter(ProcessInstance.process_id == process_id and
+                                            ProcessInstance.decision == 'a').count()
+    b_amount = ProcessInstance.query.filter(ProcessInstance.process_id == process_id and
+                                            ProcessInstance.decision == 'b').count()
+    return {
+        "a_amount": a_amount,
+        "b_amount": b_amount
+        # TODO add further aggregated info, such as mean reward, percent finished and so on
+    }
+
+# TODO: add endpoint that returns graph of instantiations over time
