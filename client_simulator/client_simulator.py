@@ -5,6 +5,9 @@ import requests
 
 BASE_URL = "http://localhost:5001"
 CUSTOMER_CATEGORIES = ["public", "gov"]
+AMOUNT_OF_REQUESTS_TO_SEND = 1000
+NORMAL_DIST_MEAN = 5
+NORMAL_DIST_STD_DEV = 1.5
 
 
 def get_random_customer_category():
@@ -29,9 +32,9 @@ def send_request_for_new_processes_instance(process_id):
 
 def main():
     currently_active_p_id = get_currently_active_process_id()
-    while True:
+    for i in range(AMOUNT_OF_REQUESTS_TO_SEND):
         send_request_for_new_processes_instance(currently_active_p_id)
-        normal_sample = normal(5, 1.5)
+        normal_sample = normal(NORMAL_DIST_MEAN, NORMAL_DIST_STD_DEV)
         sleep_value = normal_sample if normal_sample >= 0 else 0
         sleep(sleep_value)
 
