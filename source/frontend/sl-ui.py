@@ -2,8 +2,16 @@ import json
 
 import streamlit as st
 import requests
-from config import BACKEND_URI
+import sys
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+st.set_option('deprecation.showPyplotGlobalUse', False)
+# TODO:revert
+from display_results import *
+# from config import BACKEND_URI
 
+BACKEND_URI = f"http://localhost:5001/"
 
 def upload_files():
     with st.expander("⬆️ Step 1: Upload Process Versions", expanded=True):
@@ -68,7 +76,29 @@ def set_bapol():
 
 def display_results():
     with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
-        st.write("To Be Implemented (Relevant API endpoints and functionality missing)")
+        with st.form(key="Execution history"):
+            if st.form_submit_button("Clean up history"):#https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
+                clean_up_history()#didn't work?
+            # fetch_history_activity_duration()
+            st.write("Number of total activities:", get_activity_count())
+            st.write("Number of total batch:", get_batch_count())
+            st.write("Number of total process:", get_process_count())
+
+            st.write("Time based cost")
+            plt_cost()
+            st.write("Reward")
+            plt_reward()
+            st.write("action_prob")
+
+def view_results():
+    with st.expander("⌚️ Step 4: View Results", expanded=True):
+        options = st.multiselect(
+            'Actions you would like to view',
+            ['A', 'B'],
+            ['A'])
+
+        plt_action_prob(options)
+
 
 
 def main():
@@ -77,6 +107,7 @@ def main():
     upload_files()
     set_bapol()
     display_results()
+    view_results()
 
 
 if __name__ == '__main__':

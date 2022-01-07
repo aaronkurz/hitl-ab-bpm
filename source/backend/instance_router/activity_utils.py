@@ -1,7 +1,7 @@
+import csv
 import logging
 import time
 from xml.etree import ElementTree
-
 import pycamunda.activityinst
 import pycamunda.processinst
 import requests
@@ -39,6 +39,11 @@ COST={'Schedule':25,
       'Reject':0
 }
 '''
+
+header = list(COST.keys())
+with open('time_based_cost.csv', 'w', newline='', encoding='utf-8') as f:
+    writer = csv.DictWriter(f, fieldnames=header)
+    writer.writeheader()
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -115,6 +120,12 @@ def cal_time_based_cost(batch_size, time_elapsed):
             cost_dict[k] = (cost_dict[k] * batch_size) / time_elapsed[k]
     logging.info('time_based_cost')
     logging.info(cost_dict)
+    datas = []
+    datas.append(cost_dict)
+    with open('time_based_cost.csv', 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writerows(datas)
+
     return cost_dict
 
 
