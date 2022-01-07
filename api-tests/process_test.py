@@ -48,6 +48,8 @@ def test_get_active_process_metadata():
     # then
     response_json = response.json()
     assert response.status_code == requests.codes.ok
+    assert 'id' in response_json.keys() and 'added' in response_json.keys(),\
+        "Metadata response JSON had unexpected format"
     assert response_json.get("name") == "helicopter_license_fast"
 
 
