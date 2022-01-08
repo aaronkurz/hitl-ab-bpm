@@ -32,17 +32,35 @@ def get_currently_active_process_id():
     return response.json().get('id')
 
 
-# BATCH POLICY API
+# LEARNING POLICY API
+example_learning_policy = {
+        "experimentationLength": 200,
+        "experimentationDecay": 5,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 1.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+
+
 def get_process_count():
     return requests.get(BASE_URL + "/process-variants/count").json().get("processesCount")
 
 
-def get_bapol_count():
-    return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
+def get_lepol_count():
+    return requests.get(BASE_URL + "/learning-policy/count").json().get("learningPolicyCount")
 
 
-def post_bapol(bapol: dict):
-    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"})
+def post_lepol(lepol: dict):
+    response = requests.post(BASE_URL + "/learning-policy", json=lepol, headers={"Content-Type": "application/json"})
     assert response.status_code == requests.codes.ok
 
 

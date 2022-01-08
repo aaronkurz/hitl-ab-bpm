@@ -9,14 +9,16 @@ proc_var = MagicMock(id=76,
                      variant_a_path="/path/to/a",
                      variant_b_path="/path/to/b",
                      variant_a_camunda_id="id1",
-                     variant_b_camunda_id="id2")
+                     variant_b_camunda_id="id2",
+                     winning_version=None)
 expected = {
         'id': 76,
         'name': "taxi-request",
         'variant_a_path': "/path/to/a",
         'variant_b_path': "/path/to/b",
         'variant_a_camunda_id': "id1",
-        'variant_b_camunda_id': "id2"
+        'variant_b_camunda_id': "id2",
+        'winning_version': None
     }
 
 

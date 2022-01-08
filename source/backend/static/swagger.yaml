@@ -73,19 +73,21 @@ paths:
       responses:
         '200':
           description: OK
-  /batch-policy:
+  /learning-policy:
     post:
-      summary: Set a new batch policy
-      description: This endpoint will assign a new batch policy to the currently active process in the process_variant db table.
+      summary: Set a new learning policy
+      description: This endpoint will assign a new learning policy to the currently active process in the process_variant db table.
       tags:
-        - Batch Policy
+        - Learning Policy
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                batchSize:
+                experimentationLength:
+                  type: integer
+                experimentationDecay:
                   type: integer
                 executionStrategy:
                   type: array
@@ -102,19 +104,19 @@ paths:
         '200':
           description: Success
     delete:
-      summary: Delete all batch policies.
+      summary: Delete all learning policies.
       tags:
-        - Batch Policy
+        - Learning Policy
       responses:
         '200':
           description: Success
-  /batch-policy/latest:
+  /learning-policy/latest:
     get:
-      summary: Get the latest batch policy proposal
+      summary: Get the latest learning policy proposal
       description: >
-        Get the latest (so the currently active) batch policy proposal of the currently active process
+        Get the latest (so the currently active) learning policy proposal of the currently active process
       tags:
-        - Batch Policy
+        - Learning Policy
       responses:
         '200':
           description: OK
@@ -125,7 +127,9 @@ paths:
                 properties:
                   lastModified:
                     type: string
-                  batchSize:
+                  experimentationLength:
+                    type: integer
+                  experimentationDecay:
                     type: integer
                   processDefinitionIdA:
                     type: string
@@ -142,11 +146,11 @@ paths:
                           type: number
                         explorationProbabilityB:
                           type: number
-  /batch-policy/count:
+  /learning-policy/count:
     get:
-      summary: Get the amount of Batch Policies in the db.
+      summary: Get the amount of Learning Policies in the db.
       tags:
-        - Batch Policy
+        - Learning Policy
       responses:
         200:
           description: OK
@@ -155,7 +159,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  batchPolicyCount:
+                  learningPolicyCount:
                     type: integer
   /process-variants/{process_name}:
     post:
@@ -268,6 +272,49 @@ paths:
           description: No process with that id
         500:
           description: Server error
+  /instance-router/start-instance:
+    get:
+      summary: Start a new instance of a certain process.
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+        - name: customer-category
+          in: query
+          description: Specify which customer category the instantiation request belongs to
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+        500:
+          description: server error
+  /instance-router/aggregate-data:
+    get:
+      summary: Get aggregate data of past instances of a certain process
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        500:
+          description: server error
+
+
+
 
 
 

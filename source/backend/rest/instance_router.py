@@ -22,7 +22,7 @@ def start_process():
     if not instance_router_interface.is_ready_for_instantiation():
         return {"instantiated": False,
                 "message": "Server not ready for instantiation of processes. Try setting a process with two variants "
-                           "and a learning/batch-policy first."}
+                           "and a learning-policy first."}
     camunda_instance_id = instance_router_interface.instantiate(process_id, customer_category)
 
     # return instance id (client does not need to know decision etc./maybe should

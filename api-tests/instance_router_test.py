@@ -24,21 +24,7 @@ def test_instantiation():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.post_bapol({
-        "batchSize": 200,
-        "executionStrategy": [
-            {
-                "customerCategory": "public",
-                "explorationProbabilityA": 1.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
-                "explorationProbabilityA": 0.7,
-                "explorationProbabilityB": 0.3
-            }
-        ]
-    })
+    utils.post_lepol(utils.example_learning_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id, utils.get_random_customer_category(["public", "gov"]))
@@ -50,21 +36,7 @@ def test_aggregate_data():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.post_bapol({
-        "batchSize": 200,
-        "executionStrategy": [
-            {
-                "customerCategory": "public",
-                "explorationProbabilityA": 1.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
-                "explorationProbabilityA": 0.7,
-                "explorationProbabilityB": 0.3
-            }
-        ]
-    })
+    utils.post_lepol(utils.example_learning_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,

@@ -115,7 +115,8 @@ def get_active_process_variants_metadata():
     ap_info = {
         'id': active_process_entry.id,
         'name': active_process_entry.name,
-        'added': active_process_entry.datetime_added
+        'added': active_process_entry.datetime_added,
+        'winningVersion': active_process_entry.winning_version
     }
     return ap_info
 

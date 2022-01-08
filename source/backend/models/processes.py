@@ -13,7 +13,8 @@ class ProcessVariants(db.Model):
     variant_b_path = db.Column(db.String, nullable=False)
     variant_a_camunda_id = db.Column(db.String, nullable=False)
     variant_b_camunda_id = db.Column(db.String, nullable=False)
-    batch_policies = relationship("BatchPolicy", cascade="all, delete")
+    winning_version = db.Column(db.String, nullable=True)  # Will be set after learning is done
+    batch_policies = relationship("LearningPolicy", cascade="all, delete")
     process_instances = relationship("ProcessInstance", cascade="all, delete")
 
 
@@ -29,7 +30,8 @@ def get_process_metadata(process_id: int) -> dict:
         'variant_a_path': relevant_process_entry.variant_a_path,
         'variant_b_path': relevant_process_entry.variant_b_path,
         'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
-        'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id
+        'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id,
+        'winning_version': relevant_process_entry.winning_version
     }
     return ap_info
 
