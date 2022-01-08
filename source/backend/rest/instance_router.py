@@ -1,7 +1,7 @@
 from flask import Blueprint, request, abort, jsonify
 from models import processes
 from camunda.client import CamundaClient
-from process_bandit import process_bandit
+from instance_router import instance_router_interface
 from models.process_instance import ProcessInstance
 from models import db
 from sqlalchemy import and_
@@ -19,31 +19,11 @@ def start_process():
     process = processes.get_process_metadata(process_id)
 
     # get decision from process bandit
-    if not process_bandit.is_ready_for_decision():
+    if not instance_router_interface.is_ready_for_instantiation():
         return {"instantiated": False,
                 "message": "Server not ready for instantiation of processes. Try setting a process with two variants "
                            "and a learning/batch-policy first."}
-    decision = process_bandit.get_decision(process_id, customer_category)
-
-    # instantiate according to decision
-    client = CamundaClient()
-    variant_key = None
-    if decision == 'a':
-        variant_key = 'variant_a_camunda_id'
-    elif decision == 'b':
-        variant_key = 'variant_b_camunda_id'
-    else:
-        abort(500, 'Unexpected decision by reinforcement learning environment')
-
-    variant_a_camunda_id = process[variant_key]
-    camunda_instance_id = client.start_instance(variant_a_camunda_id)
-
-    # add info to database
-    process_instance = ProcessInstance(process_id=process_id,
-                                       decision=decision,
-                                       camunda_instance_id=camunda_instance_id)
-    db.session.add(process_instance)
-    db.session.commit()
+    camunda_instance_id = instance_router_interface.instantiate(process_id, customer_category)
 
     # return instance id (client does not need to know decision etc./maybe should
     # not even know they are part of an experiment)
