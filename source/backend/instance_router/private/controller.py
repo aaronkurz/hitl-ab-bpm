@@ -1,8 +1,7 @@
-import random
 from camunda.client import CamundaClient
 from models import processes, db
 from models.process_instance import ProcessInstance
-import process_bandit
+from instance_router.private import process_bandit
 
 
 def instantiate(process_id: int, customer_category: str) -> str:
