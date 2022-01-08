@@ -6,8 +6,8 @@ import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
-                            sumup_history_activity_duration)
+from instance_router.private.activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
+                                                    sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
 
