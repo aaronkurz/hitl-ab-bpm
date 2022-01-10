@@ -2,6 +2,7 @@ import requests
 import config
 
 
+
 class CamundaClient:
     def __init__(self, url=config.CAMUNDA_ENGINE_URI):
         self.url = url
@@ -58,7 +59,8 @@ class CamundaClient:
     def start_instance(self, process_id: int):
         headers = {'Content-Type': 'application/json'}
         response = requests.post(self.url + "/process-definition/" + str(process_id) + "/start", headers=headers)
-        return self.status_code_successful(response.status_code)
+        assert self.status_code_successful(response.status_code)
+        return response.json().get('id')
 
     # Starting multiple instances
     def start_instances(self, process_id: int, instance_count: int):

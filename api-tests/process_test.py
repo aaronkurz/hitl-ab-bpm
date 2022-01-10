@@ -12,7 +12,7 @@ def run_before_each_test():
     # v after each test
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def after_all():
     # ^ Will be executed before the first test
     yield
@@ -51,6 +51,7 @@ def test_get_active_process_metadata():
     assert 'id' in response_json.keys() and 'added' in response_json.keys(),\
         "Metadata response JSON had unexpected format"
     assert response_json.get("name") == "helicopter_license_fast"
+    assert response_json.get("winningVersion") is None
 
 
 def test_get_active_process_variants_files():
@@ -88,34 +89,30 @@ def test_files_are_overwritten():
     assert utils.get_process_count() == 1
 
 
-def test_cascading_delete_bapol():
+def test_cascading_delete():
     """ Test if the cascading delete works
 
-    If I delete a process, the corresponding bapols should be deleted too
+    If I delete a process, the corresponding learning policies and instance db entries should be deleted too
     """
     # given
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.post_bapol({
-        "batchSize": 200,
-        "executionStrategy": [
-            {
-                "customerCategory": "public",
-                "explorationProbabilityA": 1.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
-                "explorationProbabilityA": 0.7,
-                "explorationProbabilityB": 0.3
-            }
-        ]
-        })
+    utils.post_lepol(utils.example_learning_policy)
+    # create process instances/start the process x times
+    currently_active_p_id = utils.get_currently_active_process_id()
+    for i in range(10):
+        response = utils.new_processes_instance(currently_active_p_id,
+                                                utils.get_random_customer_category(["public", "gov"]))
+        assert response.json().get("instantiated") is True
+        assert "camundaInstanceId" in response.json().keys()
+
     assert utils.get_process_count() == 1
-    assert utils.get_bapol_count() == 1
+    assert utils.get_lepol_count() == 1
+    assert utils.get_sum_of_instances(currently_active_p_id) == 10
     # when
     utils.remove_all_process_rows()
     # then
     assert utils.get_process_count() == 0
-    assert utils.get_bapol_count() == 0
+    assert utils.get_lepol_count() == 0
+    assert utils.get_sum_of_instances(currently_active_p_id) == 0

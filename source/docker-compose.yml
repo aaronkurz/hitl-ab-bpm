@@ -21,7 +21,7 @@ services:
     container_name: sbe-frontend
     build: ./frontend
     ports:
-      - 3000:3000
+      - 8501:8501
   camunda:
       container_name: sbe-camunda
       build: ./camunda_engine
