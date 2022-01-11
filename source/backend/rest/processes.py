@@ -115,12 +115,13 @@ def get_active_process_variants_metadata():
     ap_info = {
         'id': active_process_entry.id,
         'name': active_process_entry.name,
-        'added': active_process_entry.datetime_added
+        'added': active_process_entry.datetime_added,
+        'winningVersion': active_process_entry.winning_version
     }
     return ap_info
 
 
-@process_variants_api.route('variant_file/<a_or_b>', methods=['GET'])
+@process_variants_api.route('variant-file/<a_or_b>', methods=['GET'])
 def get_process_variant_files(a_or_b):
     requested_id = request.args.get('id')
     if requested_id is None:
@@ -155,4 +156,4 @@ def get_process_variant_files(a_or_b):
         except FileNotFoundError:
             abort(404)
     else:
-        abort(400, description='requested variant must be a or b (e.g. process-variants/variant_file/a)')
+        abort(400, description='requested variant must be a or b (e.g. process-variants/variant-file/a)')
