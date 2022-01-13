@@ -1,18 +1,14 @@
 import os
 from dotenv import load_dotenv
 
+inside_docker = os.getenv('INSIDE_DOCKER', False)
 
-inside_docker=os.getenv('INSIDE_DOCKER',False)
-
-if(inside_docker):
+if inside_docker:
     load_dotenv('docker.env')
 else:
     load_dotenv()
 
-
-
-
-user =  os.getenv('POSTGRES_USER')
+user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
 hostname = os.getenv('POSTGRES_HOST')
 port = os.getenv('POSTGRES_PORT')
