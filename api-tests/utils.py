@@ -64,7 +64,7 @@ def post_lepol(lepol: dict):
     assert response.status_code == requests.codes.ok
 
 
-# INSTANCE ROUTER APU
+# INSTANCE ROUTER API
 def new_processes_instance(process_id: int, customer_category: str):
     params = {
         "process-id": process_id,
@@ -76,11 +76,15 @@ def new_processes_instance(process_id: int, customer_category: str):
 
 
 def get_sum_of_instances(process_id: int):
+    return get_amount_of_instances(process_id, 'a') + get_amount_of_instances(process_id, 'b')
+
+
+def get_amount_of_instances(process_id: int, version: str):
+    assert version in ['a', 'b']
     params = {
         "process-id": process_id
     }
     response = requests.get(BASE_URL + "/instance-router/aggregate-data", params=params)
     response_json = response.json()
     assert response.status_code == requests.codes.ok
-    sum_of_instances = response_json.get('a').get('amount') + response_json.get('b').get('amount')
-    return sum_of_instances
+    return response_json.get(version).get('amount')
