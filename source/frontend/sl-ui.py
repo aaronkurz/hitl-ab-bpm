@@ -1,4 +1,3 @@
-from config import BACKEND_URI
 import json
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -115,12 +114,22 @@ def display_results():
             if st.form_submit_button("Clean up history"):#https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
                 clean_up_history()#didn't work?
             # fetch_history_activity_duration()
-            st.write("Number of total activities:", get_activity_count())
-            st.write("Number of total batch:", get_batch_count())
-            st.write("Number of total process:", get_process_count())
+            response = requests.get(
+                BACKEND_URI + "instance-router/get-batch-count"
+            )
+            st.write('get-batch-count',response.json().get('batch_count'))
+            # st.write(response.json())
+            # st.write(requests.get(BACKEND_URI + "instance-router/plt-cost"))
+            # total_activities = response
+            # st.write("Number of total activities:", total_activities())
+            # st.write("Number of total batch:", get_batch_count())
+            # st.write("Number of total process:", get_process_count())
 
             st.write("Time based cost")
-            plt_cost()
+            # response = requests.get(
+            #     BACKEND_URI + "instance-router/plt-cost"
+            # )
+            # st.write(response)
             st.write("Reward")
             plt_reward()
             st.write("action_prob")

@@ -1,6 +1,6 @@
 import os
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 inside_docker=os.getenv('INSIDE_DOCKER',False)
 
@@ -23,4 +23,4 @@ SQLALCHEMY_DATABASE_URI = (
     f"postgresql+psycopg2://{user}:{password}@{hostname}:{port}/{database}"
 )
 
-CAMUNDA_ENGINE_URI = f"http://{camunda_host}:8080/engine-rest"
+CAMUNDA_ENGINE_URI = f"http://camunda:8080/engine-rest"
