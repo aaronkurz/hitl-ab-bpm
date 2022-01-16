@@ -39,7 +39,7 @@ example_learning_policy = {
         "executionStrategy": [
             {
                 "customerCategory": "public",
-                "explorationProbabilityA": 1.3,
+                "explorationProbabilityA": 0.3,
                 "explorationProbabilityB": 0.7
             },
             {
