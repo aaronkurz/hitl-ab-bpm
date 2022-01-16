@@ -276,14 +276,16 @@ paths:
                       type: integer
                     example: [1, 1, 2]
                     description:
-                      Array of how many requests have been routed to A. Index of array is number of total requests at that point and value at index is how many instances have been routed to A at that point.
+                      Array of how many requests have been routed to A. Index of array is number of total requests at
+                      that point and value at index is how many instances have been routed to A at that point.
                   requestsB:
                     type: array
                     items:
                       type: integer
                     example: [0, 1, 1]
                     description:
-                      Array of how many requests have been routed to B. Index of array is number of total requests at that point and value at index is how many instances have been routed to B at that point.
+                      Array of how many requests have been routed to B. Index of array is number of total requests at
+                      that point and value at index is how many instances have been routed to B at that point.
 
         500:
           description: server error

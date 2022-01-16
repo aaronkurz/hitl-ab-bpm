@@ -1,3 +1,4 @@
+""" This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
 from models import processes, db
 from instance_router import instance_router_interface
@@ -11,6 +12,7 @@ instance_router_api = Blueprint('instance_router_api', __name__)
 
 @instance_router_api.route('/start-instance', methods=['GET'])
 def start_process():
+    """ Endpoint for process consumers (clients) to request/start instances """
     data = request.json
 
     process_id = int(request.args.get('process-id'))
@@ -35,6 +37,7 @@ def start_process():
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
 def count_a_b():
+    """ Get some metadata about process """
     process_id = request.args.get('process-id')
     validate_backend_process_id(process_id)
     a_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
@@ -50,8 +53,6 @@ def count_a_b():
         }
         # TODO add further aggregated info, such as mean reward, percent finished and so on
     }
-
-# TODO: add endpoint that returns plot of instantiations over time
 
 
 @instance_router_api.route('/manual-decision', methods=['POST'])
@@ -72,6 +73,7 @@ def manual_decision():
 
 @instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])
 def get_instantiation_plot():
+    """ Get a time overview of client requests and where they have been routed to """
     process_id = request.args.get('process-id')
     validate_backend_process_id(process_id)
 

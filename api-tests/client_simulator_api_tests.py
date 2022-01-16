@@ -1,3 +1,4 @@
+""" Use this to simulate client requests in the API tests"""
 import random
 from time import sleep
 from numpy.random import normal

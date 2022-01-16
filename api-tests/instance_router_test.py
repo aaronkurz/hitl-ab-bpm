@@ -9,6 +9,7 @@ CUSTOMER_CATEGORIES = ["public", "gov"]
 
 
 def post_manual_decision(manual_decision: str):
+    """ Set a manual decision for currently active process in backend """
     assert manual_decision in ['a', 'b']
     params = {
         "process-id": utils.get_currently_active_process_id(),
@@ -19,6 +20,7 @@ def post_manual_decision(manual_decision: str):
 
 
 def meta_run_manual_choice(version: str):
+    """ Helps check whether manual decision of version a or b work """
     assert version in ['a', 'b']
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
@@ -89,10 +91,12 @@ def test_aggregate_data():
 
 
 def test_manual_choice_a():
+    """ Test if manual choice of a leads to only instantiating version a afterwards"""
     meta_run_manual_choice('a')
 
 
 def test_manual_choice_b():
+    """ Test if manual choice of b leads to only instantiating version b afterwards"""
     meta_run_manual_choice('b')
 
 
@@ -111,6 +115,7 @@ def test_two_manual_choices_not_possible():
 
 
 def test_client_requests_data_empty():
+    """ We want to check if the client requests endpoint works even with zero requested instances """
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
@@ -123,6 +128,7 @@ def test_client_requests_data_empty():
 
 
 def test_client_requests_data():
+    """ Tests whether the client requests data is reasonable """
     meta_run_manual_choice('b')
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BASE_URL + "/instance-router/aggregate-data/client-requests", params=params)

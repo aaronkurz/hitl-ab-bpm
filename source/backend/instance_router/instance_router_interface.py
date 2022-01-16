@@ -1,3 +1,4 @@
+""" This is the main entry point to interact with the instance router from the outside """
 # Just "fake" methods for now, in order to define an interface to connect the work that has been done
 # on the RL side and the api/web-app side (has been kind if separate until now)
 from instance_router.private import controller

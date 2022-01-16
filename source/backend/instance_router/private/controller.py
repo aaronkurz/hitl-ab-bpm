@@ -1,3 +1,4 @@
+""" Main "organizer" of instance routing """
 from camunda.client import CamundaClient
 from models import processes, db
 from models.process_instance import ProcessInstance
@@ -6,6 +7,10 @@ from instance_router.private import process_bandit
 
 
 def get_winning_version(process_id: int) -> str or None:
+    """ In case the experiment is already done or a manual decision has been made, this will return that version
+
+    :returns 'a' or 'b' or None
+    """
     process = ProcessVariants.query.filter(ProcessVariants.id == process_id).first()
     if process.winning_version is not None:
         return process.winning_version
@@ -14,6 +19,12 @@ def get_winning_version(process_id: int) -> str or None:
 
 
 def instantiate(process_id: int, customer_category: str) -> str:
+    """ Create a new process instance
+
+    :param process_id: process id that we want to start
+    :param customer_category: customer category of client
+    :return: camunda instance id of started instance
+    """
     process = processes.get_process_metadata(process_id)
 
     # get decision from process bandit, if no decision has been made yet

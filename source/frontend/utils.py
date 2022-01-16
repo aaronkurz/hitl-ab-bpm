@@ -1,3 +1,4 @@
+""" Helpful utilities for frontend """
 import requests
 from config import BACKEND_URI
 

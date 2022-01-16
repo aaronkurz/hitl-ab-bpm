@@ -1,3 +1,5 @@
+# Put stuff here, that is useful for more than one API test module
+# (if it is only relevant for one, please consider putting it in that module)
 import requests
 import random
 from config import BASE_URL
