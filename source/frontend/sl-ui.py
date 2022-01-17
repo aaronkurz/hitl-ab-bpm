@@ -1,7 +1,8 @@
 import json
-
+from utils import get_currently_active_process_id, post_manual_decision
 import streamlit as st
 import requests
+import matplotlib.pyplot as plt
 from config import BACKEND_URI
 
 
@@ -25,46 +26,7 @@ def upload_files():
                     else:
                         st.write("🚨️ File upload unsuccessful! Try again.")
                 else:
-                    st.write("⚠️ Both variant a and variant b have to be uploaded at once and a name has to be given.")
-
-
-# def set_bapol():
-#     with st.expander("📐 Step 2: Set Batch Policy", expanded=True):
-#         with st.form(key="Set Bapol"):
-#             tooltip = """Please enter the json of your Batch Policy. Example:
-            
-#             {
-#             "m": 0,
-#             "lambda": 0, 
-#             "executionStrategy": [
-#                 {
-#                     "customerCategory": "public",
-#                     "explorationProbabilityA": 0.3,
-#                     "explorationProbabilityB": 0.7
-#                 },
-#                 {
-#                     "customerCategory": "gov",
-#                     "explorationProbabilityA": 0.7,
-#                     "explorationProbabilityB": 0.3
-#                 }
-#             ]
-#             }
-#             """
-#             bapol_input = st.text_area("Enter Batch Policy JSON", help=tooltip)
-#             if st.form_submit_button("Submit"):
-#                 if bapol_input.replace(" ", "") != "":
-#                     try:
-#                         bapol_json = json.loads(bapol_input)
-#                         response = requests.post(BACKEND_URI + "/batch-policy", json=bapol_json,
-#                                                  headers={"Content-Type": "application/json"})
-#                         if response.status_code == requests.codes.ok:
-#                             st.write("✅ Batch Policy uploaded, continue below.")
-#                         else:
-#                             st.write("🚨 Upload of Batch Policy failed: HTTP status code " + str(response.status_code))
-#                     except ValueError as ve:
-#                         st.write("🚨 Entered Batch Policy is not a valid JSON: " + str(ve))
-#                 else:
-#                     st.write("⚠️ Please enter Batch Policy before submitting")
+                    st.write("⚠️ Both variant a and variant b have to be uploaded at once and a name has to be given.")                   
 
 
 def set_bapol():
@@ -88,8 +50,8 @@ def set_bapol():
                 try:
                     bapol_json = json.dumps( #create a json file from the given values
                         {
-                            'decay':decay,
-                            'length':length,
+                            'experimentationDecay':decay,
+                            'experimentationLength':length,
                             'executionStrategy':[
                                 {
                                     'customerCategory':'public',
@@ -117,16 +79,61 @@ def set_bapol():
                 st.write("⚠️ Please enter Batch Policy before submitting")
 
 
-def display_results():
-    with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
-        st.write("To Be Implemented (Relevant API endpoints and functionality missing)")
+def manual_decision():
+    successfully_posted_manual_dec = None
+    if st.button("Manual decision: Version A"):
+        successfully_posted_manual_dec = post_manual_decision('a')
+    if st.button("Manual decision: Version B"):
+        successfully_posted_manual_dec = post_manual_decision('b')
+    if successfully_posted_manual_dec:
+        st.write("✅")
+    elif successfully_posted_manual_dec is False:
+        st.write("🚨 Something went wrong")
+
+
+def plot_instances():
+    params = {"process-id": get_currently_active_process_id()}
+    response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests", params=params)
+    if response.status_code != requests.codes.ok:
+        st.write("🚨 Can't fetch data right now")
+    response_json = response.json()
+    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsA'), label='Version A')
+    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsB'), label='Version B')
+    plt.legend(loc='upper left')
+    plt.xlabel('Total requests')
+    plt.ylabel('Requests per version')
+    st.pyplot(fig=plt.gcf())
+
+
+def experiment_cockpit():
+    with st.expander("⌚️ Step 3: Experiment Cockpit", expanded=True):
+        manual_decision()
+        st.markdown("***")
+        if st.button("Refresh"):
+            params = {"process-id": get_currently_active_process_id()}
+
+            response = requests.get(
+                BACKEND_URI + "instance-router/aggregate-data", params=params
+            )
+            if response.status_code != requests.codes.ok:
+                st.write("🚨 Can't fetch data right now")
+
+            else:
+                amount_instances_a = response.json().get("a").get("amount")
+                amount_instances_b = response.json().get("b").get("amount")
+
+                st.write("Amount of instances sent to variant A: ", amount_instances_a)
+                st.write(f"Amount of instances sent to variant B: ", amount_instances_b)
+
+            plot_instances()
+
 
 def main():
     st.set_page_config(page_title="AB-BPM", page_icon="🔁")
     st.title("AB-BPM Dashboard 🎮")
     upload_files()
-    set_bapol()
-    display_results()
+    set_lepol()
+    experiment_cockpit()
 
 
 if __name__ == '__main__':
