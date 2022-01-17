@@ -1,14 +1,9 @@
 import json
-
+from utils import get_currently_active_process_id, post_manual_decision
 import streamlit as st
 import requests
+import matplotlib.pyplot as plt
 from config import BACKEND_URI
-
-
-def get_currently_active_process_id():
-    response = requests.get(BACKEND_URI + "/process-variants/active-meta")
-    assert response.status_code == requests.codes.ok
-    return response.json().get("id")
 
 
 def upload_files():
@@ -87,28 +82,53 @@ def set_lepol():
                     st.write("⚠️ Please enter Learning Policy before submitting")
 
 
-def display_results():
+def manual_decision():
+    successfully_posted_manual_dec = None
+    if st.button("Manual decision: Version A"):
+        successfully_posted_manual_dec = post_manual_decision('a')
+    if st.button("Manual decision: Version B"):
+        successfully_posted_manual_dec = post_manual_decision('b')
+    if successfully_posted_manual_dec:
+        st.write("✅")
+    elif successfully_posted_manual_dec is False:
+        st.write("🚨 Something went wrong")
 
-    with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
 
+def plot_instances():
+    params = {"process-id": get_currently_active_process_id()}
+    response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests", params=params)
+    if response.status_code != requests.codes.ok:
+        st.write("🚨 Can't fetch data right now")
+    response_json = response.json()
+    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsA'), label='Version A')
+    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsB'), label='Version B')
+    plt.legend(loc='upper left')
+    plt.xlabel('Total requests')
+    plt.ylabel('Requests per version')
+    st.pyplot(fig=plt.gcf())
+
+
+def experiment_cockpit():
+    with st.expander("⌚️ Step 3: Experiment Cockpit", expanded=True):
+        manual_decision()
+        st.markdown("***")
         if st.button("Refresh"):
-
             params = {"process-id": get_currently_active_process_id()}
 
             response = requests.get(
                 BACKEND_URI + "instance-router/aggregate-data", params=params
             )
-
             if response.status_code != requests.codes.ok:
-                st.write("Can't fetch Data righ now")
+                st.write("🚨 Can't fetch data right now")
 
             else:
-
                 amount_instances_a = response.json().get("a").get("amount")
                 amount_instances_b = response.json().get("b").get("amount")
 
-                st.write(f"Amount of instances sent to variant A {amount_instances_a}")
-                st.write(f"Amount of instances sent to variant B {amount_instances_b}")
+                st.write("Amount of instances sent to variant A: ", amount_instances_a)
+                st.write(f"Amount of instances sent to variant B: ", amount_instances_b)
+
+            plot_instances()
 
 
 def main():
@@ -116,7 +136,7 @@ def main():
     st.title("AB-BPM Dashboard 🎮")
     upload_files()
     set_lepol()
-    display_results()
+    experiment_cockpit()
 
 
 if __name__ == "__main__":
