@@ -80,10 +80,8 @@ def set_bapol():
 
         #CustomerCategory: gov (dynamic)
         st.caption("Category: Gov")
-        explorationProbability_A_gov = st.slider("Exploration probability for process A:", min_value=0.0, max_value=1.0, step=0.01, value=1.0-explorationProbability_A_pub, key="a_gov")
-        explorationProbability_B_gov = st.slider("Exploration probability for process B:", min_value=0.0, max_value=1.0, step=0.01, value=1.0 - explorationProbability_B_pub, key="b_gov")
-
-        #TODO: make slider values depend on each other (atm the gov category is depends on the pub category; however user is able to change gov *after* setting pub -> this should not be the case; keyword disabled=True doesn't work...)
+        explorationProbability_A_gov = st.slider("Exploration probability for process A:", min_value=0.0, max_value=1.0, step=0.01, value=1.0-explorationProbability_A_pub, key="a_gov", disabled=True)
+        explorationProbability_B_gov = st.slider("Exploration probability for process B:", min_value=0.0, max_value=1.0, step=0.01, value=1.0 - explorationProbability_B_pub, key="b_gov", disabled=True)
 
         with st.form(key="Set Bapol2"):
             if st.form_submit_button("Submit"):
