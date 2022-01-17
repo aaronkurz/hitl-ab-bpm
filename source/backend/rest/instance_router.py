@@ -1,11 +1,10 @@
-import requests
 from flask import Blueprint, request, abort, jsonify
 from models import processes
+from camunda.client import CamundaClient
 from instance_router import instance_router_interface
 from models.process_instance import ProcessInstance
+from models import db
 from sqlalchemy import and_
-from matplotlib import pyplot as plt
-import pandas as pd
 
 instance_router_api = Blueprint('instance_router_api', __name__)
 
@@ -51,48 +50,3 @@ def count_a_b():
     }
 
 # TODO: add endpoint that returns plot of instantiations over time
-@instance_router_api.route('/plt-cost', methods=['GET'])
-def plt_cost():
-    df = pd.read_csv('../instance_router/results/time_based_cost.csv')
-    plt.plot(df[:])
-    plt.xlabel('num_iterations', fontsize=14)
-    plt.ylabel('time based cost(cost/milliseconds', fontsize=14)
-    plt.legend(df.columns.values.tolist())
-    return plt
-
-
-CAMUNDA_ENGINE_URI = f"http://camunda:8080/engine-rest"
-
-@instance_router_api.route('/fetch-history-activity-duration', methods=['GET'])
-def fetch_history_activity_duration():
-    history_url = '/history/activity-instance?'
-    query_url = CAMUNDA_ENGINE_URI + history_url
-    result = requests.get(query_url)
-    history_activity_duration_dict = {}
-    for instance in result.json():
-        history_activity_duration_dict[instance['id']] = [instance['activityName'], instance['durationInMillis']]
-    return history_activity_duration_dict
-
-@instance_router_api.route('/get-activity-count', methods=['GET'])
-def get_activity_count():
-    history_url = '/history/activity-instance/count'
-    query_url = CAMUNDA_ENGINE_URI + history_url
-    result = requests.get(query_url).json()
-    # return Response(response=result['count'], status=200)
-    print(result['count'])
-    return {}
-
-@instance_router_api.route('/get-batch-count', methods=['GET'])
-def get_batch_count():
-    history_url = '/history/batch/count'
-    query_url = CAMUNDA_ENGINE_URI + history_url
-    result = requests.get(query_url).json()
-    print(result['count'])
-    return {'batch_count':result['count']}
-
-@instance_router_api.route('/get-process-count', methods=['GET'])
-def get_process_count():
-    history_url = '/history/process-instance/count'
-    query_url = CAMUNDA_ENGINE_URI + history_url
-    result = requests.get(query_url).json()
-    return result['count']
