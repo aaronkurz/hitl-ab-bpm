@@ -143,6 +143,7 @@ def store_reward():
     return "Success"
 
 # TODO: add endpoint that returns plot of instantiations over time
+# Return the Matplotlib image as a string/dict/request
 # @instance_router_api.route('/plt-cost', methods=['GET'])
 # def plt_cost():
 #     df = pd.read_csv('./instance_router/results/time_based_cost.csv')
