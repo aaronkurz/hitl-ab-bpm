@@ -13,3 +13,25 @@ class ProcessInstance(db.Model):
     # v these are set by the RL env after an instance is terminated
     finished_time = db.Column(db.DateTime, nullable=True)
     reward = db.Column(db.Float, nullable=True)
+
+class TimeBasedCost(db.Model):
+    __tablename__ = "time_based_cost"
+    id = db.Column(db.Integer, primary_key=True)
+    schedule_tbc = db.Column(db.Float, default=0, nullable=False)
+    elegibility_test_tbc = db.Column(db.Float, default=0, nullable=False)
+    medical_test_tbc = db.Column(db.Float, default=0, nullable=False)
+    theory_test_tbc = db.Column(db.Float, default=0, nullable=False)
+    practical_test_tbc = db.Column(db.Float, default=0, nullable=False)
+    approve_tbc = db.Column(db.Float, default=0, nullable=False)
+    reject_tbc = db.Column(db.Float, default=0, nullable=False)
+
+class ActionProbability(db.Model):
+    __tablename__ = "action_prob"
+    id = db.Column(db.Integer, primary_key=True)
+    variant_a_prob = db.Column(db.Float, default=0, nullable=False)
+    variant_b_prob = db.Column(db.Float, default=0, nullable=False)
+
+class RewardOverIteration(db.Model):
+    __tablename__ = "reward_over_iteration"
+    iteration_id = db.Column(db.Integer, primary_key=True)
+    reward = db.Column(db.Float, default=0, nullable=False)
