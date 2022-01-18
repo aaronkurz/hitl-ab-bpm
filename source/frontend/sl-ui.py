@@ -1,4 +1,3 @@
-import json
 from utils import get_currently_active_process_id, post_manual_decision
 import streamlit as st
 import requests
@@ -10,76 +9,73 @@ def upload_files():
     with st.expander("⬆️ Step 1: Upload Process Versions", expanded=True):
         with st.form(key="Upload Files"):
             process_name = st.text_input("Process name")
-            f_a = st.file_uploader("Upload process variant A", type=["bpmn"])
-            f_b = st.file_uploader("Upload process variant B", type=["bpmn"])
+            f_a = st.file_uploader("Upload process variant A", type=['bpmn'])
+            f_b = st.file_uploader("Upload process variant B", type=['bpmn'])
             if st.form_submit_button("Submit"):
-                if (
-                    f_a is not None
-                    and f_b is not None
-                    and process_name.replace(" ", "") != ""
-                ):
-                    files_in = {"variantA": f_a, "variantB": f_b}
+                if f_a is not None and f_b is not None and process_name.replace(" ", "") != "":
+                    files_in = {
+                        "variantA": f_a,
+                        "variantB": f_b
+                    }
                     # when
-                    response = requests.post(
-                        BACKEND_URI + "/process-variants/" + process_name,
-                        files=files_in,
-                    )
+                    response = requests.post(BACKEND_URI + "/process-variants/" + process_name, files=files_in)
                     # then
                     if response.status_code == requests.codes.ok:
                         st.write("✅ Files uploaded, continue below.")
                     else:
                         st.write("🚨️ File upload unsuccessful! Try again.")
                 else:
-                    st.write(
-                        "⚠️ Both variant a and variant b have to be uploaded at once and a name has to be given."
-                    )
+                    st.write("⚠️ Both variant a and variant b have to be uploaded at once and a name has to be given.")
 
 
 def set_lepol():
     with st.expander("📐 Step 2: Set Learning Policy", expanded=True):
-        with st.form(key="Set Lepol"):
-            tooltip = """Please enter the json of your Learning Policy. Example:
-            
-            {
-                "experimentationLength": 200,
-                "experimentationDecay": 5,
-                "executionStrategy": [
-                    {
-                        "customerCategory": "public",
-                        "explorationProbabilityA": 0.3,
-                        "explorationProbabilityB": 0.7
-                    },
-                    {
-                        "customerCategory": "gov",
-                        "explorationProbabilityA": 0.7,
-                        "explorationProbabilityB": 0.3
-                    }
-                ]
-            }
-            """
-            lepol_input = st.text_area("Enter Learning Policy JSON", help=tooltip)
-            if st.form_submit_button("Submit"):
-                if lepol_input.replace(" ", "") != "":
-                    try:
-                        lepol_json = json.loads(lepol_input)
-                        response = requests.post(
-                            BACKEND_URI + "/learning-policy",
-                            json=lepol_json,
-                            headers={"Content-Type": "application/json"},
-                        )
-                        if response.status_code == requests.codes.ok:
-                            st.write("✅ Learning Policy uploaded, continue below.")
-                        else:
-                            st.write(
-                                "🚨 Upload of Learning Policy failed: HTTP status code "
-                                + str(response.status_code)
-                            )
-                    except ValueError as ve:
-                        st.write(
-                            "🚨 Entered Learning Policy is not a valid JSON: " + str(ve)
-                        )
+        decay = st.number_input("Enter decay (lambda) value")
+        length = st.number_input("Enter length (M) value:")
+
+        # Execution strategy
+        # CustomerCategory: public
+        st.caption("Category: Public")
+        explorationProbability_A_pub = st.slider("Enter exploration probability for process A:", min_value=0.0,
+                                                 max_value=1.0, value=0.5, step=0.01, key="a_pub")
+        explorationProbability_B_pub = st.slider("Exploration probability for process B:", min_value=0.0, max_value=1.0,
+                                                 step=0.1, value=1.0 - explorationProbability_A_pub, key="b_pub",
+                                                 disabled=True)
+
+        # CustomerCategory: gov (dynamic)
+        st.caption("Category: Gov")
+        explorationProbability_A_gov = st.slider("Exploration probability for process A:", min_value=0.0, max_value=1.0,
+                                                 value=0.5, step=0.01, key="a_gov")
+        explorationProbability_B_gov = st.slider("Exploration probability for process B:", min_value=0.0, max_value=1.0,
+                                                 step=0.1, value=1.0 - explorationProbability_A_gov, key="b_gov",
+                                                 disabled=True)
+        if st.button("Submit"):
+            try:
+                bapol_json = {
+                    'experimentationDecay': decay,
+                    'experimentationLength': length,
+                    'executionStrategy': [
+                        {
+                            'customerCategory': 'public',
+                            'explorationProbability_A_pub': explorationProbability_A_pub,
+                            'explorationProbability_B_pub': explorationProbability_B_pub
+                        },
+                        {
+                            'customerCategory': 'gov',
+                            'explorationProbability_A_gov': explorationProbability_A_gov,
+                            'explorationProbability_B_gov': explorationProbability_B_gov
+                        }
+                    ]
+                }
+
+                response = requests.post(BACKEND_URI + "/learning-policy", json=bapol_json,
+                                         headers={"Content-Type": "application/json"})
+                if response.status_code == requests.codes.ok:
+                    st.write("✅ Batch Policy uploaded, continue below.")
                 else:
-                    st.write("⚠️ Please enter Learning Policy before submitting")
+                    st.write("🚨 Upload of Batch Policy failed: HTTP status code " + str(response.status_code))
+            except ValueError as ve:
+                st.write("🚨 Entered Batch Policy is not a valid JSON: " + str(ve))
 
 
 def manual_decision():
@@ -139,5 +135,5 @@ def main():
     experiment_cockpit()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
