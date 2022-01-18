@@ -7,7 +7,6 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 from display_results import *
 # from config import BACKEND_URI
 
-BACKEND_URI = f"http://localhost:5001/"
 
 def get_currently_active_process_id():
     response = requests.get(BACKEND_URI + "/process-variants/active-meta")
@@ -102,7 +101,7 @@ def display_results():
             )
 
             if response.status_code != requests.codes.ok:
-                st.write("Can't fetch Data righ now")
+                st.write("Can't fetch Data right now")
 
             else:
 
@@ -113,11 +112,12 @@ def display_results():
                 st.write(f"Amount of instances sent to variant B {amount_instances_b}")
         with st.form(key="Execution history"):
             if st.form_submit_button("Clean up history"):#https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
-                clean_up_history()#didn't work?
-            # fetch_history_activity_duration()
-            st.write("Number of total activities:", get_activity_count())
-            st.write("Number of total batch:", get_batch_count())
-            st.write("Number of total process:", get_process_count())
+                requests.post(
+                    BACKEND_URI + "instance-router/clean-up-history"
+                )
+            st.write("Number of total activities:",requests.get(BACKEND_URI + "instance-router/get-activity-count").json().get('activity_count'))
+            st.write("Number of total batch:",requests.get(BACKEND_URI + "instance-router/get-batch-count").json().get('batch_count'))
+            st.write("Number of total process:",requests.get(BACKEND_URI + "instance-router/get-process-count").json().get('process_count'))
 
             st.write("Time based cost")
             plt_cost()
