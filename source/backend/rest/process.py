@@ -7,11 +7,11 @@ from flask import jsonify
 
 from camunda.client import CamundaClient
 from models import db
-from models.processes import ProcessVariants
+from models.process import Process
 
 ALLOWED_EXTENSIONS = {'bpmn'}
 
-process_variants_api = Blueprint('process-variants', __name__)
+process_api = Blueprint('process-variants', __name__)
 
 
 def allowed_file(filename):
@@ -19,7 +19,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@process_variants_api.route('/<process_name>', methods=['POST'])
+@process_api.route('/<process_name>', methods=['POST'])
 def set_process(process_name):
     """ Add a new process with two variants """
     # check if the post request has the correct file part
@@ -45,7 +45,7 @@ def set_process(process_name):
     path_variant_a = os.path.join(path, variant_a_file.filename)
     path_variant_b = os.path.join(path, variant_b_file.filename)
 
-    existing = db.session.query(ProcessVariants).filter(ProcessVariants.name == process_name)
+    existing = db.session.query(Process).filter(Process.name == process_name)
     if existing.count() == 1:
         db.session.delete(existing.first())
     elif existing.count() > 1:
@@ -58,21 +58,21 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
-    process_variant = ProcessVariants(name=process_name,
-                                      variant_a_path=path_variant_a,
-                                      variant_b_path=path_variant_b,
-                                      variant_a_camunda_id=camunda_id_a,
-                                      variant_b_camunda_id=camunda_id_b)
+    process_variant = Process(name=process_name,
+                              variant_a_path=path_variant_a,
+                              variant_b_path=path_variant_b,
+                              variant_a_camunda_id=camunda_id_a,
+                              variant_b_camunda_id=camunda_id_b)
 
     # change old active process to inactive
-    db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True)).update(dict(active=False))
+    db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
     db.session.add(process_variant)
     db.session.commit()
     # TODO: return new row
     return "Success"
 
 
-@process_variants_api.route('', methods=['DELETE'])
+@process_api.route('', methods=['DELETE'])
 def delete_process_variants_rows():
     # delete process versions from filesystem
     folder = os.path.join(os.getcwd(), 'resources/bpmn/')
@@ -87,26 +87,26 @@ def delete_process_variants_rows():
         except Exception as e:
             abort(500, 'Failed to delete %s. Reason: %s' % (file_path, e))
     # remove db rows
-    results = db.session.query(ProcessVariants).all()
+    results = db.session.query(Process).all()
     for result in results:
         db.session.delete(result)
     db.session.commit()
     return "Success"
 
 
-@process_variants_api.route('/count', methods=['GET'])
+@process_api.route('/count', methods=['GET'])
 def get_processes_count():
     """ Get amount of processes that have been set / entries in processes db table """
     data = {
-        "processesCount": ProcessVariants.query.count()
+        "processesCount": Process.query.count()
     }
     json_data = jsonify(data)
     return json_data
 
 
-@process_variants_api.route('/active-meta', methods=['GET'])
+@process_api.route('/active-meta', methods=['GET'])
 def get_active_process_variants_metadata():
-    active_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.active.is_(True))
+    active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
     if active_process_entry_query.count() == 0:
         return "No active process in db"
     elif active_process_entry_query.count() > 1:
@@ -116,17 +116,18 @@ def get_active_process_variants_metadata():
         'id': active_process_entry.id,
         'name': active_process_entry.name,
         'added': active_process_entry.datetime_added,
-        'winningVersion': active_process_entry.winning_version
+        'winningVersion':
+            None if active_process_entry.winning_version is None else active_process_entry.winning_version.value
     }
     return ap_info
 
 
-@process_variants_api.route('variant-file/<a_or_b>', methods=['GET'])
+@process_api.route('variant-file/<a_or_b>', methods=['GET'])
 def get_process_variant_files(a_or_b):
     requested_id = request.args.get('id')
     if requested_id is None:
         abort(400, description='id query parameter not specified')
-    active_process_entry_query = db.session.query(ProcessVariants).filter(ProcessVariants.id == requested_id)
+    active_process_entry_query = db.session.query(Process).filter(Process.id == requested_id)
     if active_process_entry_query.count() == 0:
         abort(404, description='No process with specified id found')
 

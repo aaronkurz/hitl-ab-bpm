@@ -7,12 +7,12 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 paths:
-  /learning-policy:
+  /batch-policy:
     post:
-      summary: Set a new learning policy
-      description: This endpoint will assign a new learning policy to the currently active process in the process_variant db table.
+      summary: Set a new batch policy
+      description: This endpoint will assign a new batch policy to the currently active process in the process db table.
       tags:
-        - Learning Policy
+        - Batch Policy
       requestBody:
         content:
           application/json:
@@ -38,19 +38,19 @@ paths:
         '200':
           description: Success
     delete:
-      summary: Delete all learning policies.
+      summary: Delete all batch policies.
       tags:
-        - Learning Policy
+        - Batch Policy
       responses:
         '200':
           description: Success
-  /learning-policy/latest:
+  /batch-policy/latest:
     get:
-      summary: Get the latest learning policy proposal
+      summary: Get the latest batch policy proposal
       description: >
-        Get the latest (so the currently active) learning policy proposal of the currently active process
+        Get the latest (so the currently active) batch policy proposal of the currently active process
       tags:
-        - Learning Policy
+        - Batch Policy
       responses:
         '200':
           description: OK
@@ -80,11 +80,11 @@ paths:
                           type: number
                         explorationProbabilityB:
                           type: number
-  /learning-policy/count:
+  /batch-policy/count:
     get:
-      summary: Get the amount of Learning Policies in the db.
+      summary: Get the amount of Batch Policies in the db.
       tags:
-        - Learning Policy
+        - Batch Policy
       responses:
         200:
           description: OK
@@ -93,15 +93,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  learningPolicyCount:
+                  batchPolicyCount:
                     type: integer
-  /process-variants/{process_name}:
+  /process/{process_name}:
     post:
       summary: Add a new process with two variants.
       description: >
         They are deployed to camunda automagically.
       tags:
-        - Process Variants
+        - Process
       parameters:
         - name: process_name
           in: path
@@ -129,21 +129,21 @@ paths:
           description: Client error
         500:
           description: Server error
-  /process-variants:
+  /process:
     delete:
       summary: Delete all processes from db and files from filesystem of backend.
       tags:
-        - Process Variants
+        - Process
       responses:
         200:
           description: Success
         500:
           description: Server error
-  /process-variants/count:
+  /process/count:
     get:
       summary: Get amount of processes deployed via our backend.
       tags:
-        - Process Variants
+        - Process
       responses:
         200:
           description: OK
@@ -154,11 +154,11 @@ paths:
                 properties:
                   processesCount:
                     type: integer
-  /process-variants/active-meta:
+  /process/active-meta:
     get:
       summary: Get metadata about currently active process.
       tags:
-        - Process Variants
+        - Process
       description: >
         id is the id in our backend, not in the camunda engine.
       responses:
@@ -175,14 +175,14 @@ paths:
                     type: string
                   added:
                     type: string
-  /process-variants/variant-file/{a_or_b}:
+  /process/variant-file/{a_or_b}:
     get:
       summary: Get the bpmn file of a certain process.
       description: >
         You can get the relevant currently active process id via
-        this api call: /process-variants/active-meta
+        this api call: /process/active-meta
       tags:
-        - Process Variants
+        - Process
       parameters:
         - name: a_or_b
           in: path

@@ -18,7 +18,7 @@ def upload_files():
                         "variantB": f_b
                     }
                     # when
-                    response = requests.post(BACKEND_URI + "/process-variants/" + process_name, files=files_in)
+                    response = requests.post(BACKEND_URI + "/process/" + process_name, files=files_in)
                     # then
                     if response.status_code == requests.codes.ok:
                         st.write("✅ Files uploaded, continue below.")
@@ -28,10 +28,9 @@ def upload_files():
                     st.write("⚠️ Both variant a and variant b have to be uploaded at once and a name has to be given.")
 
 
-def set_lepol():
-    with st.expander("📐 Step 2: Set Learning Policy", expanded=True):
-        decay = st.number_input("Enter decay (lambda) value")
-        length = st.number_input("Enter length (M) value:")
+def set_bapol():
+    with st.expander("📐 Step 2: Set Batch Policy", expanded=True):
+        batch_size = st.number_input("Enter batch size")
 
         # Execution strategy
         # CustomerCategory: public
@@ -52,8 +51,7 @@ def set_lepol():
         if st.button("Submit"):
             try:
                 bapol_json = {
-                    'experimentationDecay': decay,
-                    'experimentationLength': length,
+                    'batchSize': batch_size,
                     'executionStrategy': [
                         {
                             'customerCategory': 'public',
@@ -68,7 +66,7 @@ def set_lepol():
                     ]
                 }
 
-                response = requests.post(BACKEND_URI + "/learning-policy", json=bapol_json,
+                response = requests.post(BACKEND_URI + "/batch-policy", json=bapol_json,
                                          headers={"Content-Type": "application/json"})
                 if response.status_code == requests.codes.ok:
                     st.write("✅ Batch Policy uploaded, continue below.")
@@ -131,7 +129,7 @@ def main():
     st.set_page_config(page_title="AB-BPM", page_icon="🔁")
     st.title("AB-BPM Dashboard 🎮")
     upload_files()
-    set_lepol()
+    set_bapol()
     experiment_cockpit()
 
 

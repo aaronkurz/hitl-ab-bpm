@@ -1,9 +1,9 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
-from models import processes, db
+import models
 from instance_router import instance_router_interface
 from models.process_instance import ProcessInstance
-from models.processes import ProcessVariants
+from models.process import Process, WinningReasonEnum, set_winning
 from sqlalchemy import and_, asc
 from rest.utils import validate_backend_process_id
 
@@ -19,7 +19,7 @@ def start_process():
     validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
 
-    process = processes.get_process_metadata(process_id)
+    process = models.process.get_process_metadata(process_id)
 
     # get decision from process bandit
     if not instance_router_interface.is_ready_for_instantiation():
@@ -58,16 +58,10 @@ def count_a_b():
 @instance_router_api.route('/manual-decision', methods=['POST'])
 def manual_decision():
     """ API endpoint to allow human expert to manually make a decision """
-    process_id = request.args.get('process-id')
+    process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     decision = request.args.get('version-decision')
-    if decision not in ['a', 'b']:
-        abort(400, "version-decision query parameter must be 'a' or 'b'")
-    process = ProcessVariants.query.filter(ProcessVariants.id == process_id).first()
-    if process.winning_version is not None:
-        abort(400, "This process already has a winning version")
-    process.winning_version = decision
-    db.session.commit()
+    set_winning(process_id, decision)
     return "Success"
 
 

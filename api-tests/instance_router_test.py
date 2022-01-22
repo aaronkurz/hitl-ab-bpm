@@ -25,7 +25,7 @@ def meta_run_manual_choice(version: str):
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
-    utils.post_lepol(utils.example_learning_policy)
+    utils.post_lepol(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
     sleep(10)
@@ -67,7 +67,7 @@ def test_instantiation():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.post_lepol(utils.example_learning_policy)
+    utils.post_lepol(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,
@@ -80,7 +80,7 @@ def test_aggregate_data():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn")
-    utils.post_lepol(utils.example_learning_policy)
+    utils.post_lepol(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,
@@ -105,7 +105,7 @@ def test_two_manual_choices_not_possible():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn")
-    utils.post_lepol(utils.example_learning_policy)
+    utils.post_lepol(utils.example_batch_policy)
     post_manual_decision('a')
     try:
         post_manual_decision('b')

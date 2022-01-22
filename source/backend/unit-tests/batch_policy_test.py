@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock
-from models.learning_policy import LearningPolicy, get_current_lepol, get_current_lepol_active_process
+from models.batch_policy import BatchPolicy, get_current_bapol, get_current_bapol_active_process
 from models import db
 
 db.session = MagicMock()
@@ -12,12 +12,11 @@ def before_all():
                       exploration_probability_a=0.3,
                       exploration_probability_b=0.7)
     bapol = Mock(execution_strategies=[exec_strat, exec_strat],
-                 last_modified="2020",
-                 exp_length=200,
-                 exp_decay=5,
+                 time_added="2020",
+                 batch_size=200,
                  process_id=5)
-    LearningPolicy.query = MagicMock()
-    LearningPolicy.query.order_by.return_value.filter.return_value.first.return_value = bapol
+    BatchPolicy.query = MagicMock()
+    BatchPolicy.query.order_by.return_value.filter.return_value.first.return_value = bapol
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
@@ -25,8 +24,7 @@ def before_all():
 
 def test_get_current_bapol():
     assert {
-               "experimentationLength": 200,
-               "experimentationDecay": 5,
+               "batchSize": 200,
                "lastModified": "2020",
                "processId": 5,
                "executionStrategy": [
@@ -41,26 +39,25 @@ def test_get_current_bapol():
                        "explorationProbabilityB": 0.7
                    }
                ]
-           } == get_current_lepol(5)
+           } == get_current_bapol(5)
 
 
 def test_active_count_zero():
     db.session.query.return_value.filter.return_value.count.return_value = 0
     with pytest.raises(Exception):
-        get_current_lepol_active_process()
+        get_current_bapol_active_process()
 
 
 def test_active_count_too_many():
     db.session.query.return_value.filter.return_value.count.return_value = 2
     with pytest.raises(Exception):
-        get_current_lepol_active_process()
+        get_current_bapol_active_process()
 
 
 def test_active_count_correct():
     db.session.query.return_value.filter.return_value.count.return_value = 1
     assert {
-               "experimentationLength": 200,
-               "experimentationDecay": 5,
+               "batchSize": 200,
                "lastModified": "2020",
                "processId": 5,
                "executionStrategy": [
@@ -75,4 +72,4 @@ def test_active_count_correct():
                        "explorationProbabilityB": 0.7
                    }
                ]
-           } == get_current_lepol_active_process()
+           } == get_current_bapol_active_process()

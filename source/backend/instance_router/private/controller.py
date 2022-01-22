@@ -1,8 +1,8 @@
 """ Main "organizer" of instance routing """
 from camunda.client import CamundaClient
-from models import processes, db
+from models import process, db
 from models.process_instance import ProcessInstance
-from models.processes import ProcessVariants
+from models.process import Process
 from instance_router.private import process_bandit
 
 
@@ -11,9 +11,9 @@ def get_winning_version(process_id: int) -> str or None:
 
     :returns 'a' or 'b' or None
     """
-    process = ProcessVariants.query.filter(ProcessVariants.id == process_id).first()
+    process = Process.query.filter(Process.id == process_id).first()
     if process.winning_version is not None:
-        return process.winning_version
+        return process.winning_version.value
     else:
         return None
 
@@ -25,7 +25,7 @@ def instantiate(process_id: int, customer_category: str) -> str:
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
     """
-    process = processes.get_process_metadata(process_id)
+    process_metadata = process.get_process_metadata(process_id)
 
     # get decision from process bandit, if no decision has been made yet
     winning_version = get_winning_version(process_id)
@@ -41,9 +41,9 @@ def instantiate(process_id: int, customer_category: str) -> str:
     elif decision == 'b':
         variant_key = 'variant_b_camunda_id'
     else:
-        raise Exception('Unexpected decision by reinforcement learning environment')
+        raise Exception('Unexpected decision by reinforcement learning environment: ' + str(decision))
 
-    variant_camunda_id = process[variant_key]
+    variant_camunda_id = process_metadata[variant_key]
     camunda_instance_id = client.start_instance(variant_camunda_id)
     # add info to database
     process_instance = ProcessInstance(process_id=process_id,

@@ -10,7 +10,7 @@ def get_random_customer_category(list_of_customer_categories: [str]):
     return list_of_customer_categories[random.randint(0, len(list_of_customer_categories) - 1)]
 
 
-# PROCESS VARIANTS API
+# PROCESS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str):
     # given
     files_in = {
@@ -18,26 +18,25 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str):
         "variantB": open(path_b)
     }
     # when
-    response = requests.post(BASE_URL + "/process-variants/" + process_name, files=files_in)
+    response = requests.post(BASE_URL + "/process/" + process_name, files=files_in)
     # then
     assert response.status_code == requests.codes.ok, "Setting of process failed: " + str(response.content)
 
 
 def remove_all_process_rows():
-    response = requests.delete(BASE_URL + "/process-variants")
+    response = requests.delete(BASE_URL + "/process")
     assert response.status_code == requests.codes.OK, "Deletion of process rows failed: " + str(response.content)
 
 
 def get_currently_active_process_id():
-    response = requests.get(BASE_URL + "/process-variants/active-meta")
+    response = requests.get(BASE_URL + "/process/active-meta")
     assert response.status_code == requests.codes.ok
     return response.json().get('id')
 
 
-# LEARNING POLICY API
-example_learning_policy = {
-        "experimentationLength": 200,
-        "experimentationDecay": 5,
+# BATCH POLICY API
+example_batch_policy = {
+        "batchSize": 200,
         "executionStrategy": [
             {
                 "customerCategory": "public",
@@ -54,15 +53,15 @@ example_learning_policy = {
 
 
 def get_process_count():
-    return requests.get(BASE_URL + "/process-variants/count").json().get("processesCount")
+    return requests.get(BASE_URL + "/process/count").json().get("processesCount")
 
 
 def get_lepol_count():
-    return requests.get(BASE_URL + "/learning-policy/count").json().get("learningPolicyCount")
+    return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
 
 
 def post_lepol(lepol: dict):
-    response = requests.post(BASE_URL + "/learning-policy", json=lepol, headers={"Content-Type": "application/json"})
+    response = requests.post(BASE_URL + "/batch-policy", json=lepol, headers={"Content-Type": "application/json"})
     assert response.status_code == requests.codes.ok
 
 
