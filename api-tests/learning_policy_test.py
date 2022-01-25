@@ -46,7 +46,7 @@ def test_set_lepol():
 
 
 def test_get_latest():
-    """ Test if retrieval of latest set learning policy works """
+    """ Test if retrieval of the latest learning policy works """
     # given
     test_set_lepol()
     # when

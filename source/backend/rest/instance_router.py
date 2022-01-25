@@ -1,18 +1,22 @@
-import requests
-from flask import Blueprint, request
-from models import processes
+""" This module presents ways to interact with the instance router and its results from the outside """
+from flask import Blueprint, request, abort
+from models import processes, db
 from instance_router import instance_router_interface
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
-from sqlalchemy import and_
-from models import db
+from models.processes import ProcessVariants
+from sqlalchemy import and_, asc
+from rest.utils import validate_backend_process_id
+
 instance_router_api = Blueprint('instance_router_api', __name__)
 
 
 @instance_router_api.route('/start-instance', methods=['GET'])
 def start_process():
+    """ Endpoint for process consumers (clients) to request/start instances """
     data = request.json
 
     process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
 
     process = processes.get_process_metadata(process_id)
@@ -33,7 +37,9 @@ def start_process():
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
 def count_a_b():
+    """ Get some metadata about process """
     process_id = request.args.get('process-id')
+    validate_backend_process_id(process_id)
     a_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                                  ProcessInstance.decision == 'a')).count()
     b_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
@@ -46,6 +52,52 @@ def count_a_b():
             "amount": b_amount
         }
         # TODO add further aggregated info, such as mean reward, percent finished and so on
+    }
+
+
+@instance_router_api.route('/manual-decision', methods=['POST'])
+def manual_decision():
+    """ API endpoint to allow human expert to manually make a decision """
+    process_id = request.args.get('process-id')
+    validate_backend_process_id(process_id)
+    decision = request.args.get('version-decision')
+    if decision not in ['a', 'b']:
+        abort(400, "version-decision query parameter must be 'a' or 'b'")
+    process = ProcessVariants.query.filter(ProcessVariants.id == process_id).first()
+    if process.winning_version is not None:
+        abort(400, "This process already has a winning version")
+    process.winning_version = decision
+    db.session.commit()
+    return "Success"
+
+
+@instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])
+def get_instantiation_plot():
+    """ Get a time overview of client requests and where they have been routed to """
+    process_id = request.args.get('process-id')
+    validate_backend_process_id(process_id)
+
+    all_instances_ordered = ProcessInstance.query.filter(ProcessInstance.process_id == process_id).\
+        order_by(asc(ProcessInstance.instantiation_time))
+    requests_a = []
+    requests_b = []
+    requests_a_counter = 0
+    requests_b_counter = 0
+    for instance in all_instances_ordered:
+        if instance.decision == 'a':
+            requests_a_counter += 1
+        elif instance.decision == 'b':
+            requests_b_counter += 1
+        else:
+            raise Exception("Unexpected decision for instance " + str(instance.id))
+
+        requests_a.append(requests_a_counter)
+        requests_b.append(requests_b_counter)
+
+    return {
+        "noTotalRequests": all_instances_ordered.count(),
+        "requestsA": requests_a,
+        "requestsB": requests_b
     }
 
 # TODO: migrate RL script first
@@ -198,3 +250,4 @@ def get_process_count():
     query_url = CAMUNDA_ENGINE_URI + history_url
     result = requests.get(query_url).json()
     return {'process_count':result['count']}
+

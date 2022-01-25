@@ -7,72 +7,6 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 paths:
-  /process/deploy:
-    post:
-      summary: deploys certain processes to engine
-      responses:
-        '200':
-          description: OK
-  /process/{process_id}/start_instance:
-    post:
-      summary: start a process instance in the engine
-      parameters:
-        - in: path
-          name: process_id
-          required: true
-          description: id of process definition to start instance of
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-        '400':
-          description: could not create instance
-  /process/definition:
-    delete:
-      summary: deletes all process definitions
-      responses:
-        '200':
-          description: OK
-  /process/instance:
-    delete:
-      summary: deletes all process instance
-      responses:
-        '200':
-          description: OK
-  /process/all:
-    delete:
-      summary: deletes all process data from engine
-      responses:
-        '200':
-          description: OK
-  /process/history:
-    get:
-      summary: polls engine history service
-      responses:
-        '200':
-          description: OK
-  /process/{process_id}/start_instances:
-    post:
-      summary: start a process instance a certain number of times in the engine
-      parameters:
-        - in: path
-          name: process_id
-          required: true
-          description: id of process definition to start instance of
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                count:
-                  type: integer
-      responses:
-        '200':
-          description: OK
   /learning-policy:
     post:
       summary: Set a new learning policy
@@ -312,6 +246,77 @@ paths:
           description: OK
         500:
           description: server error
+  /instance-router/aggregate-data/client-requests:
+    get:
+      summary: Get a time overview of client requests and where they have been routed to
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  noTotalRequests:
+                    type: integer
+                    example: 3
+                    description: Total number of requests that have been made to backend for this process.
+                  requestsA:
+                    type: array
+                    items:
+                      type: integer
+                    example: [1, 1, 2]
+                    description:
+                      Array of how many requests have been routed to A. Index of array is number of total requests at
+                      that point and value at index is how many instances have been routed to A at that point.
+                  requestsB:
+                    type: array
+                    items:
+                      type: integer
+                    example: [0, 1, 1]
+                    description:
+                      Array of how many requests have been routed to B. Index of array is number of total requests at
+                      that point and value at index is how many instances have been routed to B at that point.
+
+        500:
+          description: server error
+        400:
+          description: client error
+  /instance-router/manual-decision:
+    post:
+      summary: Allows human expert to manually make a decision (whether to use version A or B from now on)
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+        - name: customer-category
+          in: query
+          description: Specify which customer category the instantiation request belongs to
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+        500:
+          description: server error
+        400:
+          description: client error
+
 
 
 
