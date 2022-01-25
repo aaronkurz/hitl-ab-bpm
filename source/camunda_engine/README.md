@@ -1,4 +1,5 @@
-Human BPI with Reinforcement Learning project as part of module "(Advanced) Distributed Systems Prototyping" at TU Berlin.
+Human BPI with Reinforcement Learning project as part of module "(Advanced) Distributed Systems Prototyping" at TU
+Berlin.
 <p align="center">
 <img width="628" alt="Bildschirmfoto 2021-10-28 um 22 37 30" src="https://user-images.githubusercontent.com/41950946/139332212-52ac8834-ca01-4591-9c0b-27c156db9b85.png">
 </p>
@@ -13,11 +14,19 @@ The operation
 loads a bpmn file from the _src/main/resources_ dir, drag it to the Modeler to have a better view~
 
 # Detailed tutorial
-##Create the Camunda Spring Boot project
+
+## Create the Camunda Spring Boot project
+
 Create an empty Maven project named sbe_prototyping and groupId org.example
 
 ## Configuring Maven dependencies
-Next add the Maven dependency, which needs to be added to the `pom.xml` file in the project root directory.  We need to add the Spring Boot dependency to "Dependency Management", and then add Camunda Spring Boot Starter as a dependency, which will provide the Camunda process engine and its own WebApp;  For simplicity, the database uses an embedded H2 database;  Finally, add `spring-boot-Maven-plugin`, which packages spring Boot projects together.  The final result is as follows:  
+
+Next add the Maven dependency, which needs to be added to the `pom.xml` file in the project root directory. We need to
+add the Spring Boot dependency to "Dependency Management", and then add Camunda Spring Boot Starter as a dependency,
+which will provide the Camunda process engine and its own WebApp; For simplicity, the database uses an embedded H2
+database; Finally, add `spring-boot-Maven-plugin`, which packages spring Boot projects together. The final result is as
+follows:
+
 ```<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -87,8 +96,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 ```
 
 ## Add the main class for the project
-Next, we'll add a main class for the application to run. Create the class under `src/main/java` named `WebappExampleProcessApplication`
+
+Next, we'll add a main class for the application to run. Create the class under `src/main/java`
+named `WebappExampleProcessApplication`
 The main class of SpringBoot needs to add the @SpringBootApplication annotation. The resulting effect is as follows:
+
 ```package org.example.loanapproval;
 
 import org.springframework.boot.SpringApplication;
@@ -105,11 +117,14 @@ public class WebappExampleProcessApplication {
 
 ## Configuration items
 
-Camunda Spring Boot comes with best practice configurations that are automatically enabled at startup. To override some of these configurations, add `application.yaml` or `application.properties` to resources.  The specific content of the default configuration can check https://docs.camunda.org/manual
+Camunda Spring Boot comes with best practice configurations that are automatically enabled at startup. To override some
+of these configurations, add `application.yaml` or `application.properties` to resources. The specific content of the
+default configuration can check https://docs.camunda.org/manual
 
 ## User-defined administrator accounts
 
-Let's create the `application.yaml` file under `src/main/resources` and type the following:  
+Let's create the `application.yaml` file under `src/main/resources` and type the following:
+
 ```camunda.bpm:
 admin-user:
 id: demo
@@ -118,7 +133,9 @@ firstName: Demo
 filter:
 create: All tasks
 ```
-The preceding configuration uses Demo as the administrator user name and password, and adds the All Tasks filter to the Tasklist
+
+The preceding configuration uses Demo as the administrator user name and password, and adds the All Tasks filter to the
+Tasklist
 
 ## Compile operation
 
@@ -126,14 +143,17 @@ IDEs usually have tools that can be compiled and run directly
 
 You can also run it from the command line:
 
-`mvn package ` 
+`mvn package `
 `Java - jar target/***.jar`
 
-Open the browser to http://localhost:8080/, and the login screen will be automatically opened. You can log in to demo/ Demo and open Tasklist. You can see that "All Tasks" is also created.
+Open the browser to http://localhost:8080/, and the login screen will be automatically opened. You can log in to demo/
+Demo and open Tasklist. You can see that "All Tasks" is also created.
 
 ## Enable process support for projects
 
-Now we add the `@EnableProcessApplication` annotation to the Camunda Spring Boot project, which provides more configurable items and enables more process-related annotations.  
+Now we add the `@EnableProcessApplication` annotation to the Camunda Spring Boot project, which provides more
+configurable items and enables more process-related annotations.
+
 ```
 package org.example.loanapproval;
 
@@ -153,7 +173,8 @@ public class WebappExampleProcessApplication {
 
 ## Initiate process tests during process deployment
 
-The next step is a test where we want to initiate a process after the process is deployed using the EventListener annotation `@Eventlistener` of type `PostDeployEvent`,  The modified `WebappExampleProcessApplication` is as follows:  
+The next step is a test where we want to initiate a process after the process is deployed using the EventListener
+annotation `@Eventlistener` of type `PostDeployEvent`, The modified `WebappExampleProcessApplication` is as follows:
 
 ```
 @SpringBootApplication

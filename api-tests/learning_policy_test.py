@@ -1,5 +1,6 @@
 import pytest
 import requests
+
 import utils
 from config import BASE_URL
 

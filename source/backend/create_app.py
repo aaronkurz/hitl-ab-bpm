@@ -1,7 +1,9 @@
-from flask import Flask
-from models import db
-import config
 import time
+
+from flask import Flask
+
+import config
+from models import db
 
 
 def create_app():
@@ -20,7 +22,8 @@ def create_app():
         except:
             tries += -1
             seconds = 10
-            print('Failed to connect to database. Waiting %i seconds and then trying again (try countdown: %s)' % (seconds, tries))
+            print('Failed to connect to database. Waiting %i seconds and then trying again (try countdown: %s)' % (
+            seconds, tries))
             time.sleep(seconds)  # Wait a bit until database is loaded
 
     return app

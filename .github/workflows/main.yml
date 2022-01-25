@@ -45,11 +45,11 @@ jobs:
 
       - name: Prepare and run API tests
         run: |
-            cd api-tests
-            pip install -r requirements.txt
-            pytest
+          cd api-tests
+          pip install -r requirements.txt
+          pytest
 
       - name: Stop docker containers
         run: |
-            cd source
-            docker compose stop
+          cd source
+          docker compose stop

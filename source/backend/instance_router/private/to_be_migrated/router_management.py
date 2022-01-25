@@ -6,10 +6,12 @@ import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from instance_router.private.to_be_migrated.activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
-                                                                   sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
+from instance_router.private.to_be_migrated.activity_utils import (cal_time_based_cost, instance_terminated,
+                                                                   get_format_timestamp,
+                                                                   sumup_history_activity_duration)
+
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 
@@ -114,7 +116,7 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    #logging.getLogger().setLevel(logging.INFO)
+    # logging.getLogger().setLevel(logging.INFO)
 
     num_iterations = 10
 

@@ -2,6 +2,7 @@ import csv
 import logging
 import time
 from xml.etree import ElementTree
+
 import pycamunda.activityinst
 import pycamunda.processinst
 import requests
@@ -183,5 +184,5 @@ def get_format_timestamp():
     return (
         time.strftime("%Y-%m-%dT%H:%M:%Smilliseconds%z", time.localtime()).replace('+', '%2b').replace('milliseconds',
                                                                                                        str(".%03d" % ((
-                                                                                                    time.time() - int(
-                                                                                              time.time())) * 1000))))
+                                                                                                                              time.time() - int(
+                                                                                                                          time.time())) * 1000))))

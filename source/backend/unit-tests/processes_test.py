@@ -1,7 +1,9 @@
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, Mock
-from models.processes import get_process_metadata, get_active_process_metadata
+
 from models import db
+from models.processes import get_process_metadata, get_active_process_metadata
 
 db.session = MagicMock()
 pre_proc_var = MagicMock()
@@ -12,14 +14,14 @@ proc_var = MagicMock(id=76,
                      variant_b_camunda_id="id2",
                      winning_version=None)
 expected = {
-        'id': 76,
-        'name': "taxi-request",
-        'variant_a_path': "/path/to/a",
-        'variant_b_path': "/path/to/b",
-        'variant_a_camunda_id': "id1",
-        'variant_b_camunda_id': "id2",
-        'winning_version': None
-    }
+    'id': 76,
+    'name': "taxi-request",
+    'variant_a_path': "/path/to/a",
+    'variant_b_path': "/path/to/b",
+    'variant_a_camunda_id': "id1",
+    'variant_b_camunda_id': "id2",
+    'winning_version': None
+}
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -64,5 +66,3 @@ def test_get_active_process_assertion_error_above():
 def test_get_active_process_valid():
     pre_proc_var.count.return_value = 1
     assert expected == get_active_process_metadata()
-
-

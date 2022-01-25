@@ -1,6 +1,6 @@
 from datetime import datetime
+
 from models import db
-from sqlalchemy.orm import relationship
 
 
 class Activities(db.Model):
@@ -26,6 +26,7 @@ class Activities(db.Model):
     tenantId = db.Column(db.String(100), nullable=True)
     removalTime = db.Column(db.String(100), nullable=True)
     rootProcessInstanceId = db.Column(db.String(100), nullable=True)
+
 
 '''
 

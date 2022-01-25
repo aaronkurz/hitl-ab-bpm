@@ -1,11 +1,11 @@
-from utils import get_currently_active_process_id, post_manual_decision
 import streamlit as st
-import requests
-import matplotlib.pyplot as plt
+
 from config import BACKEND_URI
-import json
+from utils import get_currently_active_process_id, post_manual_decision
+
 st.set_option('deprecation.showPyplotGlobalUse', False)
 from display_results import *
+
 
 def upload_files():
     with st.expander("⬆️ Step 1: Upload Process Versions", expanded=True):
@@ -128,6 +128,7 @@ def experiment_cockpit():
 
             plot_instances()
 
+
 def display_results():
     with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
         if st.button("Refresh"):
@@ -149,19 +150,24 @@ def display_results():
                 st.write(f"Amount of instances sent to variant A {amount_instances_a}")
                 st.write(f"Amount of instances sent to variant B {amount_instances_b}")
         with st.form(key="Execution history"):
-            if st.form_submit_button("Clean up history"):#https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
+            if st.form_submit_button(
+                    "Clean up history"):  # https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
                 requests.post(
                     BACKEND_URI + "instance-router/clean-up-history"
                 )
-            st.write("Number of total activities:",requests.get(BACKEND_URI + "instance-router/get-activity-count").json().get('activity_count'))
-            st.write("Number of total batch:",requests.get(BACKEND_URI + "instance-router/get-batch-count").json().get('batch_count'))
-            st.write("Number of total process:",requests.get(BACKEND_URI + "instance-router/get-process-count").json().get('process_count'))
+            st.write("Number of total activities:",
+                     requests.get(BACKEND_URI + "instance-router/get-activity-count").json().get('activity_count'))
+            st.write("Number of total batch:",
+                     requests.get(BACKEND_URI + "instance-router/get-batch-count").json().get('batch_count'))
+            st.write("Number of total process:",
+                     requests.get(BACKEND_URI + "instance-router/get-process-count").json().get('process_count'))
 
             st.write("Time based cost")
             plt_cost()
             st.write("Reward")
             plt_reward()
             st.write("action_prob")
+
 
 def view_results():
     with st.expander("⌚️ Step 4: View Results", expanded=True):
@@ -172,6 +178,7 @@ def view_results():
 
         plt_action_prob(options)
 
+
 def main():
     st.set_page_config(page_title="AB-BPM", page_icon="🔁")
     st.title("AB-BPM Dashboard 🎮")
@@ -180,6 +187,7 @@ def main():
     experiment_cockpit()
     display_results()
     view_results()
+
 
 if __name__ == '__main__':
     main()

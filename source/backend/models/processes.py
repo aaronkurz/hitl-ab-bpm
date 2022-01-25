@@ -1,6 +1,8 @@
 from datetime import datetime
-from models import db
+
 from sqlalchemy.orm import relationship
+
+from models import db
 
 
 class ProcessVariants(db.Model):
@@ -42,4 +44,3 @@ def get_active_process_metadata() -> dict:
     assert active_process_entry_query.count() == 1, "Active processes != 1: " + str(active_process_entry_query.count())
     active_process_entry_id = active_process_entry_query.first().id
     return get_process_metadata(active_process_entry_id)
-

@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 inside_docker = os.getenv('INSIDE_DOCKER', False)

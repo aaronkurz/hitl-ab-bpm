@@ -1,5 +1,6 @@
 """ Helpful utilities for frontend """
 import requests
+
 from config import BACKEND_URI
 
 
@@ -17,5 +18,3 @@ def post_manual_decision(manual_decision: str) -> bool:
     }
     response = requests.post(BACKEND_URI + "/instance-router/manual-decision", params=params)
     return response.status_code == requests.codes.ok
-
-

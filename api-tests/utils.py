@@ -1,7 +1,9 @@
 # Put stuff here, that is useful for more than one API test module
 # (if it is only relevant for one, please consider putting it in that module)
-import requests
 import random
+
+import requests
+
 from config import BASE_URL
 
 
@@ -36,21 +38,21 @@ def get_currently_active_process_id():
 
 # LEARNING POLICY API
 example_learning_policy = {
-        "experimentationLength": 200,
-        "experimentationDecay": 5,
-        "executionStrategy": [
-            {
-                "customerCategory": "public",
-                "explorationProbabilityA": 0.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
-                "explorationProbabilityA": 0.7,
-                "explorationProbabilityB": 0.3
-            }
-        ]
-    }
+    "experimentationLength": 200,
+    "experimentationDecay": 5,
+    "executionStrategy": [
+        {
+            "customerCategory": "public",
+            "explorationProbabilityA": 0.3,
+            "explorationProbabilityB": 0.7
+        },
+        {
+            "customerCategory": "gov",
+            "explorationProbabilityA": 0.7,
+            "explorationProbabilityB": 0.3
+        }
+    ]
+}
 
 
 def get_process_count():

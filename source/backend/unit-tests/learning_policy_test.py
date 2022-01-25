@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, Mock
-from models.learning_policy import LearningPolicy, get_current_lepol, get_current_lepol_active_process
+
+import pytest
+
 from models import db
+from models.learning_policy import LearningPolicy, get_current_lepol, get_current_lepol_active_process
 
 db.session = MagicMock()
 

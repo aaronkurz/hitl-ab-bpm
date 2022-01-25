@@ -1,9 +1,9 @@
 """ Main "organizer" of instance routing """
 from camunda.client import CamundaClient
+from instance_router.private import process_bandit
 from models import processes, db
 from models.process_instance import ProcessInstance
 from models.processes import ProcessVariants
-from instance_router.private import process_bandit
 
 
 def get_winning_version(process_id: int) -> str or None:
