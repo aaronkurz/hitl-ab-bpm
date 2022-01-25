@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock
-from models.batch_policy import BatchPolicy, get_current_bapol, get_current_bapol_active_process
+from models.batch_policy import BatchPolicy, get_current_bapol_data, get_current_bapol_data_active_process
 from models import db
 
 db.session = MagicMock()
@@ -39,19 +39,19 @@ def test_get_current_bapol():
                        "explorationProbabilityB": 0.7
                    }
                ]
-           } == get_current_bapol(5)
+           } == get_current_bapol_data(5)
 
 
 def test_active_count_zero():
     db.session.query.return_value.filter.return_value.count.return_value = 0
     with pytest.raises(Exception):
-        get_current_bapol_active_process()
+        get_current_bapol_data_active_process()
 
 
 def test_active_count_too_many():
     db.session.query.return_value.filter.return_value.count.return_value = 2
     with pytest.raises(Exception):
-        get_current_bapol_active_process()
+        get_current_bapol_data_active_process()
 
 
 def test_active_count_correct():
@@ -72,4 +72,4 @@ def test_active_count_correct():
                        "explorationProbabilityB": 0.7
                    }
                ]
-           } == get_current_bapol_active_process()
+           } == get_current_bapol_data_active_process()

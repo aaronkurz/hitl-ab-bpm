@@ -9,13 +9,13 @@ def is_ready_for_instantiation() -> bool:
     return True
 
 
-def instantiate(process_id: int, customer_category: str) -> str:
+def instantiate(process_id: int, customer_category: str) -> dict:
     """ Returns either a or b
 
     :returns 'a' or 'b'
     """
-    camunda_instance_id = controller.instantiate(process_id, customer_category)
-    return camunda_instance_id
+    instantiation_dict = controller.instantiate(process_id, customer_category)
+    return instantiation_dict
 
 
 

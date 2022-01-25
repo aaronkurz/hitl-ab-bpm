@@ -83,7 +83,7 @@ class CamundaClient:
     def delete_all_data(self, target: str):
         POSSIBLE_TARGETS = ["process-instance", "process-definition", "deployment", "decision-definition"]
         if target not in POSSIBLE_TARGETS:
-            raise Exception(str(target) + "not a valid data deletion target")
+            raise RuntimeError(str(target) + "not a valid data deletion target")
 
         if target == 'process-definition':
             self.delete_all_data(target="process-instance")
@@ -117,9 +117,9 @@ class CamundaClient:
 
         # Getting the ID, Key and Name of the process from the json file
         for elem in proc_def_history:
-            processDefinitionId = elem.get('processDefinitionId')
+            process_definition_id = elem.get('processDefinitionId')
 
-            params = {'processDefinitionId': str(processDefinitionId)}
+            params = {'processDefinitionId': str(process_definition_id)}
             proc_inst_response = requests.get(self.url + "/history/process-instance", params=params)
 
             assert (self.status_code_successful(proc_inst_response.status_code))
@@ -128,10 +128,6 @@ class CamundaClient:
             # Calculating the duration of the process
             for elem2 in proc_inst_response.json():
                 associated_instances.append(elem2)
-                # end_datetime = datetime.strptime(elem2.get('endTime'),'%b %d %Y %I:%M%p')
-                # start_datetime = datetime.strptime(elem2.get('startTime'),'%b %d %Y %I:%M%p')
-                # process_duration = (end_datetime - start_datetime)
-                # associated_instances.append(process_duration)
 
             elem['associated_instances'] = associated_instances
 

@@ -1,10 +1,11 @@
-from flask import Blueprint, abort
-from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol
-from models.process import Process
-from flask import request
 from datetime import datetime
+
+from flask import Blueprint, abort, request, jsonify
+
 from models import db
-from flask import jsonify
+from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol_data
+from models.process import Process
+from models.batch_policy_proposal import exists_bapol_proposal_without_bapol, get_current_open_proposal
 
 batch_policy_api = Blueprint('batch_policy_api', __name__)
 
@@ -12,9 +13,15 @@ batch_policy_api = Blueprint('batch_policy_api', __name__)
 # TODO: add sanity checks of data (percentages add up e.g.)
 @batch_policy_api.route('', methods=['POST'])
 def set_batch_policy():
-    """ Set new batch policy for currently active process """
-    json = request.json
+    """ Set new batch policy for currently active process
 
+     An open proposal has to be available to do this.
+     """
+    process_id = request.args.get('process-id')
+    if not exists_bapol_proposal_without_bapol(process_id):
+        abort(404, "No prior open batch policy proposal for this process found.")
+
+    json = request.json
     batch_size = json.get('batchSize')
     execution_strategies_json = json.get('executionStrategy')
     execution_strategies_table_rows = []
@@ -24,11 +31,11 @@ def set_batch_policy():
             exploration_probability_a=elem.get('explorationProbabilityA'),
             exploration_probability_b=elem.get('explorationProbabilityB')
         ))
-    active_process_query = db.session.query(Process).filter(Process.active.is_(True))
-    assert active_process_query.count() == 1, "Amount of active processes in db != 1"
-    active_process = active_process_query.first()
+    relevant_process_query = db.session.query(Process).filter(Process.id == process_id)
+    assert relevant_process_query.count() == 1, "Amount of active processes in db != 1"
+    relevant_process = relevant_process_query.first()
     batch_policy = BatchPolicy(batch_size=batch_size,
-                               process_id=active_process.id,
+                               process_id=relevant_process.id,
                                time_added=datetime.now(),
                                execution_strategies=execution_strategies_table_rows)
 
@@ -52,7 +59,7 @@ def get_batch_policy():
         abort(500, "Internal server error: More than one active process")
     elif active_pv_query.count() == 1:
         active_pv = active_pv_query.first()
-    data_dict = get_current_bapol(active_pv.id)
+    data_dict = get_current_bapol_data(active_pv.id)
     return data_dict
 
 
@@ -72,3 +79,17 @@ def delete_batch_policy_rows():
     db.session.query(BatchPolicy).delete()
     db.session.commit()
     return "Success"
+
+
+@batch_policy_api.route('/new-proposal', methods=['GET'])
+def check_get_new_proposal():
+    process_id = int(request.args.get('process-id'))
+    if not exists_bapol_proposal_without_bapol(process_id):
+        return {
+            'newProposalExists': False
+        }
+    else:
+        return {
+            'newProposalExists': True,
+            'proposal': get_current_open_proposal(process_id)
+        }

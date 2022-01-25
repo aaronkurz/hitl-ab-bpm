@@ -4,7 +4,7 @@ from models.process_instance import ProcessInstance
 from models.batch_policy import BatchPolicy
 from sqlalchemy.orm import relationship
 import enum
-
+from models.utils import CASCADING_DELETE
 
 class WinningReasonEnum(enum.Enum):
     experimentEnded = "Experiment ended"
@@ -26,11 +26,13 @@ class Process(db.Model):
     variant_b_path = db.Column(db.String, nullable=False)
     variant_a_camunda_id = db.Column(db.String, nullable=False)
     variant_b_camunda_id = db.Column(db.String, nullable=False)
+    default_version = db.Column(db.Enum(Version), nullable=False)
     winning_version = db.Column(db.Enum(Version), nullable=True)  # Will be set after learning is done
     winning_reason = db.Column(db.Enum(WinningReasonEnum), nullable=True)
     datetime_decided = db.Column(db.DateTime, nullable=True)
-    batch_policies = relationship("BatchPolicy", cascade="all, delete")
-    process_instances = relationship("ProcessInstance", cascade="all, delete")
+    batch_policies = relationship("BatchPolicy", cascade=CASCADING_DELETE)
+    process_instances = relationship("ProcessInstance", cascade=CASCADING_DELETE)
+    batch_policy_proposals = relationship('BatchPolicyProposals', cascade=CASCADING_DELETE, nullable=False)
 
 
 def get_process_metadata(process_id: int) -> dict:
@@ -46,6 +48,7 @@ def get_process_metadata(process_id: int) -> dict:
         'variant_b_path': relevant_process_entry.variant_b_path,
         'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
         'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id,
+        'default_version': relevant_process_entry.default_version,
         'winning_version': relevant_process_entry.winning_version,
         'winning_reason': relevant_process_entry.winning_reason,
         'datetime_decided': relevant_process_entry.datetime_decided,
@@ -72,10 +75,10 @@ def set_winning(process_id: int, decision: str) -> dict:
      :param decision: 'a' or 'b'
     """
     if decision not in ['a', 'b']:
-        raise Exception("version-decision query parameter must be 'a' or 'b'")
+        raise RuntimeError("version-decision query parameter must be 'a' or 'b'")
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None:
-        raise Exception("This process already has a winning version")
+        raise RuntimeError("This process already has a winning version")
     relevant_process.winning_version = decision
     relevant_process.winning_reason = WinningReasonEnum.manualChoice
     relevant_process.datetime_decided = datetime.now()

@@ -13,26 +13,23 @@ instance_router_api = Blueprint('instance_router_api', __name__)
 @instance_router_api.route('/start-instance', methods=['GET'])
 def start_process():
     """ Endpoint for process consumers (clients) to request/start instances """
-    data = request.json
-
     process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
-
-    process = models.process.get_process_metadata(process_id)
 
     # get decision from process bandit
     if not instance_router_interface.is_ready_for_instantiation():
         return {"instantiated": False,
                 "message": "Server not ready for instantiation of processes. Try setting a process with two variants "
                            "and a learning-policy first."}
-    camunda_instance_id = instance_router_interface.instantiate(process_id, customer_category)
+    instantiation_dict = instance_router_interface.instantiate(process_id, customer_category)
 
     # return instance id (client does not need to know decision etc./maybe should
     # not even know they are part of an experiment)
     return {
         "instantiated": True,
-        "camundaInstanceId": camunda_instance_id}
+        "camundaInstanceId": instantiation_dict.get('camundaInstanceId')
+    }
 
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
@@ -83,7 +80,7 @@ def get_instantiation_plot():
         elif instance.decision == 'b':
             requests_b_counter += 1
         else:
-            raise Exception("Unexpected decision for instance " + str(instance.id))
+            raise RuntimeError("Unexpected decision for instance " + str(instance.id))
 
         requests_a.append(requests_a_counter)
         requests_b.append(requests_b_counter)

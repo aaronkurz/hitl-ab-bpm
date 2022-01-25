@@ -1,9 +1,13 @@
 """ Main "organizer" of instance routing """
 from camunda.client import CamundaClient
+from instance_router.private import camunda_collector
+from scipy.stats import bernoulli
 from models import process, db
 from models.process_instance import ProcessInstance
+from models.batch_policy import get_latest_bapol_entry
 from models.process import Process
-from instance_router.private import process_bandit
+from models import batch_policy
+from instance_router.private import rl_agent
 
 
 def get_winning_version(process_id: int) -> str or None:
@@ -11,26 +15,72 @@ def get_winning_version(process_id: int) -> str or None:
 
     :returns 'a' or 'b' or None
     """
-    process = Process.query.filter(Process.id == process_id).first()
-    if process.winning_version is not None:
-        return process.winning_version.value
+    relevant_process = Process.query.filter(Process.id == process_id).first()
+    if relevant_process.winning_version is not None:
+        return relevant_process.winning_version.value
     else:
         return None
 
 
-def instantiate(process_id: int, customer_category: str) -> str:
+def get_decision_in_batch(process_id, customer_category) -> str:
+    """
+   :param process_id:
+   :param customer_category:
+   :return: 'a' or 'b'
+   """
+    bapol_dict = batch_policy.get_current_bapol_data(process_id)
+    fitting_customer_category_found = False
+    for elem in bapol_dict.get('executionStrategy'):
+        if elem.get('customerCategory') == customer_category:
+            return ['a', 'b'][bernoulli.rvs(elem.get('explorationProbabilityB'))]
+            # bernoulli.rvs(p) will return either 0 or 1, and 1 with the probability of p
+    raise Exception('No suitable customer category found in batch policy: ' + str(customer_category))
+
+
+def get_decision_outside_batch(process_id) -> str:
+    """
+   :param process_id:
+   :return: 'a' or 'b'
+   """
+    relevant_process = Process.query.filter(Process.id == process_id).first()
+    return relevant_process.default_version.value
+
+
+def is_in_batch(process_id):
+    return ProcessInstance.query.filter(ProcessInstance.process_id == process_id).count() <\
+           batch_policy.get_batch_size_sum(process_id)
+
+
+def end_of_batch_reached(process_id):
+
+    return ProcessInstance.query.filter(ProcessInstance.process_id == process_id).count() ==\
+           batch_policy.get_batch_size_sum(process_id)
+
+
+def instantiate(process_id: int, customer_category: str) -> dict:
     """ Create a new process instance
 
     :param process_id: process id that we want to start
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
     """
+    new_batch_policy_available = False
     process_metadata = process.get_process_metadata(process_id)
 
     # get decision from process bandit, if no decision has been made yet
     winning_version = get_winning_version(process_id)
+    is_in_batch_marker = False
     if winning_version is None:
-        decision = process_bandit.get_decision(process_id, customer_category)
+        if not is_in_batch(process_id):
+            decision = get_decision_outside_batch(process_id)
+            new_batch_policy_available = True
+        else:
+            is_in_batch_marker = True
+            decision = get_decision_in_batch(process_id, customer_category)
+            if end_of_batch_reached(process_id):
+                camunda_collector.collect_finished_instances(process_id)
+                rl_agent.learn_and_set_new_batch_policy_proposal(process_id)
+                new_batch_policy_available = True
     else:
         decision = winning_version
 
@@ -49,9 +99,12 @@ def instantiate(process_id: int, customer_category: str) -> str:
     process_instance = ProcessInstance(process_id=process_id,
                                        decision=decision,
                                        camunda_instance_id=camunda_instance_id)
+    if is_in_batch_marker:
+        get_latest_bapol_entry(process_id).process_instances.append(process_instance)
     db.session.add(process_instance)
     db.session.commit()
 
-    # TODO schedule update of rewards
-
-    return camunda_instance_id
+    return {
+        'newBatchPolicyProposalReady': new_batch_policy_available,
+        'camundaInstanceId': camunda_instance_id,
+    }

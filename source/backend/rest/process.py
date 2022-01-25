@@ -1,13 +1,15 @@
 import os
 import shutil
-
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
+from sqlalchemy import and_
 
 from camunda.client import CamundaClient
+from models.batch_policy_proposal import create_naive_bapol_proposal
+from models.process_instance import ProcessInstance
 from models import db
-from models.process import Process
+from models.process import Process, Version
 
 ALLOWED_EXTENSIONS = {'bpmn'}
 
@@ -21,7 +23,12 @@ def allowed_file(filename):
 
 @process_api.route('/<process_name>', methods=['POST'])
 def set_process(process_name):
-    """ Add a new process with two variants """
+    """ Add a new process with two variants
+
+     Query params:
+     default-version: 'a' or 'b'
+     customer-categories: separate categories with '-'
+     """
     # check if the post request has the correct file part
     if not ('variantA' in request.files and 'variantB' in request.files):
         abort(400, description='No variantA and/or variantB file part')
@@ -29,6 +36,18 @@ def set_process(process_name):
     variant_b_file = request.files['variantB']
     if not (allowed_file(variant_a_file.filename) and allowed_file(variant_b_file.filename)):
         abort(400, description='Only .bpmn files allowed')
+
+    # get default version
+    default_version = request.args.get('default-version')
+    if default_version == 'a':
+        default_version = Version.a
+    elif default_version == 'b':
+        default_version = Version.b
+    else:
+        abort(400, 'Default version has to be specified in query argument \'defaultVersion\'')
+
+    # get relevant customer categories
+    all_customer_categories = request.args.get('customer-categories').split('-')
 
     # Directory
     directory = process_name
@@ -58,18 +77,24 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
+    # add naive bp proposal
+    naive_bapol_prop = create_naive_bapol_proposal(all_customer_categories)
+
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
                               variant_a_camunda_id=camunda_id_a,
-                              variant_b_camunda_id=camunda_id_b)
+                              variant_b_camunda_id=camunda_id_b,
+                              default_version=default_version,
+                              batch_policy_proposals=[naive_bapol_prop])
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
     db.session.add(process_variant)
     db.session.commit()
-    # TODO: return new row
-    return "Success"
+    return {
+        'processId': process_variant.id
+    }
 
 
 @process_api.route('', methods=['DELETE'])
@@ -116,6 +141,7 @@ def get_active_process_variants_metadata():
         'id': active_process_entry.id,
         'name': active_process_entry.name,
         'added': active_process_entry.datetime_added,
+        'defaultVersion': active_process_entry.default_version,
         'winningVersion':
             None if active_process_entry.winning_version is None else active_process_entry.winning_version.value
     }
@@ -158,3 +184,19 @@ def get_process_variant_files(a_or_b):
             abort(404)
     else:
         abort(400, description='requested variant must be a or b (e.g. process-variants/variant-file/a)')
+
+
+@process_api.route('/experiment-state', methods=['GET'])
+def get_process_state():
+    process_id = int(request.args.get('process-id'))
+    if Process.query.filter(Process.id == process_id).first().winning_version is not None \
+            and ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                  ProcessInstance.do_evaluate == True,
+                                                  ProcessInstance.reward is not None)):
+        state = "Finished"
+    else:
+        state = "Running"
+
+    return {
+        'state': state
+    }
