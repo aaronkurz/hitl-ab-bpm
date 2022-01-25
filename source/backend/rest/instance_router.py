@@ -1,6 +1,7 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
 from sqlalchemy import and_, asc
+import requests
 
 from instance_router import instance_router_interface
 from models import processes, db
@@ -218,15 +219,14 @@ def store_reward():
 #     pylab.savefig(response, format="png")
 #     return response
 
+CAMUNDA_ENGINE_URI = f"http://camunda:8080/engine-rest"
+
 @instance_router_api.route('/clean-up-history', methods=['POST'])
 def clean_up_history():
     history_url = '/history/cleanup'
     query_url = CAMUNDA_ENGINE_URI + history_url
     requests.post(query_url)
     return "Success"
-
-
-CAMUNDA_ENGINE_URI = f"http://camunda:8080/engine-rest"
 
 
 @instance_router_api.route('/fetch-history-activity-duration', methods=['GET'])

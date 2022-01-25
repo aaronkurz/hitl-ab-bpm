@@ -1,6 +1,7 @@
 import streamlit as st
-
+import requests
 from config import BACKEND_URI
+
 from utils import get_currently_active_process_id, post_manual_decision
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -131,7 +132,7 @@ def experiment_cockpit():
 
 def display_results():
     with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
-        if st.button("Refresh"):
+        if st.button("Refresh", key = "uniq id"):
 
             params = {"process-id": get_currently_active_process_id()}
 
