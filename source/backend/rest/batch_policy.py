@@ -36,8 +36,8 @@ def set_batch_policy():
     relevant_process = relevant_process_query.first()
     batch_policy = BatchPolicy(batch_size=batch_size,
                                process_id=relevant_process.id,
-                               time_added=datetime.now(),
-                               execution_strategies=execution_strategies_table_rows)
+                               execution_strategies=execution_strategies_table_rows,
+                               batch_policy_proposal=get_current_open_proposal(process_id))
 
     db.session.add(batch_policy)
     for elem in execution_strategies_table_rows:
@@ -75,21 +75,13 @@ def get_batch_policy_count():
 
 @batch_policy_api.route('', methods=['DELETE'])
 def delete_batch_policy_rows():
-    db.session.query(ExecutionStrategyBaPol).delete()
-    db.session.query(BatchPolicy).delete()
+    execs = db.session.query(ExecutionStrategyBaPol)
+    for exec in execs:
+        db.session.delete(exec)
+    bapols = db.session.query(BatchPolicy)
+    for bapol in bapols:
+        db.session.delete(bapol)
     db.session.commit()
     return "Success"
 
 
-@batch_policy_api.route('/new-proposal', methods=['GET'])
-def check_get_new_proposal():
-    process_id = int(request.args.get('process-id'))
-    if not exists_bapol_proposal_without_bapol(process_id):
-        return {
-            'newProposalExists': False
-        }
-    else:
-        return {
-            'newProposalExists': True,
-            'proposal': get_current_open_proposal(process_id)
-        }

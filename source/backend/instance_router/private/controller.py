@@ -4,7 +4,7 @@ from instance_router.private import camunda_collector
 from scipy.stats import bernoulli
 from models import process, db
 from models.process_instance import ProcessInstance
-from models.batch_policy import get_latest_bapol_entry
+from models.batch_policy import append_process_instance_to_bapol
 from models.process import Process
 from models import batch_policy
 from instance_router.private import rl_agent
@@ -29,7 +29,6 @@ def get_decision_in_batch(process_id, customer_category) -> str:
    :return: 'a' or 'b'
    """
     bapol_dict = batch_policy.get_current_bapol_data(process_id)
-    fitting_customer_category_found = False
     for elem in bapol_dict.get('executionStrategy'):
         if elem.get('customerCategory') == customer_category:
             return ['a', 'b'][bernoulli.rvs(elem.get('explorationProbabilityB'))]
@@ -96,11 +95,17 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     variant_camunda_id = process_metadata[variant_key]
     camunda_instance_id = client.start_instance(variant_camunda_id)
     # add info to database
-    process_instance = ProcessInstance(process_id=process_id,
-                                       decision=decision,
-                                       camunda_instance_id=camunda_instance_id)
     if is_in_batch_marker:
-        get_latest_bapol_entry(process_id).process_instances.append(process_instance)
+        process_instance = ProcessInstance(process_id=process_id,
+                                           decision=decision,
+                                           camunda_instance_id=camunda_instance_id,
+                                           do_evaluate=True)
+        append_process_instance_to_bapol(process_id, process_instance)
+    else:
+        process_instance = ProcessInstance(process_id=process_id,
+                                           decision=decision,
+                                           camunda_instance_id=camunda_instance_id,
+                                           do_evaluate=False)
     db.session.add(process_instance)
     db.session.commit()
 

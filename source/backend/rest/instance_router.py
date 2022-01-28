@@ -3,7 +3,8 @@ from flask import Blueprint, request, abort
 import models
 from instance_router import instance_router_interface
 from models.process_instance import ProcessInstance
-from models.process import Process, WinningReasonEnum, set_winning
+from models.process import set_winning
+from models.utils import Version
 from sqlalchemy import and_, asc
 from rest.utils import validate_backend_process_id
 
@@ -75,12 +76,12 @@ def get_instantiation_plot():
     requests_a_counter = 0
     requests_b_counter = 0
     for instance in all_instances_ordered:
-        if instance.decision == 'a':
+        if instance.decision == Version.a:
             requests_a_counter += 1
-        elif instance.decision == 'b':
+        elif instance.decision == Version.b:
             requests_b_counter += 1
         else:
-            raise RuntimeError("Unexpected decision for instance " + str(instance.id))
+            raise RuntimeError("Unexpected decision for instance " + str(instance.id) + " " + str(instance.decision))
 
         requests_a.append(requests_a_counter)
         requests_b.append(requests_b_counter)

@@ -11,8 +11,7 @@ class BatchPolicyProposal(db.Model):
     time_added = db.Column(db.DateTime, nullable=False, default=datetime.now())
     execution_strategies = db.relationship('ExecutionStrategyBaPolProp',
                                            backref='batch_policy_proposal',
-                                           cascade="all, delete",
-                                           nullable=False)
+                                           cascade="all, delete")
     batch_policy_id = db.Column(db.Integer, db.ForeignKey('batch_policy.id'))
 
 
@@ -43,8 +42,13 @@ def create_naive_bapol_proposal(customer_categories):
 
 def exists_bapol_proposal_without_bapol(process_id) -> bool:
     count_props_without_bapol = BatchPolicyProposal.query. \
-                                    filter(and_(BatchPolicyProposal.process_id == process_id,
-                                                BatchPolicyProposal.batch_policy_id is None)).count()
+        filter(and_(BatchPolicyProposal.process_id == process_id,
+                    BatchPolicyProposal.batch_policy_id == None)).count()
+    print(count_props_without_bapol)
+    print(BatchPolicyProposal.query. \
+        filter(BatchPolicyProposal.batch_policy_id == None).first())
+    print(BatchPolicyProposal.query. \
+        filter(BatchPolicyProposal.process_id == process_id).first().id)
     if count_props_without_bapol == 0:
         return False
     elif count_props_without_bapol == 1:
@@ -53,19 +57,29 @@ def exists_bapol_proposal_without_bapol(process_id) -> bool:
         raise RuntimeError("Illegal state: More than one batch policy proposal without corresponding batch policy")
 
 
-def get_current_open_proposal(process_id: int) -> dict:
+def get_current_open_proposal_data(process_id: int) -> dict:
+    if not exists_bapol_proposal_without_bapol(process_id):
+        raise RuntimeError("No open batch policy proposal")
+
+    relevant_bapol_prop = get_current_open_proposal(process_id)
+    exec_strats = []
+    for exec_strat in relevant_bapol_prop.execution_strategies:
+        exec_strats.append(dict(customerCategory=exec_strat.customer_category,
+                                explorationProbabilityA=exec_strat.exploration_probability_a,
+                                explorationProbabilityB=exec_strat.exploration_probability_b))
+
+    return {
+            'processId': process_id,
+            'baPolId': relevant_bapol_prop.batch_policy_id,
+            'executionStrategies': exec_strats
+        }
+
+
+def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
     if not exists_bapol_proposal_without_bapol(process_id):
         raise RuntimeError("No open batch policy proposal")
 
     relevant_bapol_prop = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
-                                          BatchPolicyProposal.batch_policy_id is None))
-    exec_strats = []
-    for exec_strat in relevant_bapol_prop:
-        exec_strats.append(dict(customerCategory=exec_strat.customer_category,
-                                explorationProbabilityA=exec_strat.exploration_probability_a,
-                                explorationProbabilityB=exec_strat.exploration_probability_b))
-    return {
-        'processId': process_id,
-        'executionStrategies': exec_strats
-    }
+                                                                BatchPolicyProposal.batch_policy_id == None)).first()
 
+    return relevant_bapol_prop

@@ -1,6 +1,6 @@
 """ Here, the RL agent is implemented """
 from models.process_instance import ProcessInstance
-from models.batch_policy_proposal import BatchPolicyProposals
+from models.batch_policy_proposal import BatchPolicyProposal
 from sqlalchemy import and_
 
 
@@ -17,4 +17,4 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     for instance in relevant_instances:
         relevant_instances.update(dict(reward=500, ))
 
-    new_bpp = BatchPolicyProposals()
+    new_bpp = BatchPolicyProposal()

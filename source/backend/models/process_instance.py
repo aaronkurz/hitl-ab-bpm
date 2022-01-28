@@ -1,6 +1,6 @@
 from datetime import datetime
 from models import db
-from models.process import Version
+from models.utils import Version
 
 
 class ProcessInstance(db.Model):

@@ -3,17 +3,7 @@ from models import db
 from models.process_instance import ProcessInstance
 from models.batch_policy import BatchPolicy
 from sqlalchemy.orm import relationship
-import enum
-from models.utils import CASCADING_DELETE
-
-class WinningReasonEnum(enum.Enum):
-    experimentEnded = "Experiment ended"
-    manualChoice = "Manual choice by human expert"
-
-
-class Version(enum.Enum):
-    a = 'a'
-    b = 'b'
+from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
 
 
 class Process(db.Model):
@@ -32,7 +22,7 @@ class Process(db.Model):
     datetime_decided = db.Column(db.DateTime, nullable=True)
     batch_policies = relationship("BatchPolicy", cascade=CASCADING_DELETE)
     process_instances = relationship("ProcessInstance", cascade=CASCADING_DELETE)
-    batch_policy_proposals = relationship('BatchPolicyProposals', cascade=CASCADING_DELETE, nullable=False)
+    batch_policy_proposals = relationship('BatchPolicyProposal', cascade=CASCADING_DELETE)
 
 
 def get_process_metadata(process_id: int) -> dict:
@@ -48,8 +38,8 @@ def get_process_metadata(process_id: int) -> dict:
         'variant_b_path': relevant_process_entry.variant_b_path,
         'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
         'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id,
-        'default_version': relevant_process_entry.default_version,
-        'winning_version': relevant_process_entry.winning_version,
+        'default_version':  None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
+        'winning_version': None if relevant_process_entry.winning_version is None else relevant_process_entry.winning_version.value,
         'winning_reason': relevant_process_entry.winning_reason,
         'datetime_decided': relevant_process_entry.datetime_decided,
         'number_batch_policies':

@@ -11,21 +11,25 @@ def get_random_customer_category(list_of_customer_categories: [str]):
 
 
 # PROCESS API
-def post_processes_a_b(process_name: str, path_a: str, path_b: str):
+def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str):
     # given
     files_in = {
         "variantA": open(path_a),
         "variantB": open(path_b)
     }
+    params = {
+        'customer-categories': "-".join(customer_categories),
+        'default-version': default_version
+    }
     # when
-    response = requests.post(BASE_URL + "/process/" + process_name, files=files_in)
+    response = requests.post(BASE_URL + "/process/" + process_name, files=files_in, params=params)
     # then
     assert response.status_code == requests.codes.ok, "Setting of process failed: " + str(response.content)
 
 
 def remove_all_process_rows():
     response = requests.delete(BASE_URL + "/process")
-    assert response.status_code == requests.codes.OK, "Deletion of process rows failed: " + str(response.content)
+    assert response.status_code == requests.codes.ok, "Deletion of process rows failed: " + str(response.content)
 
 
 def get_currently_active_process_id():
@@ -56,12 +60,16 @@ def get_process_count():
     return requests.get(BASE_URL + "/process/count").json().get("processesCount")
 
 
-def get_lepol_count():
+def get_bapol_count():
     return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
 
 
-def post_lepol(lepol: dict):
-    response = requests.post(BASE_URL + "/batch-policy", json=lepol, headers={"Content-Type": "application/json"})
+def post_bapol(lepol: dict):
+    params = {
+        'process-id': get_currently_active_process_id()
+    }
+    response = requests.post(BASE_URL + "/batch-policy", json=lepol, headers={"Content-Type": "application/json"},
+                             params=params)
     assert response.status_code == requests.codes.ok
 
 

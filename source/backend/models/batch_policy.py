@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from models import db
 from models.utils import CASCADING_DELETE
 
@@ -7,7 +9,7 @@ class BatchPolicy(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     batch_size = db.Column(db.Integer, nullable=False)
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
-    time_added = db.Column(db.DateTime, nullable=False)
+    time_added = db.Column(db.DateTime, nullable=False, default=datetime.now())
     execution_strategies = db.relationship('ExecutionStrategyBaPol', backref='batch_policy', cascade=CASCADING_DELETE)
     process_instances = db.relationship('ProcessInstance', backref='batch_policy', cascade=CASCADING_DELETE)
     batch_policy_proposal = db.relationship('BatchPolicyProposal',
@@ -29,6 +31,11 @@ def get_latest_bapol_entry(process_id: int):
         .filter(BatchPolicy.process_id == process_id).first()
 
 
+def append_process_instance_to_bapol(process_id: int, process_instance):
+    relevant_bapol = get_latest_bapol_entry(process_id)
+    relevant_bapol.process_instances.append(process_instance)
+
+
 def get_current_bapol_data(process_id: int) -> dict:
     """ Get the latest (= currently active) bapol of specified process """
     latest_bapol = get_latest_bapol_entry(process_id)
@@ -42,6 +49,8 @@ def get_current_bapol_data(process_id: int) -> dict:
         }
         exec_strats_dict.append(exec_strat)
     data = {
+        "baPolId": latest_bapol.id,
+        "prevBaPolPropId": latest_bapol.batch_policy_proposal.id,
         "lastModified": latest_bapol.time_added,
         "batchSize": latest_bapol.batch_size,
         "processId": latest_bapol.process_id,

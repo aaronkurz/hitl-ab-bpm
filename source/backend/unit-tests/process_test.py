@@ -9,11 +9,13 @@ db.session = MagicMock()
 pre_proc_var = MagicMock()
 ProcessInstance.query = MagicMock()
 BatchPolicy.query = MagicMock()
+default_v = MagicMock(value='a')
 proc_var = MagicMock(id=76,
                      variant_a_path="/path/to/a",
                      variant_b_path="/path/to/b",
                      variant_a_camunda_id="id1",
                      variant_b_camunda_id="id2",
+                     default_version=default_v,
                      winning_version=None,
                      winning_reason=None,
                      datetime_decided=None)
@@ -24,6 +26,7 @@ expected = {
         'variant_b_path': "/path/to/b",
         'variant_a_camunda_id': "id1",
         'variant_b_camunda_id': "id2",
+        'default_version': 'a',
         'winning_version': None,
         'winning_reason': None,
         'datetime_decided': None,

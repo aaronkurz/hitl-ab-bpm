@@ -140,10 +140,12 @@ def get_active_process_variants_metadata():
     ap_info = {
         'id': active_process_entry.id,
         'name': active_process_entry.name,
-        'added': active_process_entry.datetime_added,
-        'defaultVersion': active_process_entry.default_version,
+        'addedTime': active_process_entry.datetime_added,
+        'defaultVersion':
+            None if active_process_entry.default_version is None else active_process_entry.default_version.value,
         'winningVersion':
-            None if active_process_entry.winning_version is None else active_process_entry.winning_version.value
+            None if active_process_entry.winning_version is None else active_process_entry.winning_version.value,
+        'decisionTime': active_process_entry.datetime_decided
     }
     return ap_info
 
@@ -189,6 +191,8 @@ def get_process_variant_files(a_or_b):
 @process_api.route('/experiment-state', methods=['GET'])
 def get_process_state():
     process_id = int(request.args.get('process-id'))
+    if Process.query.filter(Process.id == process_id).count == 0:
+        abort(404, "No such process/experiment.")
     if Process.query.filter(Process.id == process_id).first().winning_version is not None \
             and ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                                   ProcessInstance.do_evaluate == True,
