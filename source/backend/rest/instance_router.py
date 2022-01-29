@@ -1,10 +1,11 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
-import models
 from instance_router import instance_router_interface
+from models.process import set_winning
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
-from models.processes import ProcessVariants
 from sqlalchemy import and_, asc
+
+from models.utils import Version
 from rest.utils import validate_backend_process_id
 import requests
 
