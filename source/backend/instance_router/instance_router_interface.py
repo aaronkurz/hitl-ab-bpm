@@ -16,6 +16,3 @@ def instantiate(process_id: int, customer_category: str) -> str:
     """
     camunda_instance_id = controller.instantiate(process_id, customer_category)
     return camunda_instance_id
-
-
-

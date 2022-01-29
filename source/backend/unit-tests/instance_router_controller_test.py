@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, Mock
-from models.processes import ProcessVariants
+
+import pytest
+
 from instance_router.private import controller
+from models.processes import ProcessVariants
 
 
 @pytest.fixture(scope='module', autouse=True)

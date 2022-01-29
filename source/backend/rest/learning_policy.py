@@ -1,10 +1,12 @@
+from datetime import datetime
+
 from flask import Blueprint, abort
+from flask import jsonify
+from flask import request
+
+from models import db
 from models.learning_policy import LearningPolicy, ExecutionStrategyLePol, get_current_lepol
 from models.processes import ProcessVariants
-from flask import request
-from datetime import datetime
-from models import db
-from flask import jsonify
 
 learning_policy_api = Blueprint('learning_policy_api', __name__)
 

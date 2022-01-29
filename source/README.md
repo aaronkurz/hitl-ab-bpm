@@ -6,7 +6,7 @@ components:
 
 * Backend (Flask)
 * postgres database
-* camunda process engine  
+* camunda process engine
 * Frontend (React)
 
 ## Setup

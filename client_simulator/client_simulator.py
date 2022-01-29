@@ -1,7 +1,8 @@
 import random
 from time import sleep
-from numpy.random import normal
+
 import requests
+from numpy.random import normal
 
 BASE_URL = "http://localhost:5001"
 CUSTOMER_CATEGORIES = ["public", "gov"]

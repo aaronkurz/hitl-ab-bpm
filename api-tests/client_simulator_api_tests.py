@@ -1,8 +1,10 @@
 """ Use this to simulate client requests in the API tests"""
 import random
 from time import sleep
-from numpy.random import normal
+
 import requests
+from numpy.random import normal
+
 from config import BASE_URL
 from utils import get_currently_active_process_id
 

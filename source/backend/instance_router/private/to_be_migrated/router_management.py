@@ -6,10 +6,11 @@ import pandas as pd
 from dateutil import parser
 from vowpalwabbit import pyvw
 
-from instance_router.private.to_be_migrated.activity_utils import (cal_time_based_cost, instance_terminated, get_format_timestamp,
-                                                                   sumup_history_activity_duration)
 from camunda.client import CamundaClient
 from contextual_bandit.rl_env import RlEnv
+from instance_router.private.to_be_migrated.activity_utils import (cal_time_based_cost, instance_terminated,
+                                                                   get_format_timestamp,
+                                                                   sumup_history_activity_duration)
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
@@ -115,9 +116,9 @@ class RouterManager:
 
 def main():
     # Adjust accordingly
-    #logging.getLogger().setLevel(logging.INFO)
+    # logging.getLogger().setLevel(logging.INFO)
 
-    num_iterations = 1
+    num_iterations = 10
 
     # Init rl_env
     rl_env = RlEnv()
@@ -133,6 +134,7 @@ def main():
 
     acc_reward = []
     reward_sum = 0.0
+    rl_env.action_prob_header2csv()
     for i in range(num_iterations):
         reward = router.start_simulation(i)
         reward_sum += reward
@@ -143,7 +145,7 @@ def main():
     print(rl_env.actions_list)
 
     df = pd.DataFrame(acc_reward, columns=['Mean_Reward'])
-    df.to_csv('contextual_bandit/results/testing_reward.csv')
+    df.to_csv('reward.csv')
 
     print(f"\nFinished learning.\n")
 

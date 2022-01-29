@@ -32,6 +32,7 @@ POSTGRES_DB=sbe_db
 ```
 
 ### camunda
+
 have camunda running on port `8080`
 
 ### Flask
@@ -47,10 +48,6 @@ run
 `pip install -r requirements.txt`
 
 `python app.y`
-
-
-
-
 
 ## 2-Docker compose
 

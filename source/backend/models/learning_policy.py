@@ -22,7 +22,7 @@ class ExecutionStrategyLePol(db.Model):
 
 def get_current_lepol(process_id: int) -> dict:
     """ Get the latest (= currently active) lepol of specified process """
-    latest_bapol = LearningPolicy.query.order_by(LearningPolicy.last_modified.desc())\
+    latest_bapol = LearningPolicy.query.order_by(LearningPolicy.last_modified.desc()) \
         .filter(LearningPolicy.process_id == process_id).first()
     exec_strats_rows: [ExecutionStrategyLePol] = latest_bapol.execution_strategies
     exec_strats_dict = []

@@ -1,9 +1,11 @@
-import pytest
-import utils
 from time import sleep
-import client_simulator_api_tests as cs
-from config import BASE_URL
+
+import pytest
 import requests
+
+import client_simulator_api_tests as cs
+import utils
+from config import BASE_URL
 
 CUSTOMER_CATEGORIES = ["public", "gov"]
 
@@ -137,5 +139,3 @@ def test_client_requests_data():
     assert len(response.json().get("requestsA")) == 10
     assert len(response.json().get("requestsB")) == 10
     assert response.json().get("requestsA")[9] + response.json().get("requestsB")[9] == 10
-
-
