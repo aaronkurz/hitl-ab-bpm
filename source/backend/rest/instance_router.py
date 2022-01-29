@@ -1,13 +1,13 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
-from sqlalchemy import and_, asc
-import requests
-
 from instance_router import instance_router_interface
-from models import processes, db
+from models.process import set_winning
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
-from models.processes import ProcessVariants
+from sqlalchemy import and_, asc
+
+from models.utils import Version
 from rest.utils import validate_backend_process_id
+import requests
 
 instance_router_api = Blueprint('instance_router_api', __name__)
 
@@ -15,26 +15,23 @@ instance_router_api = Blueprint('instance_router_api', __name__)
 @instance_router_api.route('/start-instance', methods=['GET'])
 def start_process():
     """ Endpoint for process consumers (clients) to request/start instances """
-    data = request.json
-
     process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
-
-    process = processes.get_process_metadata(process_id)
 
     # get decision from process bandit
     if not instance_router_interface.is_ready_for_instantiation():
         return {"instantiated": False,
                 "message": "Server not ready for instantiation of processes. Try setting a process with two variants "
                            "and a learning-policy first."}
-    camunda_instance_id = instance_router_interface.instantiate(process_id, customer_category)
+    instantiation_dict = instance_router_interface.instantiate(process_id, customer_category)
 
     # return instance id (client does not need to know decision etc./maybe should
     # not even know they are part of an experiment)
     return {
         "instantiated": True,
-        "camundaInstanceId": camunda_instance_id}
+        "camundaInstanceId": instantiation_dict.get('camundaInstanceId')
+    }
 
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
@@ -60,16 +57,10 @@ def count_a_b():
 @instance_router_api.route('/manual-decision', methods=['POST'])
 def manual_decision():
     """ API endpoint to allow human expert to manually make a decision """
-    process_id = request.args.get('process-id')
+    process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     decision = request.args.get('version-decision')
-    if decision not in ['a', 'b']:
-        abort(400, "version-decision query parameter must be 'a' or 'b'")
-    process = ProcessVariants.query.filter(ProcessVariants.id == process_id).first()
-    if process.winning_version is not None:
-        abort(400, "This process already has a winning version")
-    process.winning_version = decision
-    db.session.commit()
+    set_winning(process_id, decision)
     return "Success"
 
 
@@ -86,12 +77,12 @@ def get_instantiation_plot():
     requests_a_counter = 0
     requests_b_counter = 0
     for instance in all_instances_ordered:
-        if instance.decision == 'a':
+        if instance.decision == Version.a:
             requests_a_counter += 1
-        elif instance.decision == 'b':
+        elif instance.decision == Version.b:
             requests_b_counter += 1
         else:
-            raise Exception("Unexpected decision for instance " + str(instance.id))
+            raise RuntimeError("Unexpected decision for instance " + str(instance.id) + " " + str(instance.decision))
 
         requests_a.append(requests_a_counter)
         requests_b.append(requests_b_counter)
