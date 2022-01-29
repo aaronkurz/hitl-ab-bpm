@@ -15,7 +15,7 @@ services:
     env_file: db.conf
     ports:
       - 5432:5432
-    volumes: 
+    volumes:
       - postgres_data:/var/lib/postgresql
   frontend:
     container_name: sbe-frontend
@@ -25,11 +25,11 @@ services:
     volumes:
       - ./frontend:/source
   camunda:
-      container_name: sbe-camunda
-      build: ./camunda_engine
-      ports:
-        - 8080:8080
-  
+    container_name: sbe-camunda
+    build: ./camunda_engine
+    ports:
+      - 8080:8080
+
 
 
 volumes:

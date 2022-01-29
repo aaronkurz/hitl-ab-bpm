@@ -1,10 +1,11 @@
-import random
+import csv
 import logging
+import random
 
-from matplotlib import pyplot as plt
 from vowpalwabbit import pyvw
 
-logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
 
 class RlEnv:
     # Context
@@ -86,6 +87,31 @@ class RlEnv:
         chosen_action_index, prob = self.sample_custom_pmf(pmf)
         return actions[chosen_action_index], prob
 
+    def get_action_prob_dict(self, vw, context, actions):
+        vw_text_example = self.to_vw_example_format(context, actions)
+        pmf = vw.predict(vw_text_example)
+        dict = {}
+        count = 0
+        for elem in actions:
+            dict[elem] = pmf[count]
+            count = count + 1
+        return dict
+
+    def action_prob_header2csv(self):
+        print(self.actions)
+        header = self.actions
+        with open('action_prob.csv', 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+
+    def action_prob2csv(self, ap_dict):
+        datas = []
+        datas.append(ap_dict)
+        header = ap_dict.keys()
+        with open('action_prob.csv', 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=header)
+            writer.writerows(datas)
+
     def choose_orga(self, orgas):
         """
         Choose an organisation randomly from organisations list
@@ -100,11 +126,11 @@ class RlEnv:
         :param vw:
         :return:
         """
-        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn =True)
+        reward = self.run_simulation(vw, self.orgas, self.actions, self.get_reward, do_learn=True)
 
         return reward
 
-    def run_simulation(self, vw, orgas, actions, reward_function: get_reward, do_learn: bool =True):
+    def run_simulation(self, vw, orgas, actions, reward_function: get_reward, do_learn: bool = True):
         """[summary]
 
         Args:
@@ -121,12 +147,14 @@ class RlEnv:
         acc_reward = []
 
         # Set random seed
-        #random.seed(1)
+        # random.seed(1)
         # 1. In each simulation choose a user
         organisation = self.choose_orga(orgas)
         # 2. Pass context to vw to get an action
         context = {'orga': organisation}
         action, prob = self.get_action(vw, context, actions)
+        dic = self.get_action_prob_dict(vw, context, actions)
+        self.action_prob2csv(dic)
         logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
         self.actions_list.append(action)
         # 3. Get reward of the action we chose
@@ -135,7 +163,8 @@ class RlEnv:
 
         if do_learn:
             # 4. Inform VW of what happened so we can learn from it
-            vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)), pyvw.vw.lContextualBandit)
+            vw_format = vw.parse(self.to_vw_example_format(context, actions, (action, reward, prob)),
+                                 pyvw.vw.lContextualBandit)
             # 5. Learn
             vw.learn(vw_format)
             # 6. Let VW know you're done with these objects

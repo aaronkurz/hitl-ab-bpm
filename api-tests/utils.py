@@ -2,6 +2,9 @@
 # (if it is only relevant for one, please consider putting it in that module)
 import requests
 import random
+
+import requests
+
 from config import BASE_URL
 
 

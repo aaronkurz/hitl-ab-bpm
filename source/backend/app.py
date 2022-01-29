@@ -1,4 +1,5 @@
 from flask_swagger_ui import get_swaggerui_blueprint
+
 import config
 import create_app
 from camunda.client import CamundaClient

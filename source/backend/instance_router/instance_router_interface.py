@@ -16,6 +16,3 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     """
     instantiation_dict = controller.instantiate(process_id, customer_category)
     return instantiation_dict
-
-
-

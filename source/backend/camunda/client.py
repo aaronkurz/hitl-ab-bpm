@@ -1,6 +1,6 @@
 import requests
-import config
 
+import config
 
 
 class CamundaClient:
