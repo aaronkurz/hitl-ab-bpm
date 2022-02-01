@@ -165,12 +165,14 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     :return: nothing
     """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                           ProcessInstance.finished_time is not None,
-                                                           ProcessInstance.do_evaluate is True,
-                                                           ProcessInstance.reward is None))
+                                                           ProcessInstance.finished_time != None,
+                                                           ProcessInstance.do_evaluate == True,
+                                                           ProcessInstance.reward == None))
     for instance in relevant_instances:
         relevant_instances.update(dict(reward=500, ))
 
     reward = run_simulation(vw, orgas, actions, get_reward, do_learn=True)
 
     new_bpp = BatchPolicyProposal()
+
+    return new_bpp

@@ -65,6 +65,9 @@ class RouterManager:
             instances = process_history.get('associated_instances')
             durations = []
             for instance in instances:
+                print(f"Start: {instance.get('startTime')}")
+                print(type(instance.get('startTime')))
+                print(f"End: {instance.get('endTime')}")
                 start = parser.parse(instance.get('startTime'))
                 end = parser.parse(instance.get('endTime'))
                 duration = (end - start).total_seconds()
