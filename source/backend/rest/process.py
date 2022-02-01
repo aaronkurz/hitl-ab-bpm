@@ -50,8 +50,10 @@ def set_process(process_name):
     all_customer_categories = request.args.get('customer-categories').split('-')
 
     # get upper and lower time of version a history
-    a_hist_min_duration = request.args.get('a-hist-min-duration')
-    a_hist_max_duration = request.args.get('a-hist-max-duration')
+    a_hist_min_duration = int(request.args.get('a-hist-min-duration'))
+    a_hist_max_duration = int(request.args.get('a-hist-max-duration'))
+    if a_hist_min_duration is None or a_hist_max_duration is None:
+        abort(400, 'Missing query parameter a-hist-min-duration or a-hist-max-duration')
 
     # Directory
     directory = process_name

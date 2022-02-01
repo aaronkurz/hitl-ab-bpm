@@ -14,7 +14,8 @@ def get_random_customer_category(list_of_customer_categories: [str]):
 
 
 # PROCESS API
-def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str):
+def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
+                       a_hist_min_duration: int, a_hist_max_duration: int):
     # given
     files_in = {
         "variantA": open(path_a),
@@ -22,7 +23,9 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_cat
     }
     params = {
         'customer-categories': "-".join(customer_categories),
-        'default-version': default_version
+        'default-version': default_version,
+        "a-hist-min-duration": a_hist_min_duration,
+        "a-hist-max-duration": a_hist_max_duration
     }
     # when
     response = requests.post(BASE_URL + "/process/" + process_name, files=files_in, params=params)
@@ -77,12 +80,10 @@ def post_bapol(lepol: dict):
 
 
 # INSTANCE ROUTER API
-def new_processes_instance(process_id: int, customer_category: str, a_hist_min_duration: int, a_hist_max_duration: int):
+def new_processes_instance(process_id: int, customer_category: str):
     params = {
         "process-id": process_id,
-        "customer-category": customer_category,
-        "a_hist_min_duration": a_hist_min_duration,
-        "a_hist_max_duration": a_hist_max_duration
+        "customer-category": customer_category
     }
     response = requests.get(BASE_URL + "/instance-router/start-instance", params=params)
     assert response.status_code == requests.codes.ok

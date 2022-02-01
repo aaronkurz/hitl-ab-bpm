@@ -38,16 +38,15 @@ def test_count():
 def test_set_bapol():
     """ Test if setting of new batch policy works and whether it has an associated batch policy proposal """
     # given
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     utils.post_processes_a_b("helicopter_license_fast",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     utils.post_bapol(utils.example_batch_policy)
     assert utils.get_bapol_count() == 1
 

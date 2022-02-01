@@ -22,11 +22,10 @@ def after_all():
 
 def test_first_one_automatically_created():
     """ Test whether the first, naive bapol proposal is created for a new proposal """
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     assert utils.get_process_count() == 1
     params = {
         'process-id': utils.get_currently_active_process_id()
