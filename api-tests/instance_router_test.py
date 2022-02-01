@@ -10,6 +10,22 @@ from config import BASE_URL
 CUSTOMER_CATEGORIES = ["public", "gov"]
 
 
+@pytest.fixture(autouse=True)
+def run_before_each_test():
+    utils.remove_all_process_rows()
+    # ^ before each test
+    yield
+    # v after each test
+
+
+@pytest.fixture(scope='module', autouse=True)
+def after_all():
+    # ^ Will be executed before the first test
+    yield
+    # v Will be executed after the last test
+    utils.remove_all_process_rows()
+
+
 def post_manual_decision(manual_decision: str):
     """ Set a manual decision for currently active process in backend """
     assert manual_decision in ['a', 'b']
@@ -49,22 +65,6 @@ def meta_run_manual_choice(version: str):
     if version == 'b':
         assert instances_a_before == instances_a_after
         assert instances_b_before + 5 == instances_b_after
-
-
-@pytest.fixture(autouse=True)
-def run_before_each_test():
-    utils.remove_all_process_rows()
-    # ^ before each test
-    yield
-    # v after each test
-
-
-@pytest.fixture(scope='module', autouse=True)
-def after_all():
-    # ^ Will be executed before the first test
-    yield
-    # v Will be executed after the last test
-    utils.remove_all_process_rows()
 
 
 def test_instantiation():
@@ -149,3 +149,38 @@ def test_client_requests_data():
     assert len(response.json().get("requestsA")) == 10
     assert len(response.json().get("requestsB")) == 10
     assert response.json().get("requestsA")[9] + response.json().get("requestsB")[9] == 10
+
+
+def test_finished_instances_are_collected():
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"],
+                             default_version='a')
+    utils.post_bapol({
+        "batchSize": 10,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    })
+    params = {
+        "process-id": utils.get_currently_active_process_id()
+    }
+    response = requests.get(BASE_URL + "/instance-router/finished-instance-count", params=params)
+    assert response.json().get('finishedInstanceCount') == 0
+    cs.start_client_simulation(10)
+    sleep(30)
+    params = {
+        "process-id": utils.get_currently_active_process_id()
+    }
+    response = requests.get(BASE_URL + "/instance-router/finished-instance-count", params=params)
+    assert response.json().get('finishedInstanceCount') > 0
