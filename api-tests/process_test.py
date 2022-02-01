@@ -117,7 +117,9 @@ def test_cascading_delete():
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,
-                                                utils.get_random_customer_category(["public", "gov"]))
+                                                utils.get_random_customer_category(["public", "gov"]),
+                                                1,
+                                                3)
         assert response.json().get("instantiated") is True
         assert "camundaInstanceId" in response.json().keys()
 

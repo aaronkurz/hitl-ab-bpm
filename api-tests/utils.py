@@ -77,10 +77,12 @@ def post_bapol(lepol: dict):
 
 
 # INSTANCE ROUTER API
-def new_processes_instance(process_id: int, customer_category: str):
+def new_processes_instance(process_id: int, customer_category: str, a_hist_min_duration: int, a_hist_max_duration: int):
     params = {
         "process-id": process_id,
-        "customer-category": customer_category
+        "customer-category": customer_category,
+        "a_hist_min_duration": a_hist_min_duration,
+        "a_hist_max_duration": a_hist_max_duration
     }
     response = requests.get(BASE_URL + "/instance-router/start-instance", params=params)
     assert response.status_code == requests.codes.ok

@@ -49,6 +49,10 @@ def set_process(process_name):
     # get relevant customer categories
     all_customer_categories = request.args.get('customer-categories').split('-')
 
+    # get upper and lower time of version a history
+    a_hist_min_duration = request.args.get('a-hist-min-duration')
+    a_hist_max_duration = request.args.get('a-hist-max-duration')
+
     # Directory
     directory = process_name
     # Parent Directory path
@@ -86,7 +90,9 @@ def set_process(process_name):
                               variant_a_camunda_id=camunda_id_a,
                               variant_b_camunda_id=camunda_id_b,
                               default_version=default_version,
-                              batch_policy_proposals=[naive_bapol_prop])
+                              batch_policy_proposals=[naive_bapol_prop],
+                              a_hist_min_duration=a_hist_min_duration,
+                              a_hist_max_duration=a_hist_max_duration)
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
