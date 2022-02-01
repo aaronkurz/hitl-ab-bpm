@@ -50,8 +50,8 @@ def set_process(process_name):
     all_customer_categories = request.args.get('customer-categories').split('-')
 
     # get upper and lower time of version a history
-    a_hist_min_duration = int(request.args.get('a-hist-min-duration'))
-    a_hist_max_duration = int(request.args.get('a-hist-max-duration'))
+    a_hist_min_duration = float(request.args.get('a-hist-min-duration'))
+    a_hist_max_duration = float(request.args.get('a-hist-max-duration'))
     if a_hist_min_duration is None or a_hist_max_duration is None:
         abort(400, 'Missing query parameter a-hist-min-duration or a-hist-max-duration')
 
@@ -109,6 +109,8 @@ def set_process(process_name):
 def delete_process_variants_rows():
     # delete process versions from filesystem
     folder = os.path.join(os.getcwd(), 'resources/bpmn/')
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
