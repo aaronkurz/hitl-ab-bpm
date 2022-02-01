@@ -1,4 +1,6 @@
 """ Main "organizer" of instance routing """
+from sqlalchemy import and_
+
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector
 from scipy.stats import bernoulli
@@ -51,8 +53,8 @@ def is_in_batch(process_id):
 
 
 def end_of_batch_reached(process_id):
-
-    return ProcessInstance.query.filter(ProcessInstance.process_id == process_id).count() ==\
+    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                             ProcessInstance.do_evaluate == True)).count() + 1 ==\
            batch_policy.get_batch_size_sum(process_id)
 
 

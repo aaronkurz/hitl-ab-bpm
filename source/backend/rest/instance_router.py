@@ -254,3 +254,14 @@ def get_process_count():
     query_url = CAMUNDA_ENGINE_URI + history_url
     result = requests.get(query_url).json()
     return {'process_count': result['count']}
+
+
+@instance_router_api.route('finished-instance-count', methods=['GET'])
+def count_finished_instances():
+    process_id = int(request.args.get('process-id'))
+    count = ProcessInstance.query.filter(and_(ProcessInstance.finished_time != None,
+                                              ProcessInstance.process_id == process_id)).count()
+
+    return {
+        'finishedInstanceCount': count
+    }
