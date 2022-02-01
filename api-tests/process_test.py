@@ -22,26 +22,24 @@ def after_all():
 
 def test_set_process():
     """ Test if setting of new process with variants works """
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     assert utils.get_process_count() == 1
 
 
 def test_set_2_processes():
     """ Test if setting of new process with variants works """
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     utils.post_processes_a_b("helicopter_license_fast",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='b')
+                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     assert utils.get_process_count() == 2
 
 
@@ -86,17 +84,15 @@ def test_files_are_overwritten():
     in the filesystem as well as in the db.
     """
     # given
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='b')
+                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     # when
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='b')
+                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     # then
     assert utils.get_process_count() == 1
 
@@ -107,11 +103,10 @@ def test_cascading_delete():
     If I delete a process, the corresponding batch policies and instance db entries should be deleted too
     """
     # given
-    utils.post_processes_a_b("helicopter_license",
-                             "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
-                             default_version='a')
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     utils.post_bapol(utils.example_batch_policy)
     # create process instances/start the process x times
     currently_active_p_id = utils.get_currently_active_process_id()
