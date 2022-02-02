@@ -109,6 +109,26 @@ paths:
           required: true
           schema:
             type: string
+        - name: default-version
+          in: query
+          description: Either 'a' or 'b', used to determine which version to use in between batches.
+          schema:
+            type: string
+        - name: customer-categories
+          in: query
+          description: Which customer categories exist for that process (the different contexts of the contextual bandit). Format with dash separator ('-', e.g. 'public-gov')
+          schema:
+            type: string
+        - name: a_hist_min_duration
+          in: query
+          description: Mimunum instance duration in process history of old version (a), used to evaluate new instances. In seconds.
+          schema:
+            type: number
+        - name: a_hist_max_duration
+          in: query
+          description: Maximum instance duration in process history of old version (a), used to evaluate new instances. In seconds.
+          schema:
+            type: number
       requestBody:
         content:
           multipart/form-data:
@@ -312,6 +332,33 @@ paths:
       responses:
         200:
           description: OK
+        500:
+          description: server error
+        400:
+          description: client error
+  /instance-router/finished-instance-count:
+    post:
+      summary: Get count of instances that have been registered as finished in our system
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  finishedInstanceCount:
+                    type: integer
+                    example: 23
         500:
           description: server error
         400:

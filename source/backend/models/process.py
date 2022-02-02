@@ -17,6 +17,8 @@ class Process(db.Model):
     variant_a_camunda_id = db.Column(db.String, nullable=False)
     variant_b_camunda_id = db.Column(db.String, nullable=False)
     default_version = db.Column(db.Enum(Version), nullable=False)
+    a_hist_min_duration = db.Column(db.Float, nullable=False)
+    a_hist_max_duration = db.Column(db.Float, nullable=False)
     winning_version = db.Column(db.Enum(Version), nullable=True)  # Will be set after learning is done
     winning_reason = db.Column(db.Enum(WinningReasonEnum), nullable=True)
     datetime_decided = db.Column(db.DateTime, nullable=True)
