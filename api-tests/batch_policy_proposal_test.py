@@ -66,8 +66,8 @@ def test_first_one_automatically_created():
 def test_new_proposal_after_batch():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=0.02,
+                             a_hist_max_duration=3.6)
     assert get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process({
         "batchSize": 5,

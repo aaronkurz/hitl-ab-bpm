@@ -19,7 +19,7 @@ def remove_everything_from_db():
 
 # PROCESS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
-                       a_hist_min_duration: int, a_hist_max_duration: int):
+                       a_hist_min_duration: float, a_hist_max_duration: float):
     # given
     files_in = {
         "variantA": open(path_a),
