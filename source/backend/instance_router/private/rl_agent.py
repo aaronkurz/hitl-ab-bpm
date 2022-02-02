@@ -4,6 +4,8 @@ from datetime import datetime
 import logging
 import random
 
+from pip import main
+
 from models.process_instance import ProcessInstance
 from models.batch_policy_proposal import BatchPolicyProposal
 from sqlalchemy import and_
@@ -21,7 +23,7 @@ actions_list = []
 # Model
 vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
-def get_reward(context: str, action: str):
+def get_reward(context: str, action: str, duration: float):
     """Returns a reward ∈ [0;1] given a list of contexts and an action.
 
     Args:
@@ -33,13 +35,13 @@ def get_reward(context: str, action: str):
     """
     # TODO
     if context == 'public' and action == 'A':
-        return None
+        return duration
     elif context == 'public' and action == 'B':
-        return None
+        return duration
     elif context == 'gov' and action == 'A':
-        return None
+        return duration
     else:
-        return None
+        return duration
 
 # This function modifies (context, action, cost, probability) to VW friendly format
 def to_vw_example_format(context, actions, cb_label=None):
@@ -113,7 +115,7 @@ def choose_orga(orgas: list):
     """
     return random.choice(orgas)
 
-def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration, do_learn: bool = True):
+def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, do_learn: bool = True):
     """[summary]
     Args:
         vw (contextual_bandit): contextual bandit model to be trained
@@ -138,7 +140,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
     actions_list.append(action)
     # 3. Get reward of the action we chose
-    reward = reward_function(context, action)
+    reward = reward_function(context, action, duration)
     logging.info(f'Reward: {reward}')
     if do_learn:
         # 4. Inform VW of what happened so we can learn from it
@@ -151,28 +153,29 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
     return reward
 
-def calculate_duration(startTime: datetime, endTime: datetime):
-    """[summary]
-    Args:
-        data ([type]): [description]
+def calculate_duration(start_time: datetime, end_time: datetime):
     """
-    return (parser.parse(endTime) - parser.parse(startTime)).total_seconds()
+    Calculate the duration of a process instance given start and end timestamp
+    """
+    return (parser.parse(start_time) - parser.parse(end_time)).total_seconds()
 
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
-
+    Query process instances which still have to be evaluated. With the calculated duration, 
+    train the agent and update the database with the reward.
     :param process_id:
-    :return: nothing
+    :return: new batch policy proposal
     """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
+    print(relevant_instances)
     for instance in relevant_instances:
-        relevant_instances.update(dict(reward=500, ))
-
-    reward = run_simulation(vw, orgas, actions, get_reward, do_learn=True)
+        duration = calculate_duration(instance.instantiation_time, instance.finished_time)
+        reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True) 
+        relevant_instances.update(dict(reward,do_evaluate=True))
 
     new_bpp = BatchPolicyProposal()
-
     return new_bpp
+
