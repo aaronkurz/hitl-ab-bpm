@@ -107,7 +107,7 @@ def test_cascading_delete():
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
     # create process instances/start the process x times
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):

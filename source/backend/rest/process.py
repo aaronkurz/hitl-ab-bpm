@@ -6,7 +6,7 @@ from flask import jsonify
 from sqlalchemy import and_
 
 from camunda.client import CamundaClient
-from models.batch_policy_proposal import create_naive_bapol_proposal
+from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.process_instance import ProcessInstance
 from models import db
 from models.process import Process, Version
@@ -83,16 +83,12 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
-    # add naive bp proposal
-    naive_bapol_prop = create_naive_bapol_proposal(all_customer_categories)
-
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
                               variant_a_camunda_id=camunda_id_a,
                               variant_b_camunda_id=camunda_id_b,
                               default_version=default_version,
-                              batch_policy_proposals=[naive_bapol_prop],
                               a_hist_min_duration=a_hist_min_duration,
                               a_hist_max_duration=a_hist_max_duration)
 
@@ -100,6 +96,8 @@ def set_process(process_name):
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
     db.session.add(process_variant)
     db.session.commit()
+    # add naive bp proposal
+    set_naive_bapol_proposal(process_variant.id, all_customer_categories)
     return {
         'processId': process_variant.id
     }

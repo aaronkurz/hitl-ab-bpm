@@ -12,10 +12,14 @@ from config import BASE_URL
 def get_random_customer_category(list_of_customer_categories: [str]):
     return list_of_customer_categories[random.randint(0, len(list_of_customer_categories) - 1)]
 
+def remove_everything_from_db():
+    delete_all_proposals()
+    remove_all_process_rows()
+
 
 # PROCESS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
-                       a_hist_min_duration: int, a_hist_max_duration: int):
+                       a_hist_min_duration: float, a_hist_max_duration: float):
     # given
     files_in = {
         "variantA": open(path_a),
@@ -70,11 +74,11 @@ def get_bapol_count():
     return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
 
 
-def post_bapol(lepol: dict):
+def post_bapol_currently_active_process(bapol: dict):
     params = {
         'process-id': get_currently_active_process_id()
     }
-    response = requests.post(BASE_URL + "/batch-policy", json=lepol, headers={"Content-Type": "application/json"},
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
                              params=params)
     assert response.status_code == requests.codes.ok
 
@@ -103,3 +107,9 @@ def get_amount_of_instances(process_id: int, version: str):
     response_json = response.json()
     assert response.status_code == requests.codes.ok
     return response_json.get(version).get('amount')
+
+
+# BATCH POLICY PROPOSAL
+def delete_all_proposals():
+    response = requests.delete(BASE_URL + "/batch-policy-proposal")
+    assert response.status_code == requests.codes.ok, "Deletion of bapol proposal rows failed: " + str(response.content)

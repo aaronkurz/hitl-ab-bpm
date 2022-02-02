@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import and_
 
 from models import db
+from models.process import Process
 
 
 class BatchPolicyProposal(db.Model):
@@ -23,32 +24,50 @@ class ExecutionStrategyBaPolProp(db.Model):
     exploration_probability_b = db.Column(db.Float, nullable=False)
 
 
-def create_naive_bapol_proposal(customer_categories):
-    """ Still has to be added to a process and added and committed to the db """
+def set_naive_bapol_proposal(process_id: int, customer_categories: [str]):
+    expl_probs_a = []
+    expl_probs_b = []
+    for _ in customer_categories:
+        expl_probs_a.append(0.5)
+        expl_probs_b.append(0.5)
+    set_bapol_proposal(process_id, customer_categories, expl_probs_a, expl_probs_b)
+
+
+def set_bapol_proposal(process_id: int, customer_categories: [str], expl_probs_a: [float], expl_probs_b: [float]) -> bool:
+    assert _new_proposal_can_be_set(process_id)
+    assert len(customer_categories) == len(expl_probs_a) \
+           and len(expl_probs_a) == len(expl_probs_b), "Length of input lists must be the same"
     exec_strat_props = []
-    for category in customer_categories:
+    for i in range(len(customer_categories)):
+        assert expl_probs_a[i] + expl_probs_b[i] == 1.0, "Probabilities do not add up to 1.0 for each category"
         exec_strat_props.append(
             ExecutionStrategyBaPolProp(
-                customer_category=category,
-                exploration_probability_a=0.5,
-                exploration_probability_b=0.5
+                customer_category=customer_categories[i],
+                exploration_probability_a=expl_probs_a[i],
+                exploration_probability_b=expl_probs_b[i]
             )
         )
     new_proposal = BatchPolicyProposal(
         execution_strategies=exec_strat_props
     )
-    return new_proposal
+    process = Process.query.filter(Process.id == process_id).first()
+    process.batch_policy_proposals.append(new_proposal)
+    db.session.commit()
+    return True
+
+
+def _new_proposal_can_be_set(process_id) -> bool:
+    relevant_process = Process.query.filter(Process.id == process_id).first()
+    if relevant_process.winning_version is not None or exists_bapol_proposal_without_bapol(process_id):
+        return False
+    else:
+        return True
 
 
 def exists_bapol_proposal_without_bapol(process_id) -> bool:
     count_props_without_bapol = BatchPolicyProposal.query. \
         filter(and_(BatchPolicyProposal.process_id == process_id,
                     BatchPolicyProposal.batch_policy_id == None)).count()
-    print(count_props_without_bapol)
-    print(BatchPolicyProposal.query. \
-        filter(BatchPolicyProposal.batch_policy_id == None).first())
-    print(BatchPolicyProposal.query. \
-        filter(BatchPolicyProposal.process_id == process_id).first().id)
     if count_props_without_bapol == 0:
         return False
     elif count_props_without_bapol == 1:
@@ -71,7 +90,7 @@ def get_current_open_proposal_data(process_id: int) -> dict:
     return {
             'processId': process_id,
             'baPolId': relevant_bapol_prop.batch_policy_id,
-            'executionStrategies': exec_strats
+            'executionStrategy': exec_strats
         }
 
 

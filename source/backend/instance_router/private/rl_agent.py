@@ -4,13 +4,11 @@ from datetime import datetime
 import logging
 import random
 
-from pip import main
-
+from models import db
 from models.process_instance import ProcessInstance
-from models.batch_policy_proposal import BatchPolicyProposal
+from models.batch_policy_proposal import BatchPolicyProposal, set_bapol_proposal
 from sqlalchemy import and_
 from vowpalwabbit import pyvw
-from dateutil import parser
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -25,11 +23,9 @@ vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
 
 def get_reward(context: str, action: str, duration: float):
     """Returns a reward ∈ [0;1] given a list of contexts and an action.
-
     Args:
         context ([type]): [description]
         action ([type]): [description]
-
     Returns:
         [type]: [description]
     """
@@ -120,7 +116,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     Args:
         vw (contextual_bandit): contextual bandit model to be trained
         orgas (List[String]): List of organsiation the agent can choose from
-        actions (List[String]): List of actions the agent can choose from 
+        actions (List[String]): List of actions the agent can choose from
         reward_function (int): [description]
         do_learn (bool, optional): [description]. Defaults to True.
     Returns:
@@ -153,15 +149,17 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
     return reward
 
+
 def calculate_duration(start_time: datetime, end_time: datetime):
     """
     Calculate the duration of a process instance given start and end timestamp
     """
-    return (parser.parse(start_time) - parser.parse(end_time)).total_seconds()
+    return (end_time - start_time).total_seconds()
+
 
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
-    Query process instances which still have to be evaluated. With the calculated duration, 
+    Query process instances which still have to be evaluated. With the calculated duration,
     train the agent and update the database with the reward.
     :param process_id:
     :return: new batch policy proposal
@@ -173,9 +171,8 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     print(relevant_instances)
     for instance in relevant_instances:
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
-        reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True) 
-        relevant_instances.update(dict(reward,do_evaluate=True))
+        reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True)
+        instance.reward = reward
+    db.session.commit()
 
-    new_bpp = BatchPolicyProposal()
-    return new_bpp
-
+    set_bapol_proposal(process_id, ["public", "gov"], [0.3, 0.5], [0.7, 0.5])

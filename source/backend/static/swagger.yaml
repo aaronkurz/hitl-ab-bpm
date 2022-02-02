@@ -13,15 +13,20 @@ paths:
       description: This endpoint will assign a new batch policy to the currently active process in the process db table.
       tags:
         - Batch Policy
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                experimentationLength:
-                  type: integer
-                experimentationDecay:
+                batchSize:
                   type: integer
                 executionStrategy:
                   type: array
@@ -46,9 +51,9 @@ paths:
           description: Success
   /batch-policy/latest:
     get:
-      summary: Get the latest batch policy proposal
+      summary: Get the latest batch policy
       description: >
-        Get the latest (so the currently active) batch policy proposal of the currently active process
+        Get the latest (so the currently active) batch policy of the currently active process
       tags:
         - Batch Policy
       responses:
@@ -61,9 +66,7 @@ paths:
                 properties:
                   lastModified:
                     type: string
-                  experimentationLength:
-                    type: integer
-                  experimentationDecay:
+                  batchSize:
                     type: integer
                   processDefinitionIdA:
                     type: string
@@ -359,6 +362,92 @@ paths:
                   finishedInstanceCount:
                     type: integer
                     example: 23
+        500:
+          description: server error
+        400:
+          description: client error
+  /batch-policy-proposal/open:
+    get:
+      summary: check if there is an open batch policy proposal from the RL agent and if yes, retrieve it
+      tags:
+        - Batch Policy Proposal
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newProposalExists:
+                    type: boolean
+                    example: true
+                  proposal:
+                    type: object
+                    properties:
+                      processId:
+                        type: integer
+                      baPolId:
+                        type: integer
+                      executionStrategy:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            customerCategory:
+                              type: string
+                            explorationProbabilityA:
+                              type: number
+                            explorationProbabilityB:
+                              type: number
+                required:
+                  - newProposalExists
+        500:
+          description: server error
+        400:
+          description: client error
+  /batch-policy-proposal:
+    delete:
+      summary: Delete all batch policy proposals
+      tags:
+        - Batch Policy Proposal
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  baPolProposalCount:
+                    type: integer
+                    example: 4
+        500:
+          description: server error
+        400:
+          description: client error
+  /batch-policy-proposal/count:
+    delete:
+      summary: Get the amount of batch policy proposals for a certain process
+      tags:
+        - Batch Policy Proposal
+      responses:
+        200:
+          description: OK
         500:
           description: server error
         400:

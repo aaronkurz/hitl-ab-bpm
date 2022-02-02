@@ -8,7 +8,7 @@ class BatchPolicy(db.Model):
     __tablename__ = 'batch_policy'
     id = db.Column(db.Integer, primary_key=True)
     batch_size = db.Column(db.Integer, nullable=False)
-    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'))
     time_added = db.Column(db.DateTime, nullable=False, default=datetime.now())
     execution_strategies = db.relationship('ExecutionStrategyBaPol', backref='batch_policy', cascade=CASCADING_DELETE)
     process_instances = db.relationship('ProcessInstance', backref='batch_policy', cascade=CASCADING_DELETE)
