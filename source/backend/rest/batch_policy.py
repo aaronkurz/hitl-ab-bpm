@@ -17,7 +17,7 @@ def set_batch_policy():
 
      An open proposal has to be available to do this.
      """
-    process_id = request.args.get('process-id')
+    process_id = int(request.args.get('process-id'))
     if not exists_bapol_proposal_without_bapol(process_id):
         abort(404, "No prior open batch policy proposal for this process found.")
 
@@ -35,10 +35,9 @@ def set_batch_policy():
     assert relevant_process_query.count() == 1, "Amount of active processes in db != 1"
     relevant_process = relevant_process_query.first()
     batch_policy = BatchPolicy(batch_size=batch_size,
-                               process_id=relevant_process.id,
                                execution_strategies=execution_strategies_table_rows,
                                batch_policy_proposal=get_current_open_proposal(process_id))
-
+    relevant_process.batch_policies.append(batch_policy)
     db.session.add(batch_policy)
     for elem in execution_strategies_table_rows:
         db.session.add(elem)

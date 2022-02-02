@@ -21,6 +21,16 @@ def check_get_open_proposal():
         }
 
 
+@batch_policy_proposal_api.route('/count', methods=['GET'])
+def get_count():
+    """ Get amount of batch policy proposals for a certain process """
+    process_id = int(request.args.get('process-id'))
+    count = BatchPolicyProposal.query.filter(BatchPolicyProposal.process_id == process_id).count()
+    return {
+       'baPolProposalCount': count
+    }
+
+
 @batch_policy_proposal_api.route('', methods=['DELETE'])
 def delete_batch_policy_rows():
     execs = db.session.query(ExecutionStrategyBaPolProp)
