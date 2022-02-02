@@ -101,6 +101,8 @@ def set_process(process_name):
 def delete_process_variants_rows():
     # delete process versions from filesystem
     folder = os.path.join(os.getcwd(), 'resources/bpmn/')
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
