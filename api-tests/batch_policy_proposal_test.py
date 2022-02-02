@@ -110,8 +110,8 @@ def test_requests_in_between_batches():
             }
         ]
     }
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
     # one open proposal at the beginning

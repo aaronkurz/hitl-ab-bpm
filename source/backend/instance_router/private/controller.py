@@ -99,7 +99,6 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     camunda_instance_id = client.start_instance(variant_camunda_id)
     # add info to database
     if is_in_batch_marker:
-        print("here")
         process_instance = ProcessInstance(process_id=process_id,
                                            decision=decision,
                                            camunda_instance_id=camunda_instance_id,
