@@ -13,7 +13,7 @@ from vowpalwabbit import pyvw
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Context
-orgas = ['gov', 'public']
+orgas = ['public', 'gov']
 # Actions
 actions = ["A", "B"]
 # Store every action taken
@@ -72,13 +72,13 @@ def sample_custom_pmf(pmf):
         if sum_prob > draw:
             return index, prob
 
-def get_action(vw, context: str, actions):
+def get_action(vw, context, actions):
     vw_text_example = to_vw_example_format(context, actions)
     pmf = vw.predict(vw_text_example)
     chosen_action_index, prob = sample_custom_pmf(pmf)
     return actions[chosen_action_index], prob
 
-def get_action_prob_dict(vw, context: str, actions):
+def get_action_prob_dict(vw, context, actions):
     vw_text_example = to_vw_example_format(context, actions)
     pmf = vw.predict(vw_text_example)
     dict = {}
@@ -160,7 +160,8 @@ def calculate_duration(start_time: datetime, end_time: datetime):
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
     Query process instances which still have to be evaluated. With the calculated duration,
-    train the agent and update the database with the reward.
+    train the agent and update the database with the newly calculated reward. 
+    Finally, update the batch policy proposal.
     :param process_id:
     :return: new batch policy proposal
     """
@@ -168,11 +169,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-    print(relevant_instances)
+
     for instance in relevant_instances:
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
         reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True)
         instance.reward = reward
     db.session.commit()
-
-    set_bapol_proposal(process_id, ["public", "gov"], [0.3, 0.5], [0.7, 0.5])
+    
+    #                                       A               B
+    set_bapol_proposal(process_id, orgas, [0.3, 0.5], [0.7, 0.5])
