@@ -7,6 +7,7 @@ from rest.instance_router import instance_router_api
 from rest.batch_policy import batch_policy_api
 from rest.process import process_api
 from rest.batch_policy_proposal import batch_policy_proposal_api
+from celery_app import func1
 
 app = create_app.create_app()
 
@@ -30,6 +31,25 @@ client = CamundaClient(config.CAMUNDA_ENGINE_URI)
 def index():
     """ Just used to manually test whether app is live """
     return "Hello World!"
+
+import time
+from flask import jsonify
+@app.route("/celery_test")
+def celery():
+    task = func1.AsyncResult("test")
+    time.sleep(3)
+    if task.state == 'PENDING':
+        time.sleep(1)
+        response = {
+            'queue_state': task.state,
+            'status': 'Process is ongoing...',
+        }
+    else:
+        response = {
+            'queue_state': task.state,
+            'result': task.wait()
+        }
+    return jsonify(response)
 
 
 if __name__ == "__main__":
