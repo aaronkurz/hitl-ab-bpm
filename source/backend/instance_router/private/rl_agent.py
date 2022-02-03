@@ -132,6 +132,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     context = {'orga': organisation}
     action, prob = get_action(vw, context, actions)
     dic = get_action_prob_dict(vw, context, actions)
+    print(dic)
     action_prob2csv(dic)
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
     actions_list.append(action)
