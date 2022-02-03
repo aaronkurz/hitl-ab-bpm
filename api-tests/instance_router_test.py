@@ -44,7 +44,7 @@ def meta_run_manual_choice(version: str):
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
     sleep(10)
@@ -71,7 +71,7 @@ def test_instantiation():
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,
@@ -85,7 +85,7 @@ def test_aggregate_data():
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
         response = utils.new_processes_instance(currently_active_p_id,
@@ -111,7 +111,7 @@ def test_two_manual_choices_not_possible():
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
     post_manual_decision('a')
     try:
         post_manual_decision('b')
@@ -151,7 +151,7 @@ def test_finished_instances_are_collected():
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
-    utils.post_bapol({
+    utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [
             {

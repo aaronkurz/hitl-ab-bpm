@@ -48,7 +48,8 @@ def get_decision_outside_batch(process_id) -> str:
 
 
 def is_in_batch(process_id):
-    return ProcessInstance.query.filter(ProcessInstance.process_id == process_id).count() <\
+    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                             ProcessInstance.do_evaluate == True)).count() <\
            batch_policy.get_batch_size_sum(process_id)
 
 
@@ -65,7 +66,7 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
     """
-    new_batch_policy_available = False
+    new_batch_policy_proposal_available = False
     process_metadata = process.get_process_metadata(process_id)
 
     # get decision from process bandit, if no decision has been made yet
@@ -74,14 +75,14 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     if winning_version is None:
         if not is_in_batch(process_id):
             decision = get_decision_outside_batch(process_id)
-            new_batch_policy_available = True
+            new_batch_policy_proposal_available = True
         else:
             is_in_batch_marker = True
             decision = get_decision_in_batch(process_id, customer_category)
             if end_of_batch_reached(process_id):
                 camunda_collector.collect_finished_instances(process_id)
                 rl_agent.learn_and_set_new_batch_policy_proposal(process_id)
-                new_batch_policy_available = True
+                new_batch_policy_proposal_available = True
     else:
         decision = winning_version
 
@@ -112,6 +113,6 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     db.session.commit()
 
     return {
-        'newBatchPolicyProposalReady': new_batch_policy_available,
+        'newBatchPolicyProposalReady': new_batch_policy_proposal_available,
         'camundaInstanceId': camunda_instance_id,
     }
