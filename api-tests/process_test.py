@@ -6,7 +6,7 @@ from config import BASE_URL
 
 @pytest.fixture(autouse=True)
 def run_before_each_test():
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
     # ^ before each test
     yield
     # v after each test
@@ -17,7 +17,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
 
 
 def test_set_process():
@@ -95,35 +95,3 @@ def test_files_are_overwritten():
                              a_hist_max_duration=3)
     # then
     assert utils.get_process_count() == 1
-
-
-def test_cascading_delete():
-    """ Test if the cascading delete works
-
-    If I delete a process, the corresponding batch policies and instance db entries should be deleted too
-    """
-    # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
-    utils.post_bapol_currently_active_process(utils.example_batch_policy)
-    # create process instances/start the process x times
-    currently_active_p_id = utils.get_currently_active_process_id()
-    for i in range(10):
-        response = utils.new_processes_instance(currently_active_p_id,
-                                                utils.get_random_customer_category(["public", "gov"]))
-        assert response.json().get("instantiated") is True
-        assert "camundaInstanceId" in response.json().keys()
-
-    assert utils.get_process_count() == 1
-    assert utils.get_bapol_count() == 1
-    assert utils.get_sum_of_started_instances(currently_active_p_id) == 10
-    # TODO: check whether batch policy proposals are there
-    # when
-    utils.remove_all_process_rows()
-    # then
-    assert utils.get_process_count() == 0
-    assert utils.get_bapol_count() == 0
-    assert utils.get_sum_of_started_instances(currently_active_p_id) == 0
-    # TODO: check whether batch policy proposals are deleted

@@ -99,12 +99,13 @@ def manual_decision():
 
 
 @instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])
-def get_instantiation_plot():
-    """ Get a time overview of client requests and where they have been routed to """
-    process_id = request.args.get('process-id')
+def get_instantiation_data():
+    """ Get a time overview of client requests and where they have been routed to (in batch) """
+    process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
 
-    all_instances_ordered = ProcessInstance.query.filter(ProcessInstance.process_id == process_id). \
+    all_instances_ordered = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                              ProcessInstance.do_evaluate == True)). \
         order_by(asc(ProcessInstance.instantiation_time))
     requests_a = []
     requests_b = []
@@ -125,6 +126,15 @@ def get_instantiation_plot():
         "noTotalRequests": all_instances_ordered.count(),
         "requestsA": requests_a,
         "requestsB": requests_b
+    }
+
+
+@instance_router_api.route('/aggregate-data/client-requests/outside-batch', methods=['GET'])
+def get_instantiation_data_outside_batch():
+    process_id = int(request.args.get('process-id'))
+    return {
+        "numberOfRequests": ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                              ProcessInstance.do_evaluate == False)).count()
     }
 
 

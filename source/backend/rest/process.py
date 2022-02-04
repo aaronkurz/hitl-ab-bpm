@@ -103,30 +103,6 @@ def set_process(process_name):
     }
 
 
-@process_api.route('', methods=['DELETE'])
-def delete_process_variants_rows():
-    # delete process versions from filesystem
-    folder = os.path.join(os.getcwd(), 'resources/bpmn/')
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    for filename in os.listdir(folder):
-        file_path = os.path.join(folder, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            abort(500, 'Failed to delete %s. Reason: %s' % (file_path, e))
-    # remove db rows
-    results = db.session.query(Process).all()
-    for result in results:
-        db.session.delete(result)
-    db.session.commit()
-    return "Success"
-
-
 @process_api.route('/count', methods=['GET'])
 def get_processes_count():
     """ Get amount of processes that have been set / entries in processes db table """

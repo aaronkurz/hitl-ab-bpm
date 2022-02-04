@@ -23,7 +23,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    utils.remove_everything_from_db()
+    # utils.remove_everything_from_db()
 
 
 def post_manual_decision(manual_decision: str):
@@ -48,22 +48,15 @@ def meta_run_manual_choice(version: str):
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
     sleep(10)
-    assert utils.get_sum_of_started_instances(currently_active_p_id) == 5
-    instances_a_before = utils.get_amount_of_started_instances(currently_active_p_id, 'a')
-    instances_b_before = utils.get_amount_of_started_instances(currently_active_p_id, 'b')
+    assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     post_manual_decision(version)
     cs.start_client_simulation(5)
     sleep(10)
-    assert utils.get_sum_of_started_instances(currently_active_p_id) == 10
-    instances_a_after = utils.get_amount_of_started_instances(currently_active_p_id, 'a')
-    instances_b_after = utils.get_amount_of_started_instances(currently_active_p_id, 'b')
-
-    if version == 'a':
-        assert instances_a_before + 5 == instances_a_after
-        assert instances_b_before == instances_b_after
-    if version == 'b':
-        assert instances_a_before == instances_a_after
-        assert instances_b_before + 5 == instances_b_after
+    # check that still only 5 got routed inside batch
+    assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
+    # check that 5 additional ones got routes outside batch
+    # TODO: add test that makes sure that these are actually of the choice
+    assert utils.get_sum_of_started_instances_outside_batch(currently_active_p_id) == 5
 
 
 def test_instantiation():
@@ -191,10 +184,10 @@ def test_client_requests_data():
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BASE_URL + "/instance-router/aggregate-data/client-requests", params=params)
     assert response.status_code == requests.codes.ok
-    assert response.json().get("noTotalRequests") == 10
-    assert len(response.json().get("requestsA")) == 10
-    assert len(response.json().get("requestsB")) == 10
-    assert response.json().get("requestsA")[9] + response.json().get("requestsB")[9] == 10
+    assert response.json().get("noTotalRequests") == 5
+    assert len(response.json().get("requestsA")) == 5
+    assert len(response.json().get("requestsB")) == 5
+    assert response.json().get("requestsA")[4] + response.json().get("requestsB")[4] == 5
 
 
 def test_finished_instances_are_collected():

@@ -7,9 +7,7 @@ from config import BASE_URL
 
 @pytest.fixture(autouse=True)
 def run_before_each_test():
-    assert requests.delete(BASE_URL + "/batch-policy-proposal").status_code == requests.codes.OK
-    assert requests.delete(BASE_URL + "/batch-policy").status_code == requests.codes.OK
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
     # ^ before each test
     yield
     # v after each test
@@ -20,9 +18,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    assert requests.delete(BASE_URL + "/batch-policy-proposal").status_code == requests.codes.OK
-    assert requests.delete(BASE_URL + "/batch-policy").status_code == requests.codes.OK
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
 
 
 def test_count():

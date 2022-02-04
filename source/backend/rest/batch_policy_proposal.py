@@ -29,16 +29,3 @@ def get_count():
     return {
        'baPolProposalCount': count
     }
-
-
-@batch_policy_proposal_api.route('', methods=['DELETE'])
-def delete_batch_policy_rows():
-    execs = db.session.query(ExecutionStrategyBaPolProp)
-    for exec in execs:
-        db.session.delete(exec)
-    bapols = db.session.query(BatchPolicyProposal)
-    print(bapols)
-    for bapol in bapols:
-        db.session.delete(bapol)
-    db.session.commit()
-    return "Success"

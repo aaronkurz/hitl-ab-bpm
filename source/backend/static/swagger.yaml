@@ -254,7 +254,7 @@ paths:
           description: server error
   /instance-router/aggregate-data:
     get:
-      summary: Get aggregate data of past instances of a certain process
+      summary: Get aggregate data of past instances of a certain process (! only of the instances routed in batch)
       tags:
         - Instance Router
       parameters:
@@ -271,7 +271,7 @@ paths:
           description: server error
   /instance-router/aggregate-data/client-requests:
     get:
-      summary: Get a time overview of client requests and where they have been routed to
+      summary: Get a time overview of client requests and where they have been routed to (! only of the instances routed in batch)
       tags:
         - Instance Router
       parameters:

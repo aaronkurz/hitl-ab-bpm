@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import Blueprint, abort, request, jsonify
 
 from models import db
@@ -70,17 +68,3 @@ def get_batch_policy_count():
     }
     json_data = jsonify(data)
     return json_data
-
-
-@batch_policy_api.route('', methods=['DELETE'])
-def delete_batch_policy_rows():
-    execs = db.session.query(ExecutionStrategyBaPol)
-    for exec in execs:
-        db.session.delete(exec)
-    bapols = db.session.query(BatchPolicy)
-    for bapol in bapols:
-        db.session.delete(bapol)
-    db.session.commit()
-    return "Success"
-
-
