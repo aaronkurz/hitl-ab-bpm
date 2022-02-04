@@ -118,12 +118,12 @@ def test_cascading_delete():
 
     assert utils.get_process_count() == 1
     assert utils.get_bapol_count() == 1
-    assert utils.get_sum_of_instances(currently_active_p_id) == 10
+    assert utils.get_sum_of_started_instances(currently_active_p_id) == 10
     # TODO: check whether batch policy proposals are there
     # when
     utils.remove_all_process_rows()
     # then
     assert utils.get_process_count() == 0
     assert utils.get_bapol_count() == 0
-    assert utils.get_sum_of_instances(currently_active_p_id) == 0
+    assert utils.get_sum_of_started_instances(currently_active_p_id) == 0
     # TODO: check whether batch policy proposals are deleted

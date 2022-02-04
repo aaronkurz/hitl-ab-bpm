@@ -13,6 +13,8 @@ def get_random_customer_category(list_of_customer_categories: [str]):
     return list_of_customer_categories[random.randint(0, len(list_of_customer_categories) - 1)]
 
 def remove_everything_from_db():
+    # TODO add endpoint for all tables
+    #  https://stackoverflow.com/questions/11233128/how-to-clean-the-database-dropping-all-records-using-sqlalchemy
     delete_all_proposals()
     remove_all_process_rows()
 
@@ -94,22 +96,23 @@ def new_processes_instance(process_id: int, customer_category: str):
     return response
 
 
-def get_sum_of_instances(process_id: int):
-    return get_amount_of_instances(process_id, 'a') + get_amount_of_instances(process_id, 'b')
-
-
-def get_amount_of_instances(process_id: int, version: str):
-    assert version in ['a', 'b']
-    params = {
-        "process-id": process_id
-    }
-    response = requests.get(BASE_URL + "/instance-router/aggregate-data", params=params)
-    response_json = response.json()
-    assert response.status_code == requests.codes.ok
-    return response_json.get(version).get('amount')
-
-
 # BATCH POLICY PROPOSAL
 def delete_all_proposals():
     response = requests.delete(BASE_URL + "/batch-policy-proposal")
     assert response.status_code == requests.codes.ok, "Deletion of bapol proposal rows failed: " + str(response.content)
+
+
+def get_bapol_proposal_count_active_process():
+    params = {
+        'process-id': get_currently_active_process_id()
+    }
+    response = requests.get(BASE_URL + "/batch-policy-proposal/count", params=params)
+    assert response.status_code == requests.codes.ok
+    return response.json().get('baPolProposalCount')
+
+
+def new_open_proposal_exists_active_process():
+    response = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                            params={'process-id': get_currently_active_process_id()})
+    assert response.status_code == requests.codes.ok
+    return response.json().get('newProposalExists')

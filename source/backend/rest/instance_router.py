@@ -7,6 +7,7 @@ from sqlalchemy import and_, asc
 
 from models.utils import Version
 from rest.utils import validate_backend_process_id
+import statistics
 import requests
 
 instance_router_api = Blueprint('instance_router_api', __name__)
@@ -36,21 +37,54 @@ def start_process():
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
 def count_a_b():
-    """ Get some metadata about process """
+    """ Get some metadata about process: all data concerns only the instances that were part of an experimental batch!  """
     process_id = request.args.get('process-id')
     validate_backend_process_id(process_id)
-    a_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                 ProcessInstance.decision == 'a')).count()
-    b_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                 ProcessInstance.decision == 'b')).count()
+    a_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == 'a',
+                                                             ProcessInstance.do_evaluate == True))
+    b_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == 'b',
+                                                             ProcessInstance.do_evaluate == True))
+
+    a_number_started = a_all_relevant_query.count()
+    b_number_started = b_all_relevant_query.count()
+
+    a_all_relevant_query_finished = a_all_relevant_query.filter(ProcessInstance.finished_time != None)
+    b_all_relevant_query_finished = b_all_relevant_query.filter(ProcessInstance.finished_time != None)
+    # Test if reward was calculated for all finished instances in batches, as expected
+    assert a_all_relevant_query_finished.count() == a_all_relevant_query.filter(ProcessInstance.reward != None).count()\
+        and b_all_relevant_query_finished.count() == b_all_relevant_query.filter(ProcessInstance.reward != None).count(),\
+        "Server Error: Reward was not calculated properly for all finished instances"
+
+    a_number_finished = a_all_relevant_query_finished.count()
+    b_number_finished = b_all_relevant_query_finished.count()
+
+    a_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
+                        for instance in a_all_relevant_query_finished]
+    b_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
+                         for instance in b_all_relevant_query_finished]
+    a_average_duration_sec = None if len(a_list_durations) == 0 else statistics.mean(a_list_durations)
+    b_average_duration_sec = None if len(b_list_durations) == 0 else statistics.mean(b_list_durations)
+
+    a_list_rew = [instance.reward for instance in a_all_relevant_query_finished]
+    b_list_rew = [instance.reward for instance in b_all_relevant_query_finished]
+    a_average_reward = None if len(a_list_rew) == 0 else statistics.mean(a_list_rew)
+    b_average_reward = None if len(b_list_rew) == 0 else statistics.mean(b_list_rew)
+
     return {
         "a": {
-            "amount": a_amount
+            "numberStarted": a_number_started,
+            "numberFinished": a_number_finished,
+            "averageDurationSec": a_average_duration_sec,
+            "averageReward": a_average_reward
         },
         "b": {
-            "amount": b_amount
+            "numberStarted": b_number_started,
+            "numberFinished": b_number_finished,
+            "averageDurationSec": b_average_duration_sec,
+            "averageReward": b_average_reward
         }
-        # TODO add further aggregated info, such as mean reward, percent finished and so on
     }
 
 

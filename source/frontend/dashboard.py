@@ -1,6 +1,9 @@
+import math
+
 import streamlit as st
 import requests
 from matplotlib import pyplot as plt
+from pandas import DataFrame
 
 from config import BACKEND_URI
 import utils
@@ -85,16 +88,31 @@ def plot_instances():
     if response.status_code != requests.codes.ok:
         st.write("🚨 Can't fetch data right now")
     response_json = response.json()
-    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsA'), label='Version A')
-    plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsB'), label='Version B')
-    plt.legend(loc='upper left')
-    plt.xlabel('Total requests')
-    plt.ylabel('Requests per version')
-    st.pyplot(fig=plt.gcf())
+    if response_json.get('noTotalRequests') > 0:
+        plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsA'), label='Version A')
+        plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsB'), label='Version B')
+        plt.legend(loc='upper left')
+        plt.xlabel('Total requests')
+        plt.ylabel('Requests per version')
+        plt.xlim(left=0)
+        plt.ylim(bottom=0)
+        st.pyplot(fig=plt.gcf())
+    else:
+        st.write("No instantiations yet. Plot of instantiation decisions will be shown here.")
 
 
 def data():
     st.write("### Data")
+    aggregate_data()
+    detailed_data()
+
+
+def detailed_data():
+    st.write('#### Detailed Data')
+
+
+def aggregate_data():
+    st.write('#### Aggregate Data')
     if st.button("Refresh") or st.session_state['data_open'] is True:
         st.session_state['data_open'] = True
         params = {"process-id": utils.get_currently_active_process_id()}
@@ -104,16 +122,33 @@ def data():
         )
         if response.status_code != requests.codes.ok:
             st.write("🚨 Can't fetch data right now")
-
         else:
-            amount_instances_a = response.json().get("a").get("amount")
-            amount_instances_b = response.json().get("b").get("amount")
+            aggregate_data_df = DataFrame(
+                columns=['Version', 'Number Started', 'Number Finished', 'Mean Duration (sec)', 'Mean Reward'])
+            versions = ['a', 'b']
+            for i in range(2):
+                aggregate_data_df.loc[i] = [versions[i],
+                                            response.json().get(versions[i]).get("numberStarted"),
+                                            response.json().get(versions[i]).get("numberFinished"),
+                                            None if response.json().get(versions[i]).get("averageDurationSec") is None
+                                            else round(response.json().get(versions[i]).get("averageDurationSec"), 2),
+                                            None if response.json().get(versions[i]).get("averageReward") is None
+                                            else round(response.json().get(versions[i]).get("averageReward"), 2), ]
+            # HIDE ROW INDICES:
+            # CSS to inject contained in a string
+            hide_table_row_index = """
+                            <style>
+                            tbody th {display:none}
+                            .blank {display:none}
+                            </style>
+                            """
+            # Inject CSS with Markdown
 
-            st.write("Amount of instances sent to variant A: ", amount_instances_a)
-            st.write(f"Amount of instances sent to variant B: ", amount_instances_b)
+            st.markdown(hide_table_row_index, unsafe_allow_html=True)
+
+            st.table(aggregate_data_df.astype(str))
 
         plot_instances()
-
 
 def display_results():
     with st.expander("⌚️ Step 3: Wait For Results", expanded=True):

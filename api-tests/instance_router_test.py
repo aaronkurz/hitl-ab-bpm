@@ -12,7 +12,7 @@ CUSTOMER_CATEGORIES = ["public", "gov"]
 
 @pytest.fixture(autouse=True)
 def run_before_each_test():
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
     # ^ before each test
     yield
     # v after each test
@@ -23,7 +23,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    utils.remove_all_process_rows()
+    utils.remove_everything_from_db()
 
 
 def post_manual_decision(manual_decision: str):
@@ -48,15 +48,15 @@ def meta_run_manual_choice(version: str):
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
     sleep(10)
-    assert utils.get_sum_of_instances(currently_active_p_id) == 5
-    instances_a_before = utils.get_amount_of_instances(currently_active_p_id, 'a')
-    instances_b_before = utils.get_amount_of_instances(currently_active_p_id, 'b')
+    assert utils.get_sum_of_started_instances(currently_active_p_id) == 5
+    instances_a_before = utils.get_amount_of_started_instances(currently_active_p_id, 'a')
+    instances_b_before = utils.get_amount_of_started_instances(currently_active_p_id, 'b')
     post_manual_decision(version)
     cs.start_client_simulation(5)
     sleep(10)
-    assert utils.get_sum_of_instances(currently_active_p_id) == 10
-    instances_a_after = utils.get_amount_of_instances(currently_active_p_id, 'a')
-    instances_b_after = utils.get_amount_of_instances(currently_active_p_id, 'b')
+    assert utils.get_sum_of_started_instances(currently_active_p_id) == 10
+    instances_a_after = utils.get_amount_of_started_instances(currently_active_p_id, 'a')
+    instances_b_after = utils.get_amount_of_started_instances(currently_active_p_id, 'b')
 
     if version == 'a':
         assert instances_a_before + 5 == instances_a_after
@@ -81,18 +81,69 @@ def test_instantiation():
 
 
 def test_aggregate_data():
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    bapol_5_size = {
+        "batchSize": 10,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
+    assert utils.get_bapol_proposal_count_active_process() == 1
+    utils.post_bapol_currently_active_process(bapol_5_size)
+    assert utils.get_bapol_count() == 1
+    cs.start_client_simulation(10)
+    sleep(20)
+    assert utils.get_bapol_proposal_count_active_process() == 2
+    assert utils.new_open_proposal_exists_active_process() is True
+    currently_active_process_id = utils.get_currently_active_process_id()
+    params = {
+        "process-id": currently_active_process_id
+    }
+    response = requests.get(BASE_URL + "/instance-router/aggregate-data", params=params)
+    response_json = response.json()
+    assert response.status_code == requests.codes.ok
+    keys = ['numberStarted', 'numberFinished', 'averageDurationSec', 'averageReward']
+    # check if the right keys exist for both versions
+    for version in ['a', 'b']:
+        for key in keys:
+            assert key in response_json.get(version).keys()
+    assert response_json.get('a').get('numberStarted') + response_json.get('b').get('numberStarted') == 10
+    # check if the data has been populated successfully
+    for key in keys:
+        assert response_json.get('a').get(key) + response_json.get('b').get(key) != 0
+
+
+def test_aggregate_data_before_instantiation():
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
-    currently_active_p_id = utils.get_currently_active_process_id()
-    for i in range(10):
-        response = utils.new_processes_instance(currently_active_p_id,
-                                                utils.get_random_customer_category(["public", "gov"]))
-        assert response.json().get("instantiated") is True
-        assert "camundaInstanceId" in response.json().keys()
-    assert utils.get_sum_of_instances(currently_active_p_id) == 10
+    assert utils.get_bapol_count() == 1
+    currently_active_process_id = utils.get_currently_active_process_id()
+
+    # check if mean duration and reward are None before any instances are started
+    params = {
+        "process-id": currently_active_process_id
+    }
+    response = requests.get(BASE_URL + "/instance-router/aggregate-data", params=params)
+    response_json = response.json()
+    for version in ['a', 'b']:
+        assert response_json.get(version).get('averageDurationSec') is None
+        assert response_json.get(version).get('averageReward') is None
 
 
 def test_manual_choice_a():
