@@ -1,20 +1,16 @@
-import math
-
+import help
 import streamlit as st
 import requests
 from matplotlib import pyplot as plt
 from pandas import DataFrame
-
 from config import BACKEND_URI
 import utils
+
 
 def dashboard():
     st.write('## Dashboard')
     controls()
     data()
-
-
-
 
 
 def controls():
@@ -113,6 +109,8 @@ def detailed_data():
 
 def aggregate_data():
     st.write('#### Aggregate Data')
+    with st.expander('What is shown here?', expanded=False):
+        st.write(help.AGGREGATE_DATA)
     if st.button("Refresh") or st.session_state['data_open'] is True:
         st.session_state['data_open'] = True
         params = {"process-id": utils.get_currently_active_process_id()}
