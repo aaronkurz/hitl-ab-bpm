@@ -1,9 +1,9 @@
 """ Here, the RL agent is implemented """
 import csv
-from datetime import datetime
 import logging
 import random
 
+from datetime import datetime
 from models import db
 from models.process_instance import ProcessInstance
 from models.batch_policy_proposal import BatchPolicyProposal, set_bapol_proposal
@@ -13,13 +13,14 @@ from vowpalwabbit import pyvw
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Context
-orgas = ['public', 'gov']
+orgas = ['gov', 'public']
 # Actions
 actions = ["A", "B"]
-# Store every action taken
-actions_list = []
 # Model
 vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
+
+header_flag = False
+
 
 def get_reward(context: str, action: str, duration: float):
     """Returns a reward ∈ [0;1] given a list of contexts and an action.
@@ -72,36 +73,50 @@ def sample_custom_pmf(pmf):
         if sum_prob > draw:
             return index, prob
 
-def get_action(vw, context, actions):
+def get_action(vw, context: str, actions):
     vw_text_example = to_vw_example_format(context, actions)
     pmf = vw.predict(vw_text_example)
     chosen_action_index, prob = sample_custom_pmf(pmf)
     return actions[chosen_action_index], prob
 
-def get_action_prob_dict(vw, context, actions):
-    vw_text_example = to_vw_example_format(context, actions)
-    pmf = vw.predict(vw_text_example)
-    dict = {}
-    count = 0
-    for elem in actions:
-        dict[elem] = pmf[count]
-        count = count + 1
-    return dict
+def get_action_prob_per_context_dict(vw, orgas, actions):
+    # Multiple contexts, loop over list of contexts
+    dict_list = []
+    for elem in orgas:
+        tmp = {'orga': elem}
+        vw_text_example = to_vw_example_format(tmp, actions)
+        pmf = vw.predict(vw_text_example)
+        dict = {}
+        dict.update(tmp) 
+        count = 0
+        for action in actions:
+            dict[action] = pmf[count]
+            count = count + 1
+        dict_list.append(dict)
+    return dict_list  
 
-def action_prob_header2csv():
-    print(actions)
-    header = actions
+def write_stats_to_csv(dict):
+    prob_dict = calculate_counterprobability(dict['action'], dict['prob'])
+    header = ['context', 'action', 'reward', 'prob_a', 'prob_b']
+    data = [dict['context'],dict['action'],dict['reward'],prob_dict['prob_a'],prob_dict['prob_b']]
     with open('action_prob.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(header)
+        if not header_flag:
+            writer.writerow(header)
+        writer.writerow(data)
 
-def action_prob2csv(ap_dict: dict):
-    datas = []
-    datas.append(ap_dict)
-    header = ap_dict.keys()
-    with open('action_prob.csv', 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=header)
-        writer.writerows(datas)
+def calculate_counterprobability(action, prob):
+    prob_dict = {}
+    counter_prob = round(1-prob, 2)
+    prob = round(prob, 2)
+    if action == 'A':
+        prob_dict['prob_a'] = prob
+        prob_dict['prob_b'] = counter_prob
+    else: 
+        prob_dict['prob_a'] = counter_prob
+        prob_dict['prob_b'] = prob
+    return prob_dict
+
 
 def choose_orga(orgas: list):
     """
@@ -110,6 +125,7 @@ def choose_orga(orgas: list):
     :return:
     """
     return random.choice(orgas)
+
 
 def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, do_learn: bool = True):
     """[summary]
@@ -122,8 +138,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     Returns:
         [type]: [description]
     """
-    reward_sum = 0.
-    acc_reward = []
+    #current_action_choosen,current_context,reward,action_prob_a_gov,action_prob_b_gov,action_prob_a_public,action_prob_b_public
     # Set random seed
     # random.seed(1)
     # 1. In each simulation choose a user
@@ -131,14 +146,13 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # 2. Pass context to vw to get an action
     context = {'orga': organisation}
     action, prob = get_action(vw, context, actions)
-    dic = get_action_prob_dict(vw, context, actions)
-    print(dic)
-    action_prob2csv(dic)
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
-    actions_list.append(action)
     # 3. Get reward of the action we chose
     reward = reward_function(context, action, duration)
     logging.info(f'Reward: {reward}')
+    dict = {'context': organisation, 'action': action, 'prob': prob, 'reward': reward}
+    write_stats_to_csv(dict)
+    header_flag = True
     if do_learn:
         # 4. Inform VW of what happened so we can learn from it
         vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
@@ -161,8 +175,7 @@ def calculate_duration(start_time: datetime, end_time: datetime):
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
     Query process instances which still have to be evaluated. With the calculated duration,
-    train the agent and update the database with the newly calculated reward. 
-    Finally, update the batch policy proposal.
+    train the agent and update the database with the reward.
     :param process_id:
     :return: new batch policy proposal
     """
@@ -170,12 +183,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-
+    
     for instance in relevant_instances:
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
         reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True)
         instance.reward = reward
     db.session.commit()
-    
-    #                                       A               B
-    set_bapol_proposal(process_id, orgas, [0.3, 0.5], [0.7, 0.5])
+    agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
+    set_bapol_proposal(process_id, ["gov", "public"], [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
+                                                        [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
