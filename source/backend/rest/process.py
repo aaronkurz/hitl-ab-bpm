@@ -137,8 +137,8 @@ def get_active_process_variants_metadata():
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
 def get_process_variant_files(a_or_b):
-    requested_id = request.args.get('id')
-    utils.validate_backend_process_id(id)
+    requested_id = int(request.args.get('id'))
+    utils.validate_backend_process_id(requested_id)
     if requested_id is None:
         abort(400, description='id query parameter not specified')
     active_process_entry_query = db.session.query(Process).filter(Process.id == requested_id)
