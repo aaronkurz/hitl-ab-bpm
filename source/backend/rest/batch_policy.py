@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from flask import Blueprint, abort, request, jsonify
 
+from rest import utils
 from models import db
 from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol_data
 from models.process import Process
@@ -18,6 +17,7 @@ def set_batch_policy():
      An open proposal has to be available to do this.
      """
     process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
     if not exists_bapol_proposal_without_bapol(process_id):
         abort(404, "No prior open batch policy proposal for this process found.")
 
@@ -64,23 +64,10 @@ def get_batch_policy():
 
 @batch_policy_api.route('/count', methods=['GET'])
 def get_batch_policy_count():
-    """ Get amount of batch policies that have been set / entries in batch_policy db table """
-    data = {
-        "batchPolicyCount": BatchPolicy.query.count()
+    """ Get amount of batch policies that have been set / entries in batch_policy db table for a certain process """
+    process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
+    return {
+        "processId": process_id,
+        "batchPolicyCount": BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count()
     }
-    json_data = jsonify(data)
-    return json_data
-
-
-@batch_policy_api.route('', methods=['DELETE'])
-def delete_batch_policy_rows():
-    execs = db.session.query(ExecutionStrategyBaPol)
-    for exec in execs:
-        db.session.delete(exec)
-    bapols = db.session.query(BatchPolicy)
-    for bapol in bapols:
-        db.session.delete(bapol)
-    db.session.commit()
-    return "Success"
-
-

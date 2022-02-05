@@ -8,6 +8,10 @@ def setup():
         st.session_state['new_proposal'] = False
     if 'data_open' not in st.session_state:
         st.session_state['data_open'] = False
+    if 'data_detailed_open' not in st.session_state:
+        st.session_state['data_detailed_open'] = False
+    if 'data_detailed_batch_open' not in st.session_state:
+        st.session_state['data_detailed_batch_open'] = False
 
 
 def main():
