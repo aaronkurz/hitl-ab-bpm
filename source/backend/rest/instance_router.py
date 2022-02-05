@@ -313,7 +313,6 @@ def get_batch_count():
     history_url = '/history/batch/count'
     query_url = CAMUNDA_ENGINE_URI + history_url
     result = requests.get(query_url).json()
-    print(result['count'])
     return {'batch_count': result['count']}
 
 

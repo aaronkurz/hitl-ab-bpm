@@ -30,7 +30,7 @@ def send_request_for_new_processes_instance(process_id):
 def start_client_simulation(amount_of_requests_to_send):
     currently_active_p_id = get_currently_active_process_id()
     for i in range(amount_of_requests_to_send):
-        print(send_request_for_new_processes_instance(currently_active_p_id))
+        send_request_for_new_processes_instance(currently_active_p_id)
         normal_sample = normal(NORMAL_DIST_MEAN, NORMAL_DIST_STD_DEV)
         sleep_value = normal_sample if normal_sample >= 0 else 0
         sleep(sleep_value)
