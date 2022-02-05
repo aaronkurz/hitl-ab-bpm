@@ -2,6 +2,7 @@
 import csv
 import logging
 import random
+import vowpalwabbit
 
 from datetime import datetime
 from models import db
@@ -17,7 +18,7 @@ orgas = ['gov', 'public']
 # Actions
 actions = ["A", "B"]
 # Model
-vw = pyvw.vw("--cb_explore_adf -q UA --quiet --epsilon 0.2")
+vw = vowpalwabbit.Workspace("--cb_explore_adf -q UA --epsilon 0.2", quiet=True)
 
 header_flag = False
 
@@ -34,7 +35,7 @@ def get_reward(context: str, action: str, duration: float):
     neg_duration = 1.0 - duration
     if neg_duration <= 0:
         neg_duration = 0.0
-    print(f'Duration: {duration}, Neg_duration: {neg_duration}')
+
     if context == 'public' and action == 'A':
         return neg_duration
     elif context == 'public' and action == 'B':
@@ -161,7 +162,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     if do_learn:
         # 4. Inform VW of what happened so we can learn from it
         vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
-                             pyvw.vw.lContextualBandit)
+                             vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
         # 5. Learn
         vw.learn(vw_format)
         # 6. Let VW know you're done with these objects
@@ -191,7 +192,8 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     
     for instance in relevant_instances:
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
-        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision, do_learn=True)
+        # Learning
+        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision)
         instance.reward = reward
     db.session.commit()
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
