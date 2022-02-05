@@ -31,24 +31,24 @@ def get_reward(context: str, action: str, duration: float):
         [type]: [description]
     """
     # TODO
+    neg_duration = 1.0 - duration
+    if neg_duration <= 0:
+        neg_duration = 0.0
+    print(f'Duration: {duration}, Neg_duration: {neg_duration}')
     if context == 'public' and action == 'A':
-        return duration
+        return neg_duration
     elif context == 'public' and action == 'B':
-        return duration
+        return neg_duration
     elif context == 'gov' and action == 'A':
-        return duration
+        return neg_duration
     else:
-        return duration
+        return neg_duration
 
-# This function modifies (context, action, cost, probability) to VW friendly format
+
 def to_vw_example_format(context, actions, cb_label=None):
-    """[summary]
-    Args:
-        context ([type]): [description]
-        actions ([type]): [description]
-        cb_label ([type], optional): [description]. Defaults to None.
-    Returns:
-        [type]: [description]
+    """
+    This function modifies (context, action, cost, probability) to VW friendly format
+
     """
     if cb_label is not None:
         chosen_action, cost, prob = cb_label
@@ -105,9 +105,10 @@ def write_stats_to_csv(dict):
             writer.writerow(header)
         writer.writerow(data)
 
+
 def calculate_counterprobability(action, prob):
     prob_dict = {}
-    counter_prob = round(1-prob, 2)
+    counter_prob = round(1.0-prob, 2)
     prob = round(prob, 2)
     if action == 'A':
         prob_dict['prob_a'] = prob
@@ -127,7 +128,7 @@ def choose_orga(orgas: list):
     return random.choice(orgas)
 
 
-def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, do_learn: bool = True):
+def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action, do_learn: bool = True):
     """[summary]
     Args:
         vw (contextual_bandit): contextual bandit model to be trained
@@ -145,7 +146,11 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     organisation = choose_orga(orgas)
     # 2. Pass context to vw to get an action
     context = {'orga': organisation}
-    action, prob = get_action(vw, context, actions)
+    action = hist_action.value.upper()
+    agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
+    for elem in agent_stats_list:
+        if elem['orga'] == organisation:
+            prob = elem[action]
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
     # 3. Get reward of the action we chose
     reward = reward_function(context, action, duration)
@@ -186,7 +191,7 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     
     for instance in relevant_instances:
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
-        reward = run_simulation(vw, orgas, actions, get_reward, duration, do_learn=True)
+        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision, do_learn=True)
         instance.reward = reward
     db.session.commit()
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
