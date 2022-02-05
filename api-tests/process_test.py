@@ -95,3 +95,8 @@ def test_files_are_overwritten():
                              a_hist_max_duration=3)
     # then
     assert utils.get_process_count() == 1
+
+
+def test_no_process_active_meta_500():
+    response = requests.get(BASE_URL + "/process/active-meta")
+    assert response.status_code == 500

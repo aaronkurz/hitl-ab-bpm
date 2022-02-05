@@ -68,7 +68,8 @@ def get_process_count():
 
 
 def get_bapol_count():
-    return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
+    return requests.get(BASE_URL + "/batch-policy/count",
+                        params={"process-id": get_currently_active_process_id()}).json().get("batchPolicyCount")
 
 
 def post_bapol_currently_active_process(bapol: dict):

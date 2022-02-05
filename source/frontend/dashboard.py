@@ -27,13 +27,11 @@ def controls():
             st.write('No new batch policy proposal available at this time')
         elif bapol_proposal_response.json().get('newProposalExists') is True or st.session_state['new_proposal'] is True:
             st.session_state['new_proposal'] = True
-            st.write("New bapol proposal:")
-            st.write(bapol_proposal_response.json().get('proposal'))
-            st.write("Set a new batch policy here:")
+            st.write("__This is the new batch policy proposal. Feel free to submit it as is or modify it and then submit it.__")
 
             proposal_json = bapol_proposal_response.json().get('proposal')
 
-            batch_size = st.number_input("Enter batch size", step=1)
+            batch_size = st.number_input("Enter batch size", step=1, value=10)
             exploration_probabilities_a = []
             exploration_probabilities_b = []
             for i in range(len(proposal_json.get('executionStrategy'))):
@@ -62,6 +60,7 @@ def controls():
                 if response.status_code == requests.codes.ok:
                     st.write("✅ Batch Policy uploaded")
                     st.session_state['new_proposal'] = False
+                    st.experimental_rerun()
                 else:
                     st.write("🚨 Upload of Batch Policy failed: HTTP status code " + str(response.status_code))
 
@@ -105,6 +104,41 @@ def data():
 
 def detailed_data():
     st.write('#### Detailed Data')
+    with st.expander('What is shown here?', expanded=False):
+        st.write(help.DETAILED_DATA)
+    if st.button("Refresh", key="10") or st.session_state['data_detailed_open'] is True:
+        st.session_state['data_detailed_open'] = True
+        params = {"process-id": utils.get_currently_active_process_id()}
+
+        response_bapol_count = requests.get(BACKEND_URI + "batch-policy/count", params=params)
+        if response_bapol_count.status_code != requests.codes.ok:
+            st.write("🚨 Can't fetch data right now")
+        else:
+            batch_choice = st.selectbox(
+                'Which batch would you like to see details about?',
+                tuple(range(1, response_bapol_count.json().get('batchPolicyCount') + 1)),
+                help=help.BATCH_NUMBER_CHOICE)
+
+            if batch_choice is not None:
+                params = {
+                    "process-id": utils.get_currently_active_process_id(),
+                    "batch-number": batch_choice
+                }
+                response_batch_instances = requests.get(BACKEND_URI + "instance-router/detailed-data/batch", params=params)
+                if response_batch_instances.status_code != requests.codes.ok:
+                    st.write("🚨 Can't fetch data right now")
+                else:
+                    batch_instances_df = DataFrame(columns=["Version", "Start Time", "End Time", "Reward"])
+                    for i in range(len(response_batch_instances.json().get("instances"))):
+                        batch_instances_df.loc[i] = [response_batch_instances.json().get("instances")[i].get("decision"),
+                                                     response_batch_instances.json().get("instances")[i].get("startTime"),
+                                                     response_batch_instances.json().get("instances")[i].get("endTime"),
+                                                     response_batch_instances.json().get("instances")[i].get("reward"),
+                                                     ]
+                    st.write("Batch Number: ", response_batch_instances.json().get("batchNumber"))
+                    st.table(batch_instances_df)
+
+
 
 
 def aggregate_data():
@@ -147,52 +181,3 @@ def aggregate_data():
             st.table(aggregate_data_df.astype(str))
 
         plot_instances()
-
-def display_results():
-    with st.expander("⌚️ Step 3: Wait For Results", expanded=True):
-        if st.button("Refresh", key = "uniq id"):
-
-            params = {"process-id": get_currently_active_process_id()}
-
-            response = requests.get(
-                BACKEND_URI + "instance-router/aggregate-data", params=params
-            )
-
-            if response.status_code != requests.codes.ok:
-                st.write("Can't fetch Data right now")
-
-            else:
-
-                amount_instances_a = response.json().get("a").get("amount")
-                amount_instances_b = response.json().get("b").get("amount")
-
-                st.write(f"Amount of instances sent to variant A {amount_instances_a}")
-                st.write(f"Amount of instances sent to variant B {amount_instances_b}")
-        with st.form(key="Execution history"):
-            if st.form_submit_button(
-                    "Clean up history"):  # https://docs.camunda.org/manual/7.16/reference/rest/history/history-cleanup/post-history-cleanup/
-                requests.post(
-                    BACKEND_URI + "instance-router/clean-up-history"
-                )
-            st.write("Number of total activities:",
-                     requests.get(BACKEND_URI + "instance-router/get-activity-count").json().get('activity_count'))
-            st.write("Number of total batch:",
-                     requests.get(BACKEND_URI + "instance-router/get-batch-count").json().get('batch_count'))
-            st.write("Number of total process:",
-                     requests.get(BACKEND_URI + "instance-router/get-process-count").json().get('process_count'))
-
-            st.write("Time based cost")
-            plt_cost()
-            st.write("Reward")
-            plt_reward()
-            st.write("action_prob")
-
-
-def view_results():
-    with st.expander("⌚️ Step 4: View Results", expanded=True):
-        options = st.multiselect(
-            'Actions you would like to view',
-            ['A', 'B'],
-            ['A'])
-
-        plt_action_prob(options)

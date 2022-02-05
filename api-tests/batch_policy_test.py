@@ -23,11 +23,17 @@ def after_all():
 
 def test_count():
     """ Test if count of batch policies is zero when relevant db tables empty """
-    # given (just fixture)
+    # given
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     # when
-    response = requests.get(BASE_URL + "/batch-policy/count").json()
+    response = requests.get(BASE_URL + "/batch-policy/count",
+                            params={"process-id": utils.get_currently_active_process_id()}).json()
     # then
     assert "batchPolicyCount" in response, "Key 'batchPolicyCount' not found."
+    assert "processId" in response
     assert utils.get_bapol_count() == 0
 
 

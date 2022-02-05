@@ -12,3 +12,9 @@ MIN_DURATION_INPUT = """
 Please enter the minimum and maximum duration of the past process data (old version) here. This data \
 is used to calculate the reward of new instances more reliably.
 """
+
+DETAILED_DATA = """
+Here you can see the details of each and every instance that has been part of an experimental batch.
+"""
+
+BATCH_NUMBER_CHOICE = "Number 1 means the first batch set for a process, number 2 means the second, and so on"

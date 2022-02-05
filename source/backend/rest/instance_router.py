@@ -1,10 +1,10 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
-from flask import Blueprint, request, abort
+from flask import Blueprint, request
 from instance_router import instance_router_interface
+from models.batch_policy import BatchPolicy
 from models.process import set_winning
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
 from sqlalchemy import and_, asc
-
 from models.utils import Version
 from rest.utils import validate_backend_process_id
 import statistics
@@ -132,10 +132,36 @@ def get_instantiation_data():
 @instance_router_api.route('/aggregate-data/client-requests/outside-batch', methods=['GET'])
 def get_instantiation_data_outside_batch():
     process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
     return {
         "numberOfRequests": ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                               ProcessInstance.do_evaluate == False)).count()
     }
+
+
+@instance_router_api.route('/detailed-data/batch', methods=['GET'])
+def get_instances_batch():
+    process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
+    batch_number = int(request.args.get('batch-number'))
+    assert batch_number <= BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count(), "Batch number too high"
+    data = {
+        "processId": process_id,
+        "batchNumber": batch_number,
+        "instances": []
+    }
+    relevant_bapol_id = BatchPolicy.query.filter(BatchPolicy.process_id == process_id)\
+        .order_by(asc(BatchPolicy.id))[batch_number - 1].id
+    relevant_instances = ProcessInstance.query.filter(ProcessInstance.batch_policy_id == relevant_bapol_id)\
+        .order_by(asc(ProcessInstance.id))
+    for instance in relevant_instances:
+        data.get('instances').append({
+            "decision": instance.decision.value,
+            "startTime": instance.instantiation_time,
+            "endTime": instance.finished_time,
+            "reward": instance.reward
+        })
+    return data
 
 
 # TODO: migrate RL script first
@@ -238,7 +264,6 @@ def store_reward():
     return "Success"
 
 
-# TODO: add endpoint that returns plot of instantiations over time
 # Return the Matplotlib image as a string/dict/request
 # @instance_router_api.route('/plt-cost', methods=['GET'])
 # def plt_cost():

@@ -23,7 +23,7 @@ def after_all():
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
-    # utils.remove_everything_from_db()
+    utils.remove_everything_from_db()
 
 
 def post_manual_decision(manual_decision: str):
@@ -222,3 +222,67 @@ def test_finished_instances_are_collected():
     }
     response = requests.get(BASE_URL + "/instance-router/finished-instance-count", params=params)
     assert response.json().get('finishedInstanceCount') > 0
+
+
+def test_detailed_batch_instance_info():
+    bapol_size_5 = {
+        "batchSize": 5,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    active_process_id = utils.get_currently_active_process_id()
+    # finish three batches
+    for i in range(3):
+        utils.post_bapol_currently_active_process(bapol_size_5)
+        cs.start_client_simulation(5)
+        sleep(15)
+    # finish half of a batch
+    utils.post_bapol_currently_active_process(bapol_size_5)
+    cs.start_client_simulation(2)
+    sleep(10)
+    response = requests.get(BASE_URL + "/batch-policy/count", params={"process-id": active_process_id})
+    assert response.json().get('batchPolicyCount') == 4
+    # test batch policy instances details
+    for i in range(1, 5):
+        params = {
+            "process-id": active_process_id,
+            "batch-number": i
+        }
+        response = requests.get(BASE_URL + "/instance-router/detailed-data/batch", params=params)
+        assert response.status_code == requests.codes.ok
+        assert "processId" in response.json().keys()
+        assert "batchNumber" in response.json().keys()
+        assert "instances" in response.json().keys()
+        if i < 4:
+            assert len(response.json().get("instances")) == 5
+        elif i == 4:
+            assert len(response.json().get("instances")) == 2
+        for instance in response.json().get("instances"):
+            assert "decision" in instance.keys()
+            assert "startTime" in instance.keys()
+            assert "endTime" in instance.keys()
+            assert "reward" in instance.keys()
+            assert instance.get("decision") is not None
+            assert instance.get("startTime") is not None
+            if instance.get("endTime") is None:
+                assert instance.get("reward") is None
+            if instance.get("reward") is None:
+                assert instance.get("endTime") is None
+            if instance.get("endTime") is not None:
+                assert instance.get("reward") is not None
+            if instance.get("reward") is not None:
+                assert instance.get("endTime") is not None

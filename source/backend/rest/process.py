@@ -10,6 +10,7 @@ from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.process_instance import ProcessInstance
 from models import db
 from models.process import Process, Version
+from rest import utils
 
 ALLOWED_EXTENSIONS = {'bpmn'}
 
@@ -117,7 +118,7 @@ def get_processes_count():
 def get_active_process_variants_metadata():
     active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
     if active_process_entry_query.count() == 0:
-        return "No active process in db"
+        abort(500, "No active process in db")
     elif active_process_entry_query.count() > 1:
         return abort(500, "More than one active process")
     active_process_entry = active_process_entry_query.first()
@@ -137,6 +138,7 @@ def get_active_process_variants_metadata():
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
 def get_process_variant_files(a_or_b):
     requested_id = request.args.get('id')
+    utils.validate_backend_process_id(id)
     if requested_id is None:
         abort(400, description='id query parameter not specified')
     active_process_entry_query = db.session.query(Process).filter(Process.id == requested_id)
@@ -175,6 +177,7 @@ def get_process_variant_files(a_or_b):
 @process_api.route('/experiment-state', methods=['GET'])
 def get_process_state():
     process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
     if Process.query.filter(Process.id == process_id).count == 0:
         abort(404, "No such process/experiment.")
     if Process.query.filter(Process.id == process_id).first().winning_version is not None \

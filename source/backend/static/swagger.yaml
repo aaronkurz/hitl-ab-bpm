@@ -85,9 +85,16 @@ paths:
                           type: number
   /batch-policy/count:
     get:
-      summary: Get the amount of Batch Policies in the db.
+      summary: Get the amount of Batch Policies in the db for a certain process.
       tags:
         - Batch Policy
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
       responses:
         200:
           description: OK
@@ -96,8 +103,12 @@ paths:
               schema:
                 type: object
                 properties:
+                  processId:
+                    type: integer
+                    example: 23
                   batchPolicyCount:
                     type: integer
+                    example: 3
   /process/{process_name}:
     post:
       summary: Add a new process with two variants.
@@ -362,6 +373,58 @@ paths:
                   finishedInstanceCount:
                     type: integer
                     example: 23
+        500:
+          description: server error
+        400:
+          description: client error
+  /instance-router/detailed-data/batch:
+    get:
+      summary: Get a more detailed list of all the instances that have been created as part of a batch.
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+        - name: batch-number
+          in: query
+          description: Specify which batch. 1 would mean the first batch set for that process and so on.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processId:
+                    type: integer
+                    required: true
+                    example: 12
+                  batchNumber:
+                    type: integer
+                    required: true
+                    example: 2
+                  instances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        decision:
+                          type: string
+                          description: a or b
+                        startTime:
+                          type: string
+                        endTime:
+                          type: string
+                        reward:
+                          type: number
         500:
           description: server error
         400:
