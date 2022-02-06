@@ -11,7 +11,6 @@ from models import db
 from models.process_instance import ProcessInstance
 from models.batch_policy_proposal import BatchPolicyProposal, set_bapol_proposal
 from sqlalchemy import and_
-from vowpalwabbit import pyvw
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -24,7 +23,7 @@ vw = vowpalwabbit.Workspace("--cb_explore_adf -q UA --epsilon 0.2", quiet=True)
 # Store stats of all iteration within a batch
 learning_hist = []
 # Pytest boolean flag
-debugging = False
+debugging = True
 
 
 def get_reward(duration: float):
@@ -210,7 +209,7 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     if not debugging:
         path = f'instance_router/private/results/learning_history_{process_id}.csv'
         df = pd.DataFrame.from_dict(learning_hist, orient='columns')
-        # If csv files already exists, append data
+        # If csv files already exists, append data.
         if os.path.exists(path):
             df.to_csv(path, mode='a', index=False, header=False)
         else:
