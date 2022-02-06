@@ -31,7 +31,7 @@ def controls():
 
             proposal_json = bapol_proposal_response.json().get('proposal')
 
-            batch_size = st.number_input("Enter batch size", step=1, value=10)
+            batch_size = st.number_input("Enter batch size", step=1, value=10, help=help.BATCH_SIZE_HELP)
             exploration_probabilities_a = []
             exploration_probabilities_b = []
             for i in range(len(proposal_json.get('executionStrategy'))):
@@ -50,19 +50,23 @@ def controls():
                 for i in range(len(proposal_json.get('executionStrategy'))):
                     bapol_json.get('executionStrategy').append({
                         'customerCategory': proposal_json.get('executionStrategy')[i].get('customerCategory'),
-                        'explorationProbability_A_pub': exploration_probabilities_a[i],
-                        'explorationProbability_B_pub': exploration_probabilities_b[i]
+                        'explorationProbabilityA': exploration_probabilities_a[i],
+                        'explorationProbabilityB': exploration_probabilities_b[i]
                     })
+                st.session_state['bapol_json'] = bapol_json
                 response = requests.post(BACKEND_URI + "batch-policy",
                                          json=bapol_json,
                                          headers={"Content-Type": "application/json"},
                                          params={'process-id': utils.get_currently_active_process_id()})
                 if response.status_code == requests.codes.ok:
-                    st.write("✅ Batch Policy uploaded")
                     st.session_state['new_proposal'] = False
+                    st.session_state['bapol_upload_success'] = True
                     st.experimental_rerun()
                 else:
+                    st.session_state['bapol_upload_success'] = False
                     st.write("🚨 Upload of Batch Policy failed: HTTP status code " + str(response.status_code))
+    if st.session_state['bapol_upload_success'] is True:
+        st.write("✅ Upload successful")
 
 
 def manual_decision():
@@ -128,9 +132,10 @@ def detailed_data():
                 if response_batch_instances.status_code != requests.codes.ok:
                     st.write("🚨 Can't fetch data right now")
                 else:
-                    batch_instances_df = DataFrame(columns=["Version", "Start Time", "End Time", "Reward"])
+                    batch_instances_df = DataFrame(columns=["Version", "Customer Category", "Start Time", "End Time", "Reward"])
                     for i in range(len(response_batch_instances.json().get("instances"))):
                         batch_instances_df.loc[i] = [response_batch_instances.json().get("instances")[i].get("decision"),
+                                                     response_batch_instances.json().get("instances")[i].get("customerCategory"),
                                                      response_batch_instances.json().get("instances")[i].get("startTime"),
                                                      response_batch_instances.json().get("instances")[i].get("endTime"),
                                                      response_batch_instances.json().get("instances")[i].get("reward"),

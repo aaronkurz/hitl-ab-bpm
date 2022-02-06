@@ -91,7 +91,8 @@ def set_process(process_name):
                               variant_b_camunda_id=camunda_id_b,
                               default_version=default_version,
                               a_hist_min_duration=a_hist_min_duration,
-                              a_hist_max_duration=a_hist_max_duration)
+                              a_hist_max_duration=a_hist_max_duration,
+                              customer_categories=request.args.get('customer-categories'))
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
@@ -126,6 +127,7 @@ def get_active_process_variants_metadata():
         'id': active_process_entry.id,
         'name': active_process_entry.name,
         'addedTime': active_process_entry.datetime_added,
+        'customerCategories': active_process_entry.customer_categories,
         'defaultVersion':
             None if active_process_entry.default_version is None else active_process_entry.default_version.value,
         'winningVersion':

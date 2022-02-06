@@ -46,15 +46,19 @@ def test_set_2_processes():
 def test_get_active_process_metadata():
     """ Test if receiving of metadata about currently active process works """
     # given
-    test_set_2_processes()
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
     # when
     response = requests.get(BASE_URL + "/process/active-meta")
     # then
     response_json = response.json()
     assert response.status_code == requests.codes.ok
-    assert response_json.get("name") == "helicopter_license_fast"
-    assert response_json.get('defaultVersion') == 'b'
+    assert response_json.get("name") == "helicopter_license"
+    assert response_json.get('defaultVersion') == 'a'
     assert response_json.get('id') is not None
+    assert response_json.get('customerCategories') == "public-gov"
     assert response_json.get('addedTime') is not None
     assert response_json.get('decisionTime') is None
     assert response_json.get("winningVersion") is None

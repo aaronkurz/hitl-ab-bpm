@@ -53,10 +53,88 @@ def test_set_bapol():
     assert utils.get_bapol_count() == 1
 
 
+def test_set_bapol_failing_json():
+    # given
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    bapol = {
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbability_A": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customer_Category": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    params = {
+        'process-id': utils.get_currently_active_process_id()
+    }
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
+                             params=params)
+    assert response.status_code == 400
+
+
+def test_set_bapol_failing_customer_category():
+    # given
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    bapol = {
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbability_A": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customer_Category": "enterprise",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    params = {
+        'process-id': utils.get_currently_active_process_id()
+    }
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
+                             params=params)
+    assert response.status_code == 400
+
+
 def test_get_latest():
     """ Test if retrieval of the latest batch policy works """
     # given
-    test_set_bapol()
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    utils.post_bapol_currently_active_process({
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    })
     # when
     response = requests.get(BASE_URL + "/batch-policy/latest")
     # then
@@ -64,8 +142,12 @@ def test_get_latest():
     response_json = response.json()
     assert response_json.get("batchSize") == 200
     assert response_json.get("prevBaPolPropId") is not None
-    assert type(response_json.get("processId")) == int
+    assert response_json.get("processId") == utils.get_currently_active_process_id()
     for i in range(2):
-        assert type(response_json.get("executionStrategy")[i].get("customerCategory")) == str
-        assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityA")) == float
-        assert type(response_json.get("executionStrategy")[i].get("explorationProbabilityB")) == float
+        exec_strat = response_json.get("executionStrategy")[i]
+        if exec_strat.get("customerCategory") == "public":
+            assert exec_strat.get("explorationProbabilityA") == 0.3
+            assert exec_strat.get("explorationProbabilityB") == 0.7
+        if exec_strat.get("customerCategory") == "gov":
+            assert exec_strat.get("explorationProbabilityA") == 0.7
+            assert exec_strat.get("explorationProbabilityB") == 0.3
