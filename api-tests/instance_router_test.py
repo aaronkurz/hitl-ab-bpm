@@ -73,6 +73,20 @@ def test_instantiation():
         assert "camundaInstanceId" in response.json().keys()
 
 
+def test_instantiation_failing_customer_category():
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy)
+    params = {
+        "process-id": utils.get_currently_active_process_id(),
+        "customer-category": "enterprise"
+    }
+    response = requests.get(BASE_URL + "/instance-router/start-instance", params=params)
+    assert response.status_code == 400
+
+
 def test_aggregate_data():
     bapol_5_size = {
         "batchSize": 10,
@@ -273,10 +287,12 @@ def test_detailed_batch_instance_info():
             assert len(response.json().get("instances")) == 2
         for instance in response.json().get("instances"):
             assert "decision" in instance.keys()
+            assert "customerCategory" in instance.keys()
             assert "startTime" in instance.keys()
             assert "endTime" in instance.keys()
             assert "reward" in instance.keys()
             assert instance.get("decision") is not None
+            assert instance.get("customerCategory") is not None
             assert instance.get("startTime") is not None
             if instance.get("endTime") is None:
                 assert instance.get("reward") is None

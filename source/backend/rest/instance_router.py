@@ -1,8 +1,8 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from instance_router import instance_router_interface
 from models.batch_policy import BatchPolicy
-from models.process import set_winning
+from models.process import set_winning, is_valid_customer_category
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
 from sqlalchemy import and_, asc
 from models.utils import Version
@@ -19,6 +19,8 @@ def start_process():
     process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
+    if not is_valid_customer_category(process_id, customer_category):
+        abort(400, "Not a valid customer category")
 
     # get decision from process bandit
     if not instance_router_interface.is_ready_for_instantiation():
@@ -157,6 +159,7 @@ def get_instances_batch():
     for instance in relevant_instances:
         data.get('instances').append({
             "decision": instance.decision.value,
+            "customerCategory": instance.customer_category,
             "startTime": instance.instantiation_time,
             "endTime": instance.finished_time,
             "reward": instance.reward

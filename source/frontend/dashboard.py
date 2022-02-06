@@ -132,9 +132,10 @@ def detailed_data():
                 if response_batch_instances.status_code != requests.codes.ok:
                     st.write("🚨 Can't fetch data right now")
                 else:
-                    batch_instances_df = DataFrame(columns=["Version", "Start Time", "End Time", "Reward"])
+                    batch_instances_df = DataFrame(columns=["Version", "Customer Category", "Start Time", "End Time", "Reward"])
                     for i in range(len(response_batch_instances.json().get("instances"))):
                         batch_instances_df.loc[i] = [response_batch_instances.json().get("instances")[i].get("decision"),
+                                                     response_batch_instances.json().get("instances")[i].get("customerCategory"),
                                                      response_batch_instances.json().get("instances")[i].get("startTime"),
                                                      response_batch_instances.json().get("instances")[i].get("endTime"),
                                                      response_batch_instances.json().get("instances")[i].get("reward"),

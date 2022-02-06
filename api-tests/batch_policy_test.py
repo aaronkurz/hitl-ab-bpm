@@ -53,6 +53,66 @@ def test_set_bapol():
     assert utils.get_bapol_count() == 1
 
 
+def test_set_bapol_failing_json():
+    # given
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    bapol = {
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbability_A": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customer_Category": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    params = {
+        'process-id': utils.get_currently_active_process_id()
+    }
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
+                             params=params)
+    assert response.status_code == 400
+
+
+def test_set_bapol_failing_customer_category():
+    # given
+    utils.post_processes_a_b("helicopter_license_fast",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    bapol = {
+        "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbability_A": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customer_Category": "enterprise",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    params = {
+        'process-id': utils.get_currently_active_process_id()
+    }
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
+                             params=params)
+    assert response.status_code == 400
+
+
 def test_get_latest():
     """ Test if retrieval of the latest batch policy works """
     # given

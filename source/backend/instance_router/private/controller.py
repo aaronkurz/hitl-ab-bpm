@@ -104,12 +104,14 @@ def instantiate(process_id: int, customer_category: str) -> dict:
         process_instance = ProcessInstance(process_id=process_id,
                                            decision=decision,
                                            camunda_instance_id=camunda_instance_id,
+                                           customer_category=customer_category,
                                            do_evaluate=True)
         append_process_instance_to_bapol(process_id, process_instance)
     else:
         process_instance = ProcessInstance(process_id=process_id,
                                            decision=decision,
                                            camunda_instance_id=camunda_instance_id,
+                                           customer_category=customer_category,
                                            do_evaluate=False)
     db.session.add(process_instance)
     db.session.commit()

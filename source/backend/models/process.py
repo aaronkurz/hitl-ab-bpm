@@ -12,6 +12,7 @@ class Process(db.Model):
     name = db.Column(db.String(100), nullable=False)
     active = db.Column(db.Boolean, nullable=False, default=True)
     datetime_added = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    customer_categories = db.Column(db.String, nullable=False)
     variant_a_path = db.Column(db.String, nullable=False)
     variant_b_path = db.Column(db.String, nullable=False)
     variant_a_camunda_id = db.Column(db.String, nullable=False)
@@ -76,3 +77,13 @@ def set_winning(process_id: int, decision: str) -> dict:
     relevant_process.datetime_decided = datetime.now()
     db.session.commit()
     return get_process_metadata(process_id)
+
+
+def is_valid_customer_category(process_id: int, customer_category: str):
+    process = Process.query.filter(Process.id == process_id).first()
+    customer_categories_list = process.customer_categories.split("-")
+    if customer_category in customer_categories_list:
+        return True
+    else:
+        return False
+
