@@ -22,10 +22,15 @@ def set_batch_policy():
         abort(404, "No prior open batch policy proposal for this process found.")
 
     json = request.json
+    assert 'batchSize' in json.keys()
+    assert 'executionStrategy' in json.keys()
     batch_size = json.get('batchSize')
     execution_strategies_json = json.get('executionStrategy')
     execution_strategies_table_rows = []
     for elem in execution_strategies_json:
+        assert 'explorationProbabilityA' in elem.keys()
+        assert 'explorationProbabilityB' in elem.keys()
+        assert 'customerCategory' in elem.keys()
         execution_strategies_table_rows.append(ExecutionStrategyBaPol(
             customer_category=elem.get('customerCategory'),
             exploration_probability_a=elem.get('explorationProbabilityA'),

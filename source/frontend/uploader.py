@@ -35,7 +35,7 @@ def upload_files():
                         "a-hist-min-duration": min_dur_a,
                         "a-hist-max-duration": max_dur_a
                     }
-                    response = requests.post(BACKEND_URI + "/process/" + process_name, files=files_in, params=params)
+                    response = requests.post(BACKEND_URI + "process/" + process_name, files=files_in, params=params)
                     if response.status_code == requests.codes.ok:
                         st.write("✅ Files uploaded, continue below.")
                     else:

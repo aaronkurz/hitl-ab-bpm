@@ -286,3 +286,111 @@ def test_detailed_batch_instance_info():
                 assert instance.get("reward") is not None
             if instance.get("reward") is not None:
                 assert instance.get("endTime") is not None
+
+
+def test_routing_follows_bapol_b():
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    utils.post_bapol_currently_active_process({
+        "batchSize": 10,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.0,
+                "explorationProbabilityB": 1.0
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.0,
+                "explorationProbabilityB": 1.0
+            }
+        ]
+    })
+    cs.start_client_simulation(10)
+    sleep(25)
+    params = {
+        "process-id": utils.get_currently_active_process_id(),
+        "batch-number": 1
+    }
+    response = requests.get(BASE_URL + "/instance-router/detailed-data/batch", params=params)
+    assert response.status_code == requests.codes.ok
+    response_instances = response.json().get("instances")
+    assert len(response_instances) == 10
+    for instance in response_instances:
+        assert instance.get('decision') == 'b'
+
+
+def test_routing_follows_bapol_a():
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    utils.post_bapol_currently_active_process({
+        "batchSize": 10,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 1.0,
+                "explorationProbabilityB": 0
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 1.0,
+                "explorationProbabilityB": 0
+            }
+        ]
+    })
+    cs.start_client_simulation(10)
+    sleep(25)
+    params = {
+        "process-id": utils.get_currently_active_process_id(),
+        "batch-number": 1
+    }
+    response = requests.get(BASE_URL + "/instance-router/detailed-data/batch", params=params)
+    assert response.status_code == requests.codes.ok
+    response_instances = response.json().get("instances")
+    assert len(response_instances) == 10
+    for instance in response_instances:
+        assert instance.get('decision') == 'a'
+
+
+def test_routing_follows_bapol_both():
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
+                             a_hist_max_duration=3)
+    utils.post_bapol_currently_active_process({
+        "batchSize": 10,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.5,
+                "explorationProbabilityB": 0.5
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.5,
+                "explorationProbabilityB": 0.5
+            }
+        ]
+    })
+    cs.start_client_simulation(10)
+    sleep(25)
+    params = {
+        "process-id": utils.get_currently_active_process_id(),
+        "batch-number": 1
+    }
+    response = requests.get(BASE_URL + "/instance-router/detailed-data/batch", params=params)
+    assert response.status_code == requests.codes.ok
+    response_instances = response.json().get("instances")
+    assert len(response_instances) == 10
+    a_counter = 0
+    b_counter = 0
+    for instance in response_instances:
+        if instance.get('decision') == 'a':
+            a_counter += 1
+        elif instance.get('decision') == 'b':
+            b_counter += 1
+    assert a_counter > 0 and b_counter > 0

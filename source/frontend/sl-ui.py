@@ -12,6 +12,8 @@ def setup():
         st.session_state['data_detailed_open'] = False
     if 'data_detailed_batch_open' not in st.session_state:
         st.session_state['data_detailed_batch_open'] = False
+    if 'bapol_upload_success' not in st.session_state:
+        st.session_state['bapol_upload_success'] = False
 
 
 def main():

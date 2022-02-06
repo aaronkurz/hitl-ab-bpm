@@ -25,17 +25,19 @@ def get_winning_version(process_id: int) -> str or None:
 
 
 def get_decision_in_batch(process_id, customer_category) -> str:
-    """
-   :param process_id:
-   :param customer_category:
+    """ Will return the decision based on the currently active batch policy.
+
+   :param process_id: process id in backend
+   :param customer_category: customer category of instantiation request
    :return: 'a' or 'b'
    """
     bapol_dict = batch_policy.get_current_bapol_data(process_id)
     for elem in bapol_dict.get('executionStrategy'):
         if elem.get('customerCategory') == customer_category:
-            return ['a', 'b'][bernoulli.rvs(elem.get('explorationProbabilityB'))]
-            # bernoulli.rvs(p) will return either 0 or 1, and 1 with the probability of p
-    raise Exception('No suitable customer category found in batch policy: ' + str(customer_category))
+            rv = bernoulli(elem.get('explorationProbabilityB'))
+            return ['a', 'b'][rv.rvs(1)[0]]
+            # rv.rvs(sample-size) will return either 0 or 1, and 1 with the probability of p in bernoulli(p)
+    raise RuntimeError('No suitable customer category found in batch policy: ' + str(customer_category))
 
 
 def get_decision_outside_batch(process_id) -> str:
