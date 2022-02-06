@@ -31,7 +31,7 @@ def controls():
 
             proposal_json = bapol_proposal_response.json().get('proposal')
 
-            batch_size = st.number_input("Enter batch size", step=1, value=10)
+            batch_size = st.number_input("Enter batch size", step=1, value=10, help=help.BATCH_SIZE_HELP)
             exploration_probabilities_a = []
             exploration_probabilities_b = []
             for i in range(len(proposal_json.get('executionStrategy'))):

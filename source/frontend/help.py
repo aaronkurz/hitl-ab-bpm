@@ -18,3 +18,8 @@ Here you can see the details of each and every instance that has been part of an
 """
 
 BATCH_NUMBER_CHOICE = "Number 1 means the first batch set for a process, number 2 means the second, and so on"
+
+BATCH_SIZE_HELP = """
+Here you can choose how many of the next incoming process instantiation requests will be part of this experimental \
+batch.
+"""
