@@ -23,22 +23,6 @@ def after_all():
     utils.remove_everything_from_db()
 
 
-def get_bapol_proposal_count_active_process():
-    params = {
-        'process-id': utils.get_currently_active_process_id()
-    }
-    response = requests.get(BASE_URL + "/batch-policy-proposal/count", params=params)
-    assert response.status_code == requests.codes.ok
-    return response.json().get('baPolProposalCount')
-
-
-def new_open_proposal_exists_active_process():
-    response = requests.get(BASE_URL + "/batch-policy-proposal/open",
-                            params={'process-id': utils.get_currently_active_process_id()})
-    assert response.status_code == requests.codes.ok
-    return response.json().get('newProposalExists')
-
-
 def test_first_one_automatically_created():
     """ Test whether the first, naive bapol proposal is created for a new proposal """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
@@ -68,7 +52,7 @@ def test_new_proposal_after_batch():
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=0.02,
                              a_hist_max_duration=3.6)
-    assert get_bapol_proposal_count_active_process() == 1
+    assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process({
         "batchSize": 5,
         "executionStrategy": [
@@ -87,7 +71,7 @@ def test_new_proposal_after_batch():
     assert utils.get_bapol_count() == 1
     cs.start_client_simulation(5)
     sleep(10)
-    assert get_bapol_proposal_count_active_process() == 2
+    assert utils.get_bapol_proposal_count_active_process() == 2
     response = requests.get(BASE_URL + "/batch-policy-proposal/open",
                             params={'process-id': utils.get_currently_active_process_id()})
     assert response.status_code == requests.codes.ok
@@ -115,15 +99,15 @@ def test_requests_in_between_batches():
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
                              a_hist_max_duration=3)
     # one open proposal at the beginning
-    assert get_bapol_proposal_count_active_process() == 1
+    assert utils.get_bapol_proposal_count_active_process() == 1
     # setting a batch policy with size 5 and finishing it
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
     cs.start_client_simulation(5)
     sleep(10)
     # making sure after first batch is finished that there are two proposals
-    assert get_bapol_proposal_count_active_process() == 2
-    assert new_open_proposal_exists_active_process() is True
+    assert utils.get_bapol_proposal_count_active_process() == 2
+    assert utils.new_open_proposal_exists_active_process() is True
     # starting 5 instances in between batches
     cs.start_client_simulation(5)
     sleep(10)
@@ -134,11 +118,11 @@ def test_requests_in_between_batches():
     cs.start_client_simulation(3)
     sleep(10)
     # making sure that there is no new proposal yet
-    assert new_open_proposal_exists_active_process() is False
-    assert get_bapol_proposal_count_active_process() == 2
+    assert utils.new_open_proposal_exists_active_process() is False
+    assert utils.get_bapol_proposal_count_active_process() == 2
     # finishing bapol
     cs.start_client_simulation(2)
     sleep(10)
     # making sure there is a new proposal
-    assert new_open_proposal_exists_active_process() is True
-    assert get_bapol_proposal_count_active_process() == 3
+    assert utils.new_open_proposal_exists_active_process() is True
+    assert utils.get_bapol_proposal_count_active_process() == 3

@@ -1,10 +1,9 @@
-from datetime import datetime
-
 from flask import Blueprint, abort, request, jsonify
 
+from rest import utils
 from models import db
 from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol_data
-from models.process import Process
+from models.process import Process, is_valid_customer_category
 from models.batch_policy_proposal import exists_bapol_proposal_without_bapol, get_current_open_proposal
 
 batch_policy_api = Blueprint('batch_policy_api', __name__)
@@ -18,14 +17,26 @@ def set_batch_policy():
      An open proposal has to be available to do this.
      """
     process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
     if not exists_bapol_proposal_without_bapol(process_id):
         abort(404, "No prior open batch policy proposal for this process found.")
 
     json = request.json
+    assert 'batchSize' in json.keys()
+    assert 'executionStrategy' in json.keys()
+    if 'batchSize' not in json.keys() \
+            or 'executionStrategy' not in json.keys():
+        abort(400, "Wrong JSON format")
     batch_size = json.get('batchSize')
     execution_strategies_json = json.get('executionStrategy')
     execution_strategies_table_rows = []
     for elem in execution_strategies_json:
+        if 'explorationProbabilityA' not in elem.keys() \
+                or 'explorationProbabilityB' not in elem.keys() \
+                or 'customerCategory' not in elem.keys():
+            abort(400, "Wrong JSON format")
+        if not is_valid_customer_category(process_id, elem.get('customerCategory')):
+            abort(400, "Not a valid customer category")
         execution_strategies_table_rows.append(ExecutionStrategyBaPol(
             customer_category=elem.get('customerCategory'),
             exploration_probability_a=elem.get('explorationProbabilityA'),
@@ -64,23 +75,10 @@ def get_batch_policy():
 
 @batch_policy_api.route('/count', methods=['GET'])
 def get_batch_policy_count():
-    """ Get amount of batch policies that have been set / entries in batch_policy db table """
-    data = {
-        "batchPolicyCount": BatchPolicy.query.count()
+    """ Get amount of batch policies that have been set / entries in batch_policy db table for a certain process """
+    process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
+    return {
+        "processId": process_id,
+        "batchPolicyCount": BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count()
     }
-    json_data = jsonify(data)
-    return json_data
-
-
-@batch_policy_api.route('', methods=['DELETE'])
-def delete_batch_policy_rows():
-    execs = db.session.query(ExecutionStrategyBaPol)
-    for exec in execs:
-        db.session.delete(exec)
-    bapols = db.session.query(BatchPolicy)
-    for bapol in bapols:
-        db.session.delete(bapol)
-    db.session.commit()
-    return "Success"
-
-

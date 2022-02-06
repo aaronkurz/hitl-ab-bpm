@@ -7,6 +7,7 @@ from rest.instance_router import instance_router_api
 from rest.batch_policy import batch_policy_api
 from rest.process import process_api
 from rest.batch_policy_proposal import batch_policy_proposal_api
+from rest.meta import meta_api
 
 app = create_app.create_app()
 
@@ -14,6 +15,7 @@ app.register_blueprint(batch_policy_api, url_prefix="/batch-policy")
 app.register_blueprint(process_api, url_prefix="/process")
 app.register_blueprint(instance_router_api, url_prefix="/instance-router")
 app.register_blueprint(batch_policy_proposal_api, url_prefix="/batch-policy-proposal")
+app.register_blueprint(meta_api, url_prefix="/meta")
 
 SWAGGER_URL = "/swagger"
 API_URL = "/static/swagger.yaml"

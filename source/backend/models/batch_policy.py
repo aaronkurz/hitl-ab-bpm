@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from sqlalchemy import desc, asc
+
 from models import db
 from models.utils import CASCADING_DELETE
 
@@ -27,8 +29,7 @@ class ExecutionStrategyBaPol(db.Model):
 
 
 def get_latest_bapol_entry(process_id: int):
-    return BatchPolicy.query.order_by(BatchPolicy.time_added.desc()) \
-        .filter(BatchPolicy.process_id == process_id).first()
+    return BatchPolicy.query.filter(BatchPolicy.process_id == process_id).order_by(desc(BatchPolicy.id)).first()
 
 
 def append_process_instance_to_bapol(process_id: int, process_instance):
