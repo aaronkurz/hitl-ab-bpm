@@ -3,6 +3,8 @@ import csv
 import logging
 import random
 import vowpalwabbit
+import pandas as pd
+import os
 
 from datetime import datetime
 from models import db
@@ -19,31 +21,25 @@ orgas = ['gov', 'public']
 actions = ["A", "B"]
 # Model
 vw = vowpalwabbit.Workspace("--cb_explore_adf -q UA --epsilon 0.2", quiet=True)
+# Store stats of all iteration within a batch
+learning_hist = []
+# Pytest boolean flag
+debugging = False
 
-header_flag = False
 
+def get_reward(duration: float):
+    """[summary]
 
-def get_reward(context: str, action: str, duration: float):
-    """Returns a reward ∈ [0;1] given a list of contexts and an action.
-    Args:
-        context ([type]): [description]
-        action ([type]): [description]
-    Returns:
-        [type]: [description]
+    params:
+        duration (float): Duration of the process instance
+
+    returns:  1 - duration. If the duration >= 1, 0 as the reward is returned
     """
-    # TODO
+    # TODO proper reward function
     neg_duration = 1.0 - duration
     if neg_duration <= 0:
         neg_duration = 0.0
-
-    if context == 'public' and action == 'A':
-        return neg_duration
-    elif context == 'public' and action == 'B':
-        return neg_duration
-    elif context == 'gov' and action == 'A':
-        return neg_duration
-    else:
-        return neg_duration
+    return neg_duration
 
 
 def to_vw_example_format(context, actions, cb_label=None):
@@ -75,12 +71,19 @@ def sample_custom_pmf(pmf):
             return index, prob
 
 def get_action(vw, context: str, actions):
+    """
+    Not used right now
+
+    """
     vw_text_example = to_vw_example_format(context, actions)
     pmf = vw.predict(vw_text_example)
     chosen_action_index, prob = sample_custom_pmf(pmf)
     return actions[chosen_action_index], prob
 
 def get_action_prob_per_context_dict(vw, orgas, actions):
+    """
+
+    """
     # Multiple contexts, loop over list of contexts
     dict_list = []
     for elem in orgas:
@@ -96,18 +99,16 @@ def get_action_prob_per_context_dict(vw, orgas, actions):
         dict_list.append(dict)
     return dict_list  
 
-def write_stats_to_csv(dict):
-    prob_dict = calculate_counterprobability(dict['action'], dict['prob'])
-    header = ['context', 'action', 'reward', 'prob_a', 'prob_b']
-    data = [dict['context'],dict['action'],dict['reward'],prob_dict['prob_a'],prob_dict['prob_b']]
-    with open('action_prob.csv', 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        if not header_flag:
-            writer.writerow(header)
-        writer.writerow(data)
-
 
 def calculate_counterprobability(action, prob):
+    """
+    Calculate the counterprobability of a given action under a given context. Used in write_stats_to_csv.
+    params:
+        action (str): Action used in the current iteration
+        prob (float): Corresponding probability 
+
+    returns: Dictionary containing the probabilities
+    """
     prob_dict = {}
     counter_prob = round(1.0-prob, 2)
     prob = round(prob, 2)
@@ -123,42 +124,47 @@ def calculate_counterprobability(action, prob):
 def choose_orga(orgas: list):
     """
     Choose an organisation randomly from organisations list
-    :param orgas:
-    :return:
+    :param orgas
+    :return Random chosen orga
     """
     return random.choice(orgas)
 
 
-def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action, do_learn: bool = True):
-    """[summary]
-    Args:
+def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str, do_learn: bool = True):
+    """
+        
+    param:
         vw (contextual_bandit): contextual bandit model to be trained
         orgas (List[String]): List of organsiation the agent can choose from
         actions (List[String]): List of actions the agent can choose from
-        reward_function (int): [description]
-        do_learn (bool, optional): [description]. Defaults to True.
-    Returns:
-        [type]: [description]
+        reward_function (int): Function to evaluate the action
+        duration (float): Duration of a process instance
+        hist_action (st): Action retrieved from the database
+        customer_category (str): Context retrieved from the database
+        do_learn (bool, optional): Signal to learn on iteration. Defaults to True.
+    return: reward
     """
-    #current_action_choosen,current_context,reward,action_prob_a_gov,action_prob_b_gov,action_prob_a_public,action_prob_b_public
     # Set random seed
     # random.seed(1)
-    # 1. In each simulation choose a user
-    organisation = choose_orga(orgas)
-    # 2. Pass context to vw to get an action
-    context = {'orga': organisation}
+    #organisation = choose_orga(orgas)
+    # Set the context 
+    context = {'orga': customer_category}
+    # Set the chosen action
     action = hist_action.value.upper()
+    # Retrieve probabilty for the given context and action
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
     for elem in agent_stats_list:
-        if elem['orga'] == organisation:
+        if elem['orga'] == customer_category:
             prob = elem[action]
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
-    # 3. Get reward of the action we chose
-    reward = reward_function(context, action, duration)
+    # Get reward of the action we chose
+    reward = reward_function(duration)
     logging.info(f'Reward: {reward}')
-    dict = {'context': organisation, 'action': action, 'prob': prob, 'reward': reward}
-    write_stats_to_csv(dict)
-    header_flag = True
+    # Write info of iteration to csv file
+    prob_dict = calculate_counterprobability(action,prob)
+    dict = {'context': customer_category, 'action': action, 'prob_a': prob_dict['prob_a'], 'prob_b': prob_dict['prob_b'], 'reward': reward}
+    learning_hist.append(dict)
+    # Learn on the current example
     if do_learn:
         # 4. Inform VW of what happened so we can learn from it
         vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
@@ -167,13 +173,14 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
         vw.learn(vw_format)
         # 6. Let VW know you're done with these objects
         vw.finish_example(vw_format)
-    # We negate this so that on the plot instead of minimizing cost, we are maximizing reward
+    # Return the reward of the current iteration
     return reward
 
 
 def calculate_duration(start_time: datetime, end_time: datetime):
     """
     Calculate the duration of a process instance given start and end timestamp
+    :param start_time, end_time
     """
     return (end_time - start_time).total_seconds()
 
@@ -191,11 +198,25 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.reward == None))
     
     for instance in relevant_instances:
+        process_id = instance.process_id
+        # Calculate duration
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
-        # Learning
-        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision)
+        # Learn 
+        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision, instance.customer_category)
+        # Update db
         instance.reward = reward
     db.session.commit()
+    # Store learning history in csv file
+    if not debugging:
+        path = f'instance_router/private/results/learning_history_{process_id}.csv'
+        df = pd.DataFrame.from_dict(learning_hist, orient='columns')
+        # If csv files already exists, append data
+        if os.path.exists(path):
+            df.to_csv(path, mode='a', index=False, header=False)
+        else:
+            df.to_csv(path, index=False)
+    learning_hist.clear()
+    # Set batch policy proposal accordingly
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
     set_bapol_proposal(process_id, ["gov", "public"], [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
