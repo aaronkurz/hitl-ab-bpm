@@ -16,7 +16,6 @@ def get_random_customer_category(list_of_customer_categories: [str]):
 def remove_everything_from_db():
     response = requests.delete(BASE_URL + "/meta/all")
     assert response.status_code == requests.codes.ok
-    # TODO: finish this and delete all the other ways and endpoints
 
 
 # PROCESS API

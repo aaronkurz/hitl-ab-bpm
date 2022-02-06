@@ -419,6 +419,9 @@ paths:
                         decision:
                           type: string
                           description: a or b
+                        customerCategory:
+                          type: string
+                          example: public
                         startTime:
                           type: string
                         endTime:
