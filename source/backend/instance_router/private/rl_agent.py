@@ -1,5 +1,4 @@
 """ Here, the RL agent is implemented """
-import csv
 import logging
 import random
 import vowpalwabbit
