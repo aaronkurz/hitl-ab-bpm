@@ -182,6 +182,14 @@ def calculate_duration(start_time: datetime, end_time: datetime):
 
 
 def load_model(process_id: int):
+    """
+    Load the cb model if it already exists. If not, instantiate the new model
+
+    params:
+        process_id (int): Id of the parent process.
+
+    returns: vw: The cb model
+    """
     model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
     if os.path.exists(model_path):
         vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
@@ -191,6 +199,13 @@ def load_model(process_id: int):
 
 
 def write_to_csv(process_id: int):
+    """
+    Write the (context, action, prob_a, prob_b, reward) of each iteration to a csv file.
+    All iterations that belong to the same process, are written to the same csv file.
+
+    params:
+        process_id (int): Id of the parent process.
+    """
     path = f'instance_router/private/results/learning_history_{process_id}.csv'
     df = pd.DataFrame.from_dict(learning_hist, orient='columns')
     # If csv files already exists, append data.
