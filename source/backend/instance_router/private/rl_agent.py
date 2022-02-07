@@ -180,6 +180,7 @@ def calculate_duration(start_time: datetime, end_time: datetime):
     """
     return (end_time - start_time).total_seconds()
 
+
 def load_model(process_id: int):
     model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
     if os.path.exists(model_path):
@@ -189,6 +190,7 @@ def load_model(process_id: int):
         print('new')
         vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
     return vw
+
 
 def write_to_csv(process_id: int):
     path = f'instance_router/private/results/learning_history_{process_id}.csv'
