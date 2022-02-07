@@ -5,7 +5,6 @@ import random
 import vowpalwabbit
 import pandas as pd
 import os
-import numpy as np
 
 from datetime import datetime
 from models import db
@@ -25,8 +24,8 @@ debugging = False
 
 
 def get_reward(duration: float):
-    """[summary]
-
+    """
+        Return the reward for the action taken based on the duration of the process instance.
     params:
         duration (float): Duration of the process instance
 
@@ -41,7 +40,13 @@ def get_reward(duration: float):
 
 def to_vw_example_format(context, actions, cb_label=None):
     """
-    This function modifies (context, action, cost, probability) to VW friendly format
+    Modify (context, action, cost, probability) to a VW friendly format.
+
+    params:
+        context: The context of the cb
+        actions: List of all possible actions
+    
+    returns: VW friendly String
 
     """
     if cb_label is not None:
@@ -58,6 +63,14 @@ def to_vw_example_format(context, actions, cb_label=None):
 
 
 def sample_custom_pmf(pmf):
+    """
+    Helper method
+
+    params:
+        pmf ([type]): [description]
+
+    returns:
+    """
     total = sum(pmf)
     scale = 1 / total
     pmf = [x * scale for x in pmf]
@@ -82,6 +95,15 @@ def get_action(vw, context: str, actions):
 
 def get_action_prob_per_context_dict(vw, orgas, actions):
     """
+    Retrieve the probability for each action given any context.
+
+    params:
+        vw: The cb model
+        orgas: The context
+        actions: All possible actions
+    
+    returns:
+        Dictionary containing the probabilities of each action under given context 
 
     """
     # Multiple contexts, loop over list of contexts
