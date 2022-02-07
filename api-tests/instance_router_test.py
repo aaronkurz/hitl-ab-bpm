@@ -205,7 +205,6 @@ def test_client_requests_data():
 
 
 def test_finished_instances_are_collected():
-
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,

@@ -5,25 +5,23 @@ import random
 import vowpalwabbit
 import pandas as pd
 import os
+import numpy as np
 
 from datetime import datetime
 from models import db
 from models.process_instance import ProcessInstance
+from models.process import get_process_metadata
 from models.batch_policy_proposal import BatchPolicyProposal, set_bapol_proposal
 from sqlalchemy import and_
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-# Context
-orgas = ['gov', 'public']
 # Actions
 actions = ["A", "B"]
-# Model
-vw = vowpalwabbit.Workspace("--cb_explore_adf -q UA --epsilon 0.2", quiet=True)
 # Store stats of all iteration within a batch
 learning_hist = []
 # Pytest boolean flag
-debugging = True
+debugging = False
 
 
 def get_reward(duration: float):
@@ -129,7 +127,7 @@ def choose_orga(orgas: list):
     return random.choice(orgas)
 
 
-def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str, do_learn: bool = True):
+def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str):
     """
         
     param:
@@ -146,9 +144,9 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # Set random seed
     # random.seed(1)
     #organisation = choose_orga(orgas)
-    # Set the context 
+    # 1. Set the context 
     context = {'orga': customer_category}
-    # Set the chosen action
+    # 2. Set the chosen action
     action = hist_action.value.upper()
     # Retrieve probabilty for the given context and action
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
@@ -156,7 +154,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
         if elem['orga'] == customer_category:
             prob = elem[action]
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
-    # Get reward of the action we chose
+    # 3. Get reward of the action we chose
     reward = reward_function(duration)
     logging.info(f'Reward: {reward}')
     # Write info of iteration to csv file
@@ -164,14 +162,13 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     dict = {'context': customer_category, 'action': action, 'prob_a': prob_dict['prob_a'], 'prob_b': prob_dict['prob_b'], 'reward': reward}
     learning_hist.append(dict)
     # Learn on the current example
-    if do_learn:
-        # 4. Inform VW of what happened so we can learn from it
-        vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
-                             vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
-        # 5. Learn
-        vw.learn(vw_format)
-        # 6. Let VW know you're done with these objects
-        vw.finish_example(vw_format)
+    # 4. Inform VW of what happened so we can learn from it
+    vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
+                         vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
+    # 5. Learn
+    vw.learn(vw_format)
+    # 6. Let VW know you're done with these objects
+    vw.finish_example(vw_format)
     # Return the reward of the current iteration
     return reward
 
@@ -183,6 +180,24 @@ def calculate_duration(start_time: datetime, end_time: datetime):
     """
     return (end_time - start_time).total_seconds()
 
+def load_model(process_id: int):
+    model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
+    if os.path.exists(model_path):
+        print('already exists.')
+        vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
+    else: 
+        print('new')
+        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
+    return vw
+
+def write_to_csv(process_id: int):
+    path = f'instance_router/private/results/learning_history_{process_id}.csv'
+    df = pd.DataFrame.from_dict(learning_hist, orient='columns')
+    # If csv files already exists, append data.
+    if os.path.exists(path):
+        df.to_csv(path, mode='a', index=False, header=False)
+    else:
+        df.to_csv(path, index=False)
 
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
@@ -195,9 +210,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-    
+    # Load model
+    vw = load_model(process_id)
+    # Get context
+    metadata = get_process_metadata(process_id)
+    orgas = metadata['customer_categories'].split('-')
     for instance in relevant_instances:
-        process_id = instance.process_id
         # Calculate duration
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
         # Learn 
@@ -207,15 +225,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     db.session.commit()
     # Store learning history in csv file
     if not debugging:
-        path = f'instance_router/private/results/learning_history_{process_id}.csv'
-        df = pd.DataFrame.from_dict(learning_hist, orient='columns')
-        # If csv files already exists, append data.
-        if os.path.exists(path):
-            df.to_csv(path, mode='a', index=False, header=False)
-        else:
-            df.to_csv(path, index=False)
+        write_to_csv(process_id)
     learning_hist.clear()
     # Set batch policy proposal accordingly
     agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
-    set_bapol_proposal(process_id, ["gov", "public"], [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
+    set_bapol_proposal(process_id, orgas, [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
+    # Save model
+    vw.save(f'instance_router/private/cb_models/cb_model_process_id={process_id}')
+    del vw

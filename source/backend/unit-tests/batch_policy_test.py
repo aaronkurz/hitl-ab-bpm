@@ -25,26 +25,26 @@ def before_all():
     # v Will be executed after the last test
 
 
-#def test_get_current_bapol():
-#    assert {
-#               'baPolId': 10,
-#               'prevBaPolPropId': 5,
-#               "batchSize": 200,
-#               "lastModified": "2020",
-#               "processId": 5,
-#               "executionStrategy": [
-#                   {
-#                       "customerCategory": "public",
-#                       "explorationProbabilityA": 0.3,
-#                       "explorationProbabilityB": 0.7
-#                   },
-#                   {
-#                       "customerCategory": "public",
-#                       "explorationProbabilityA": 0.3,
-#                       "explorationProbabilityB": 0.7
-#                   }
-#               ]
-#           } == get_current_bapol_data(5)
+def test_get_current_bapol():
+    assert {
+               'baPolId': 10,
+               'prevBaPolPropId': 5,
+               "batchSize": 200,
+               "lastModified": "2020",
+               "processId": 5,
+               "executionStrategy": [
+                   {
+                       "customerCategory": "public",
+                       "explorationProbabilityA": 0.3,
+                       "explorationProbabilityB": 0.7
+                   },
+                   {
+                       "customerCategory": "public",
+                       "explorationProbabilityA": 0.3,
+                       "explorationProbabilityB": 0.7
+                   }
+               ]
+           } == get_current_bapol_data(5)
 
 
 def test_active_count_zero():
