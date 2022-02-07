@@ -185,6 +185,9 @@ def write_to_csv(process_id: int):
         process_id (int): Id of the parent process.
     """
     path = f'instance_router/private/results/learning_history_{process_id}.csv'
+    path_without_csv = 'instance_router/private/results/'
+    if not os.path.exists(path_without_csv):
+        os.makedirs(path_without_csv)
     df = pd.DataFrame.from_dict(learning_hist, orient='columns')
     # If csv files already exists, append data.
     if os.path.exists(path):
@@ -273,5 +276,8 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
     # Save model
     if not debugging:
-        vw.save(f'instance_router/private/cb_models/cb_model_process_id={process_id}')
+        rel_path = 'instance_router/private/cb_models'
+        if not os.path.exists(rel_path):
+            os.makedirs(rel_path)
+        vw.save(rel_path + f'/cb_model_process_id={process_id}')
         del vw
