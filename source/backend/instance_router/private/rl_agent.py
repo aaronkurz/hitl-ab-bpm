@@ -272,5 +272,6 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     set_bapol_proposal(process_id, orgas, [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
     # Save model
-    vw.save(f'instance_router/private/cb_models/cb_model_process_id={process_id}')
-    del vw
+    if not debugging:
+        vw.save(f'instance_router/private/cb_models/cb_model_process_id={process_id}')
+        del vw
