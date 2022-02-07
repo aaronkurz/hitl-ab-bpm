@@ -56,6 +56,7 @@ def to_vw_example_format(context, actions, cb_label=None):
     # Strip the last newline
     return example_string[:-1]
 
+
 def sample_custom_pmf(pmf):
     total = sum(pmf)
     scale = 1 / total
@@ -67,6 +68,7 @@ def sample_custom_pmf(pmf):
         if sum_prob > draw:
             return index, prob
 
+
 def get_action(vw, context: str, actions):
     """
     Not used right now
@@ -76,6 +78,7 @@ def get_action(vw, context: str, actions):
     pmf = vw.predict(vw_text_example)
     chosen_action_index, prob = sample_custom_pmf(pmf)
     return actions[chosen_action_index], prob
+
 
 def get_action_prob_per_context_dict(vw, orgas, actions):
     """
@@ -127,6 +130,48 @@ def choose_orga(orgas: list):
     return random.choice(orgas)
 
 
+def calculate_duration(start_time: datetime, end_time: datetime):
+    """
+    Calculate the duration of a process instance given start and end timestamp
+    :param start_time, end_time
+    """
+    return (end_time - start_time).total_seconds()
+
+
+def load_model(process_id: int):
+    """
+    Load the cb model if it already exists. If not, instantiate the new model
+
+    params:
+        process_id (int): Id of the parent process.
+
+    returns: vw: The cb model
+    """
+    model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
+    if os.path.exists(model_path):
+        vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
+    else: 
+        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
+    return vw
+
+
+def write_to_csv(process_id: int):
+    """
+    Write the (context, action, prob_a, prob_b, reward) of each iteration to a csv file.
+    All iterations that belong to the same process, are written to the same csv file.
+
+    params:
+        process_id (int): Id of the parent process.
+    """
+    path = f'instance_router/private/results/learning_history_{process_id}.csv'
+    df = pd.DataFrame.from_dict(learning_hist, orient='columns')
+    # If csv files already exists, append data.
+    if os.path.exists(path):
+        df.to_csv(path, mode='a', index=False, header=False)
+    else:
+        df.to_csv(path, index=False)
+
+
 def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str):
     """
         
@@ -172,47 +217,6 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # Return the reward of the current iteration
     return reward
 
-
-def calculate_duration(start_time: datetime, end_time: datetime):
-    """
-    Calculate the duration of a process instance given start and end timestamp
-    :param start_time, end_time
-    """
-    return (end_time - start_time).total_seconds()
-
-
-def load_model(process_id: int):
-    """
-    Load the cb model if it already exists. If not, instantiate the new model
-
-    params:
-        process_id (int): Id of the parent process.
-
-    returns: vw: The cb model
-    """
-    model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
-    if os.path.exists(model_path):
-        vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
-    else: 
-        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
-    return vw
-
-
-def write_to_csv(process_id: int):
-    """
-    Write the (context, action, prob_a, prob_b, reward) of each iteration to a csv file.
-    All iterations that belong to the same process, are written to the same csv file.
-
-    params:
-        process_id (int): Id of the parent process.
-    """
-    path = f'instance_router/private/results/learning_history_{process_id}.csv'
-    df = pd.DataFrame.from_dict(learning_hist, orient='columns')
-    # If csv files already exists, append data.
-    if os.path.exists(path):
-        df.to_csv(path, mode='a', index=False, header=False)
-    else:
-        df.to_csv(path, index=False)
 
 def learn_and_set_new_batch_policy_proposal(process_id: int):
     """
