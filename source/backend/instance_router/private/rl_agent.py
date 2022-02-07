@@ -184,10 +184,8 @@ def calculate_duration(start_time: datetime, end_time: datetime):
 def load_model(process_id: int):
     model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
     if os.path.exists(model_path):
-        print('already exists.')
         vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
     else: 
-        print('new')
         vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
     return vw
 
