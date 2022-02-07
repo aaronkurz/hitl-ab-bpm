@@ -9,7 +9,7 @@ from datetime import datetime
 from models import db
 from models.process_instance import ProcessInstance
 from models.process import get_process_metadata
-from models.batch_policy_proposal import BatchPolicyProposal, set_bapol_proposal
+from models.batch_policy_proposal import set_bapol_proposal
 from sqlalchemy import and_
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
