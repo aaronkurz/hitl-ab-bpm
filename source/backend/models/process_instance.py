@@ -9,6 +9,7 @@ class ProcessInstance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'))
     batch_policy_id = db.Column(db.Integer, db.ForeignKey('batch_policy.id'))
+    customer_category = db.Column(db.String, nullable=False)
     decision = db.Column(db.Enum(Version), nullable=False)
     do_evaluate = db.Column(db.Boolean, nullable=False)
     instantiation_time = db.Column(db.DateTime, nullable=False, default=datetime.now())

@@ -6,10 +6,11 @@ from flask import jsonify
 from sqlalchemy import and_
 
 from camunda.client import CamundaClient
-from models.batch_policy_proposal import create_naive_bapol_proposal
+from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.process_instance import ProcessInstance
 from models import db
 from models.process import Process, Version
+from rest import utils
 
 ALLOWED_EXTENSIONS = {'bpmn'}
 
@@ -49,6 +50,12 @@ def set_process(process_name):
     # get relevant customer categories
     all_customer_categories = request.args.get('customer-categories').split('-')
 
+    # get upper and lower time of version a history
+    a_hist_min_duration = float(request.args.get('a-hist-min-duration'))
+    a_hist_max_duration = float(request.args.get('a-hist-max-duration'))
+    if a_hist_min_duration is None or a_hist_max_duration is None:
+        abort(400, 'Missing query parameter a-hist-min-duration or a-hist-max-duration')
+
     # Directory
     directory = process_name
     # Parent Directory path
@@ -77,46 +84,25 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
-    # add naive bp proposal
-    naive_bapol_prop = create_naive_bapol_proposal(all_customer_categories)
-
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
                               variant_a_camunda_id=camunda_id_a,
                               variant_b_camunda_id=camunda_id_b,
                               default_version=default_version,
-                              batch_policy_proposals=[naive_bapol_prop])
+                              a_hist_min_duration=a_hist_min_duration,
+                              a_hist_max_duration=a_hist_max_duration,
+                              customer_categories=request.args.get('customer-categories'))
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
     db.session.add(process_variant)
     db.session.commit()
+    # add naive bp proposal
+    set_naive_bapol_proposal(process_variant.id, all_customer_categories)
     return {
         'processId': process_variant.id
     }
-
-
-@process_api.route('', methods=['DELETE'])
-def delete_process_variants_rows():
-    # delete process versions from filesystem
-    folder = os.path.join(os.getcwd(), 'resources/bpmn/')
-
-    for filename in os.listdir(folder):
-        file_path = os.path.join(folder, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            abort(500, 'Failed to delete %s. Reason: %s' % (file_path, e))
-    # remove db rows
-    results = db.session.query(Process).all()
-    for result in results:
-        db.session.delete(result)
-    db.session.commit()
-    return "Success"
 
 
 @process_api.route('/count', methods=['GET'])
@@ -133,7 +119,7 @@ def get_processes_count():
 def get_active_process_variants_metadata():
     active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
     if active_process_entry_query.count() == 0:
-        return "No active process in db"
+        abort(500, "No active process in db")
     elif active_process_entry_query.count() > 1:
         return abort(500, "More than one active process")
     active_process_entry = active_process_entry_query.first()
@@ -141,6 +127,7 @@ def get_active_process_variants_metadata():
         'id': active_process_entry.id,
         'name': active_process_entry.name,
         'addedTime': active_process_entry.datetime_added,
+        'customerCategories': active_process_entry.customer_categories,
         'defaultVersion':
             None if active_process_entry.default_version is None else active_process_entry.default_version.value,
         'winningVersion':
@@ -152,7 +139,8 @@ def get_active_process_variants_metadata():
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
 def get_process_variant_files(a_or_b):
-    requested_id = request.args.get('id')
+    requested_id = int(request.args.get('id'))
+    utils.validate_backend_process_id(requested_id)
     if requested_id is None:
         abort(400, description='id query parameter not specified')
     active_process_entry_query = db.session.query(Process).filter(Process.id == requested_id)
@@ -191,6 +179,7 @@ def get_process_variant_files(a_or_b):
 @process_api.route('/experiment-state', methods=['GET'])
 def get_process_state():
     process_id = int(request.args.get('process-id'))
+    utils.validate_backend_process_id(process_id)
     if Process.query.filter(Process.id == process_id).count == 0:
         abort(404, "No such process/experiment.")
     if Process.query.filter(Process.id == process_id).first().winning_version is not None \

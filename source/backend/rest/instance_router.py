@@ -1,12 +1,13 @@
 """ This module presents ways to interact with the instance router and its results from the outside """
 from flask import Blueprint, request, abort
 from instance_router import instance_router_interface
-from models.process import set_winning
+from models.batch_policy import BatchPolicy
+from models.process import set_winning, is_valid_customer_category
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
 from sqlalchemy import and_, asc
-
 from models.utils import Version
 from rest.utils import validate_backend_process_id
+import statistics
 import requests
 
 instance_router_api = Blueprint('instance_router_api', __name__)
@@ -18,6 +19,8 @@ def start_process():
     process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     customer_category = request.args.get('customer-category')
+    if not is_valid_customer_category(process_id, customer_category):
+        abort(400, "Not a valid customer category")
 
     # get decision from process bandit
     if not instance_router_interface.is_ready_for_instantiation():
@@ -36,21 +39,54 @@ def start_process():
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
 def count_a_b():
-    """ Get some metadata about process """
+    """ Get some metadata about process: all data concerns only the instances that were part of an experimental batch!  """
     process_id = request.args.get('process-id')
     validate_backend_process_id(process_id)
-    a_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                 ProcessInstance.decision == 'a')).count()
-    b_amount = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                 ProcessInstance.decision == 'b')).count()
+    a_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == 'a',
+                                                             ProcessInstance.do_evaluate == True))
+    b_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == 'b',
+                                                             ProcessInstance.do_evaluate == True))
+
+    a_number_started = a_all_relevant_query.count()
+    b_number_started = b_all_relevant_query.count()
+
+    a_all_relevant_query_finished = a_all_relevant_query.filter(ProcessInstance.finished_time != None)
+    b_all_relevant_query_finished = b_all_relevant_query.filter(ProcessInstance.finished_time != None)
+    # Test if reward was calculated for all finished instances in batches, as expected
+    assert a_all_relevant_query_finished.count() == a_all_relevant_query.filter(ProcessInstance.reward != None).count()\
+        and b_all_relevant_query_finished.count() == b_all_relevant_query.filter(ProcessInstance.reward != None).count(),\
+        "Server Error: Reward was not calculated properly for all finished instances"
+
+    a_number_finished = a_all_relevant_query_finished.count()
+    b_number_finished = b_all_relevant_query_finished.count()
+
+    a_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
+                        for instance in a_all_relevant_query_finished]
+    b_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
+                         for instance in b_all_relevant_query_finished]
+    a_average_duration_sec = None if len(a_list_durations) == 0 else statistics.mean(a_list_durations)
+    b_average_duration_sec = None if len(b_list_durations) == 0 else statistics.mean(b_list_durations)
+
+    a_list_rew = [instance.reward for instance in a_all_relevant_query_finished]
+    b_list_rew = [instance.reward for instance in b_all_relevant_query_finished]
+    a_average_reward = None if len(a_list_rew) == 0 else statistics.mean(a_list_rew)
+    b_average_reward = None if len(b_list_rew) == 0 else statistics.mean(b_list_rew)
+
     return {
         "a": {
-            "amount": a_amount
+            "numberStarted": a_number_started,
+            "numberFinished": a_number_finished,
+            "averageDurationSec": a_average_duration_sec,
+            "averageReward": a_average_reward
         },
         "b": {
-            "amount": b_amount
+            "numberStarted": b_number_started,
+            "numberFinished": b_number_finished,
+            "averageDurationSec": b_average_duration_sec,
+            "averageReward": b_average_reward
         }
-        # TODO add further aggregated info, such as mean reward, percent finished and so on
     }
 
 
@@ -65,12 +101,13 @@ def manual_decision():
 
 
 @instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])
-def get_instantiation_plot():
-    """ Get a time overview of client requests and where they have been routed to """
-    process_id = request.args.get('process-id')
+def get_instantiation_data():
+    """ Get a time overview of client requests and where they have been routed to (in batch) """
+    process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
 
-    all_instances_ordered = ProcessInstance.query.filter(ProcessInstance.process_id == process_id). \
+    all_instances_ordered = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                              ProcessInstance.do_evaluate == True)). \
         order_by(asc(ProcessInstance.instantiation_time))
     requests_a = []
     requests_b = []
@@ -92,6 +129,42 @@ def get_instantiation_plot():
         "requestsA": requests_a,
         "requestsB": requests_b
     }
+
+
+@instance_router_api.route('/aggregate-data/client-requests/outside-batch', methods=['GET'])
+def get_instantiation_data_outside_batch():
+    process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
+    return {
+        "numberOfRequests": ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                              ProcessInstance.do_evaluate == False)).count()
+    }
+
+
+@instance_router_api.route('/detailed-data/batch', methods=['GET'])
+def get_instances_batch():
+    process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
+    batch_number = int(request.args.get('batch-number'))
+    assert batch_number <= BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count(), "Batch number too high"
+    data = {
+        "processId": process_id,
+        "batchNumber": batch_number,
+        "instances": []
+    }
+    relevant_bapol_id = BatchPolicy.query.filter(BatchPolicy.process_id == process_id)\
+        .order_by(asc(BatchPolicy.id))[batch_number - 1].id
+    relevant_instances = ProcessInstance.query.filter(ProcessInstance.batch_policy_id == relevant_bapol_id)\
+        .order_by(asc(ProcessInstance.id))
+    for instance in relevant_instances:
+        data.get('instances').append({
+            "decision": instance.decision.value,
+            "customerCategory": instance.customer_category,
+            "startTime": instance.instantiation_time,
+            "endTime": instance.finished_time,
+            "reward": instance.reward
+        })
+    return data
 
 
 # TODO: migrate RL script first
@@ -194,7 +267,6 @@ def store_reward():
     return "Success"
 
 
-# TODO: add endpoint that returns plot of instantiations over time
 # Return the Matplotlib image as a string/dict/request
 # @instance_router_api.route('/plt-cost', methods=['GET'])
 # def plt_cost():
@@ -244,7 +316,6 @@ def get_batch_count():
     history_url = '/history/batch/count'
     query_url = CAMUNDA_ENGINE_URI + history_url
     result = requests.get(query_url).json()
-    print(result['count'])
     return {'batch_count': result['count']}
 
 
@@ -254,3 +325,14 @@ def get_process_count():
     query_url = CAMUNDA_ENGINE_URI + history_url
     result = requests.get(query_url).json()
     return {'process_count': result['count']}
+
+
+@instance_router_api.route('finished-instance-count', methods=['GET'])
+def count_finished_instances():
+    process_id = int(request.args.get('process-id'))
+    count = ProcessInstance.query.filter(and_(ProcessInstance.finished_time != None,
+                                              ProcessInstance.process_id == process_id)).count()
+
+    return {
+        'finishedInstanceCount': count
+    }

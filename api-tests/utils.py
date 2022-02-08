@@ -13,8 +13,14 @@ def get_random_customer_category(list_of_customer_categories: [str]):
     return list_of_customer_categories[random.randint(0, len(list_of_customer_categories) - 1)]
 
 
+def remove_everything_from_db():
+    response = requests.delete(BASE_URL + "/meta/all")
+    assert response.status_code == requests.codes.ok
+
+
 # PROCESS API
-def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str):
+def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
+                       a_hist_min_duration: float, a_hist_max_duration: float):
     # given
     files_in = {
         "variantA": open(path_a),
@@ -22,17 +28,14 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_cat
     }
     params = {
         'customer-categories': "-".join(customer_categories),
-        'default-version': default_version
+        'default-version': default_version,
+        "a-hist-min-duration": a_hist_min_duration,
+        "a-hist-max-duration": a_hist_max_duration
     }
     # when
     response = requests.post(BASE_URL + "/process/" + process_name, files=files_in, params=params)
     # then
     assert response.status_code == requests.codes.ok, "Setting of process failed: " + str(response.content)
-
-
-def remove_all_process_rows():
-    response = requests.delete(BASE_URL + "/process")
-    assert response.status_code == requests.codes.ok, "Deletion of process rows failed: " + str(response.content)
 
 
 def get_currently_active_process_id():
@@ -64,14 +67,15 @@ def get_process_count():
 
 
 def get_bapol_count():
-    return requests.get(BASE_URL + "/batch-policy/count").json().get("batchPolicyCount")
+    return requests.get(BASE_URL + "/batch-policy/count",
+                        params={"process-id": get_currently_active_process_id()}).json().get("batchPolicyCount")
 
 
-def post_bapol(lepol: dict):
+def post_bapol_currently_active_process(bapol: dict):
     params = {
         'process-id': get_currently_active_process_id()
     }
-    response = requests.post(BASE_URL + "/batch-policy", json=lepol, headers={"Content-Type": "application/json"},
+    response = requests.post(BASE_URL + "/batch-policy", json=bapol, headers={"Content-Type": "application/json"},
                              params=params)
     assert response.status_code == requests.codes.ok
 
@@ -87,11 +91,11 @@ def new_processes_instance(process_id: int, customer_category: str):
     return response
 
 
-def get_sum_of_instances(process_id: int):
-    return get_amount_of_instances(process_id, 'a') + get_amount_of_instances(process_id, 'b')
+def get_sum_of_started_instances_in_batch(process_id: int):
+    return get_number_of_started_instances_in_batch(process_id, 'a') + get_number_of_started_instances_in_batch(process_id, 'b')
 
 
-def get_amount_of_instances(process_id: int, version: str):
+def get_number_of_started_instances_in_batch(process_id: int, version: str):
     assert version in ['a', 'b']
     params = {
         "process-id": process_id
@@ -99,4 +103,36 @@ def get_amount_of_instances(process_id: int, version: str):
     response = requests.get(BASE_URL + "/instance-router/aggregate-data", params=params)
     response_json = response.json()
     assert response.status_code == requests.codes.ok
-    return response_json.get(version).get('amount')
+    return response_json.get(version).get('numberStarted')
+
+
+def get_sum_of_started_instances_outside_batch(process_id: int):
+    params = {
+        "process-id": process_id
+    }
+    response = requests.get(BASE_URL + "/instance-router/aggregate-data/client-requests/outside-batch", params=params)
+    response_json = response.json()
+    assert response.status_code == requests.codes.ok
+    return response_json.get('numberOfRequests')
+
+
+# BATCH POLICY PROPOSAL
+def delete_all_proposals():
+    response = requests.delete(BASE_URL + "/batch-policy-proposal")
+    assert response.status_code == requests.codes.ok, "Deletion of bapol proposal rows failed: " + str(response.content)
+
+
+def get_bapol_proposal_count_active_process():
+    params = {
+        'process-id': get_currently_active_process_id()
+    }
+    response = requests.get(BASE_URL + "/batch-policy-proposal/count", params=params)
+    assert response.status_code == requests.codes.ok
+    return response.json().get('baPolProposalCount')
+
+
+def new_open_proposal_exists_active_process():
+    response = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                            params={'process-id': get_currently_active_process_id()})
+    assert response.status_code == requests.codes.ok
+    return response.json().get('newProposalExists')

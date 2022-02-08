@@ -6,9 +6,9 @@ from numpy.random import normal
 
 BASE_URL = "http://localhost:5001"
 CUSTOMER_CATEGORIES = ["public", "gov"]
-AMOUNT_OF_REQUESTS_TO_SEND = 25
-NORMAL_DIST_MEAN = 3
-NORMAL_DIST_STD_DEV = 1
+AMOUNT_OF_REQUESTS_TO_SEND = 10
+NORMAL_DIST_MEAN = 1
+NORMAL_DIST_STD_DEV = 0.5
 
 
 def get_random_customer_category():
@@ -16,7 +16,7 @@ def get_random_customer_category():
 
 
 def get_currently_active_process_id():
-    response = requests.get(BASE_URL + "/process-variants/active-meta")
+    response = requests.get(BASE_URL + "/process/active-meta")
     assert response.status_code == requests.codes.ok
     return response.json().get('id')
 
