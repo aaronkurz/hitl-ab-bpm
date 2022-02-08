@@ -39,3 +39,8 @@ build/
 
 ### Jupyter ###
 playground/.ipynb_checkpoints
+
+
+### celery ###
+celerybeat-schedule.db
+

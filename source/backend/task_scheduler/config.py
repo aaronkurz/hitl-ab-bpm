@@ -1,0 +1,2 @@
+CELERY_BROKER_URL=f'redis://redis:6379/0'
+CELERY_RESULT_BACKEND=f'redis://redis:6379/0'
