@@ -1,4 +1,4 @@
-FROM python:3.7-slim as app
+FROM python:3.9-slim as app
 WORKDIR /source
 COPY . /source/
 RUN pip install --upgrade pip
@@ -7,7 +7,7 @@ ENV INSIDE_DOCKER True
 EXPOSE 5001
 CMD ["python", "app.py"] 
 
-FROM python:3.7-slim as celery
+FROM python:3.9-slim as celery
 WORKDIR /source
 COPY . /source/
 RUN pip install --upgrade pip
