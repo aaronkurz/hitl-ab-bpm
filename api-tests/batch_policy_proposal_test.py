@@ -1,5 +1,3 @@
-from time import sleep
-
 import pytest
 import requests
 import client_simulator_api_tests as cs
@@ -42,7 +40,7 @@ def test_first_one_automatically_created():
     response_process_meta = requests.get(BASE_URL + "/process/active-meta")
     current_process_id = response_process_meta.json().get('id')
     assert current_process_id == bapol_prop_process_id
-
+    
     # make sure there is no batch policy for proposal yet
     assert None is response.json().get('proposal').get('baPolId')
 
@@ -70,7 +68,6 @@ def test_new_proposal_after_batch():
     })
     assert utils.get_bapol_count() == 1
     cs.start_client_simulation(5)
-    sleep(10)
     assert utils.get_bapol_proposal_count_active_process() == 2
     response = requests.get(BASE_URL + "/batch-policy-proposal/open",
                             params={'process-id': utils.get_currently_active_process_id()})
@@ -104,25 +101,21 @@ def test_requests_in_between_batches():
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
     cs.start_client_simulation(5)
-    sleep(10)
     # making sure after first batch is finished that there are two proposals
     assert utils.get_bapol_proposal_count_active_process() == 2
     assert utils.new_open_proposal_exists_active_process() is True
     # starting 5 instances in between batches
     cs.start_client_simulation(5)
-    sleep(10)
     # setting a new bapol
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 2
     # not finishing bapol
     cs.start_client_simulation(3)
-    sleep(10)
     # making sure that there is no new proposal yet
     assert utils.new_open_proposal_exists_active_process() is False
     assert utils.get_bapol_proposal_count_active_process() == 2
     # finishing bapol
     cs.start_client_simulation(2)
-    sleep(10)
     # making sure there is a new proposal
     assert utils.new_open_proposal_exists_active_process() is True
     assert utils.get_bapol_proposal_count_active_process() == 3

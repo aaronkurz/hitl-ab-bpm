@@ -47,11 +47,9 @@ def meta_run_manual_choice(version: str):
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
-    sleep(10)
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     post_manual_decision(version)
     cs.start_client_simulation(5)
-    sleep(10)
     # check that still only 5 got routed inside batch
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     # check that 5 additional ones got routes outside batch
@@ -111,7 +109,6 @@ def test_aggregate_data():
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
     cs.start_client_simulation(10)
-    sleep(20)
     assert utils.get_bapol_proposal_count_active_process() == 2
     assert utils.new_open_proposal_exists_active_process() is True
     currently_active_process_id = utils.get_currently_active_process_id()
@@ -230,7 +227,6 @@ def test_finished_instances_are_collected():
     response = requests.get(BASE_URL + "/instance-router/finished-instance-count", params=params)
     assert response.json().get('finishedInstanceCount') == 0
     cs.start_client_simulation(10)
-    sleep(30)
     params = {
         "process-id": utils.get_currently_active_process_id()
     }
@@ -263,11 +259,9 @@ def test_detailed_batch_instance_info():
     for i in range(3):
         utils.post_bapol_currently_active_process(bapol_size_5)
         cs.start_client_simulation(5)
-        sleep(15)
     # finish half of a batch
     utils.post_bapol_currently_active_process(bapol_size_5)
     cs.start_client_simulation(2)
-    sleep(10)
     response = requests.get(BASE_URL + "/batch-policy/count", params={"process-id": active_process_id})
     assert response.json().get('batchPolicyCount') == 4
     # test batch policy instances details
@@ -291,17 +285,20 @@ def test_detailed_batch_instance_info():
             assert "startTime" in instance.keys()
             assert "endTime" in instance.keys()
             assert "reward" in instance.keys()
+            assert "rlProb" in instance.keys()
             assert instance.get("decision") is not None
             assert instance.get("customerCategory") is not None
             assert instance.get("startTime") is not None
-            if instance.get("endTime") is None:
+            if instance.get("endTime") is None or instance.get("reward") is None or instance.get("rlProb") is None:
                 assert instance.get("reward") is None
-            if instance.get("reward") is None:
+                assert instance.get("rlProb") is None
                 assert instance.get("endTime") is None
-            if instance.get("endTime") is not None:
-                assert instance.get("reward") is not None
-            if instance.get("reward") is not None:
+            if instance.get("endTime") is not None \
+                    or instance.get("reward") is not None \
+                    or instance.get("rlProb") is not None:
                 assert instance.get("endTime") is not None
+                assert instance.get("reward") is not None
+                assert instance.get("rlProb") is not None
 
 
 def test_routing_follows_bapol_b():
@@ -325,7 +322,6 @@ def test_routing_follows_bapol_b():
         ]
     })
     cs.start_client_simulation(10)
-    sleep(25)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1
@@ -359,7 +355,6 @@ def test_routing_follows_bapol_a():
         ]
     })
     cs.start_client_simulation(10)
-    sleep(25)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1
@@ -393,7 +388,6 @@ def test_routing_follows_bapol_both():
         ]
     })
     cs.start_client_simulation(10)
-    sleep(25)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1

@@ -1,9 +1,8 @@
 """ Here, the RL agent is implemented """
 import logging
 import random
-import vowpalwabbit
-
 from datetime import datetime
+import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
 from models.process import get_process_metadata
@@ -13,13 +12,13 @@ from sqlalchemy import and_
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Array containing
-quantiles = None
+QUANTILES = None
 # Store latest process_id
-latest_process_id = None
+LATEST_PROCESS_ID = None
 # Load model
-vw = None
+VW = None
 # Actions
-actions = ["A", "B"]
+ACTIONS = ["A", "B"]
 
 
 def get_reward(duration: float):
@@ -99,14 +98,14 @@ def get_action_prob_per_context_dict(orgas, actions):
     for elem in orgas:
         tmp = {'orga': elem}
         vw_text_example = to_vw_example_format(tmp, actions)
-        pmf = vw.predict(vw_text_example)
-        dict = {}
-        dict.update(tmp) 
+        pmf = VW.predict(vw_text_example)
+        prob_dict = {}
+        prob_dict.update(tmp)
         count = 0
         for action in actions:
-            dict[action] = pmf[count]
+            prob_dict[action] = pmf[count]
             count = count + 1
-        dict_list.append(dict)
+        dict_list.append(prob_dict)
     return dict_list  
 
 
@@ -146,12 +145,12 @@ def run_iteration(orgas: list, actions: list, reward_function: get_reward, durat
     reward = reward_function(duration)
     logging.info(f'Reward: {reward}')
     # 4. Inform VW of what happened so we can learn from it
-    vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
+    vw_format = VW.parse(to_vw_example_format(context, actions, (action, reward, prob)),
                          vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
     # 5. Learn
-    vw.learn(vw_format)
+    VW.learn(vw_format)
     # 6. Let VW know you're done with these objects
-    vw.finish_example(vw_format)
+    VW.finish_example(vw_format)
     # Return the reward of the current iteration
     return reward, prob
 
@@ -167,12 +166,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-    global latest_process_id
-    global vw
+    global LATEST_PROCESS_ID
+    global VW
     # Set latest process
-    if latest_process_id != process_id:
-        latest_process_id = process_id
-        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.2', quiet=True)
+    if LATEST_PROCESS_ID != process_id:
+        LATEST_PROCESS_ID = process_id
+        VW = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.2', quiet=True)
     # Get context
     metadata = get_process_metadata(process_id)
     orgas = metadata['customer_categories'].split('-')
@@ -180,13 +179,13 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
         # Calculate duration
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
         # Learn 
-        reward, prob = run_iteration(orgas, actions, get_reward, duration, instance.decision, instance.customer_category)
+        reward, prob = run_iteration(orgas, ACTIONS, get_reward, duration, instance.decision, instance.customer_category)
         # Update db
         instance.reward = reward
         instance.rl_prob = prob
     db.session.commit()
     # Set batch policy proposal accordingly
-    agent_stats_list = get_action_prob_per_context_dict(orgas, actions)
+    agent_stats_list = get_action_prob_per_context_dict(orgas, ACTIONS)
     logging.info(agent_stats_list)
     set_bapol_proposal(process_id, orgas, [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])

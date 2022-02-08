@@ -428,6 +428,9 @@ paths:
                           type: string
                         reward:
                           type: number
+                        rlProb:
+                          type: number
+                          description: Probability with which the agent would have chosen the action (decision) given customer_category
         500:
           description: server error
         400:
