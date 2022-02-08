@@ -48,21 +48,6 @@ def celery():
     custom_task.delay(7)
     custom_task.delay(3)
     return 'celery tasks running'
-    
-    # task = func1.AsyncResult("test")
-    # time.sleep(3)
-    # if task.state == 'PENDING':
-    #     time.sleep(1)
-    #     response = {
-    #         'queue_state': task.state,
-    #         'status': 'Process is ongoing...',
-    #     }
-    # else:
-    #     response = {
-    #         'queue_state': task.state,
-    #         'result': task.wait()
-    #     }
-    # return jsonify(response)
 
 
 if __name__ == "__main__":
