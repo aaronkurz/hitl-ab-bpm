@@ -7,7 +7,8 @@ from rest.instance_router import instance_router_api
 from rest.batch_policy import batch_policy_api
 from rest.process import process_api
 from rest.batch_policy_proposal import batch_policy_proposal_api
-from celery_app import func1
+from task_scheduler.celery_app import long_task,short_task,custom_task
+
 
 app = create_app.create_app()
 
@@ -36,20 +37,32 @@ import time
 from flask import jsonify
 @app.route("/celery_test")
 def celery():
-    task = func1.AsyncResult("test")
-    time.sleep(3)
-    if task.state == 'PENDING':
-        time.sleep(1)
-        response = {
-            'queue_state': task.state,
-            'status': 'Process is ongoing...',
-        }
-    else:
-        response = {
-            'queue_state': task.state,
-            'result': task.wait()
-        }
-    return jsonify(response)
+    long_task.delay()
+    long_task.delay()
+    short_task.delay()
+    short_task.delay()
+    short_task.delay()
+    short_task.delay()
+    short_task.delay()
+    short_task.delay()
+    custom_task.delay(7)
+    custom_task.delay(3)
+    return 'celery tasks running'
+    
+    # task = func1.AsyncResult("test")
+    # time.sleep(3)
+    # if task.state == 'PENDING':
+    #     time.sleep(1)
+    #     response = {
+    #         'queue_state': task.state,
+    #         'status': 'Process is ongoing...',
+    #     }
+    # else:
+    #     response = {
+    #         'queue_state': task.state,
+    #         'result': task.wait()
+    #     }
+    # return jsonify(response)
 
 
 if __name__ == "__main__":

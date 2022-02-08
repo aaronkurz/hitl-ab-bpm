@@ -2,7 +2,9 @@ version: "3.9"
 services:
   backend:
     container_name: sbe-backend
-    build: ./backend
+    build: 
+       context: ./backend
+       target: app
     ports:
       - 5001:5001
     volumes:
@@ -38,12 +40,13 @@ services:
   celery_worker:
     build:
       context : ./backend
+      target : celery
     
-    command : celery -A celery_app.celery worker -B -l info 
     depends_on :
       - redis
-
-  # celery_beat:
+    volumes:
+      - ./backend:/source
+    
 
 
 
