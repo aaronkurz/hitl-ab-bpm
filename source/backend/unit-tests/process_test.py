@@ -11,6 +11,7 @@ ProcessInstance.query = MagicMock()
 BatchPolicy.query = MagicMock()
 default_v = MagicMock(value='a')
 proc_var = MagicMock(id=76,
+                     customer_categories='gov-public',
                      variant_a_path="/path/to/a",
                      variant_b_path="/path/to/b",
                      variant_a_camunda_id="id1",
@@ -22,6 +23,7 @@ proc_var = MagicMock(id=76,
 expected = {
         'id': 76,
         'name': "taxi-request",
+        'customer_categories': 'gov-public',
         'variant_a_path': "/path/to/a",
         'variant_b_path': "/path/to/b",
         'variant_a_camunda_id': "id1",

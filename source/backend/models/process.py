@@ -37,6 +37,7 @@ def get_process_metadata(process_id: int) -> dict:
     ap_info = {
         'id': relevant_process_entry.id,
         'name': relevant_process_entry.name,
+        'customer_categories': relevant_process_entry.customer_categories,
         'variant_a_path': relevant_process_entry.variant_a_path,
         'variant_b_path': relevant_process_entry.variant_b_path,
         'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
