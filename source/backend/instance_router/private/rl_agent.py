@@ -2,8 +2,6 @@
 import logging
 import random
 import vowpalwabbit
-import pandas as pd
-import os
 
 from datetime import datetime
 from models import db
@@ -14,12 +12,14 @@ from sqlalchemy import and_
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
+# Array containing
+quantiles = None
+# Store latest process_id
+latest_process_id = None
+# Load model
+vw = None
 # Actions
 actions = ["A", "B"]
-# Store stats of all iteration within a batch
-learning_hist = []
-# Pytest boolean flag
-debugging = False
 
 
 def get_reward(duration: float):
@@ -81,18 +81,7 @@ def sample_custom_pmf(pmf):
             return index, prob
 
 
-def get_action(vw, context: str, actions):
-    """
-    Not used right now
-
-    """
-    vw_text_example = to_vw_example_format(context, actions)
-    pmf = vw.predict(vw_text_example)
-    chosen_action_index, prob = sample_custom_pmf(pmf)
-    return actions[chosen_action_index], prob
-
-
-def get_action_prob_per_context_dict(vw, orgas, actions):
+def get_action_prob_per_context_dict(orgas, actions):
     """
     Retrieve the probability for each action given any context.
 
@@ -121,36 +110,6 @@ def get_action_prob_per_context_dict(vw, orgas, actions):
     return dict_list  
 
 
-def calculate_counterprobability(action, prob):
-    """
-    Calculate the counterprobability of a given action under a given context. Used in write_stats_to_csv.
-    params:
-        action (str): Action used in the current iteration
-        prob (float): Corresponding probability 
-
-    returns: Dictionary containing the probabilities
-    """
-    prob_dict = {}
-    counter_prob = round(1.0-prob, 2)
-    prob = round(prob, 2)
-    if action == 'A':
-        prob_dict['prob_a'] = prob
-        prob_dict['prob_b'] = counter_prob
-    else: 
-        prob_dict['prob_a'] = counter_prob
-        prob_dict['prob_b'] = prob
-    return prob_dict
-
-
-def choose_orga(orgas: list):
-    """
-    Choose an organisation randomly from organisations list
-    :param orgas
-    :return Random chosen orga
-    """
-    return random.choice(orgas)
-
-
 def calculate_duration(start_time: datetime, end_time: datetime):
     """
     Calculate the duration of a process instance given start and end timestamp
@@ -159,41 +118,7 @@ def calculate_duration(start_time: datetime, end_time: datetime):
     return (end_time - start_time).total_seconds()
 
 
-def load_model(process_id: int):
-    """
-    Load the cb model if it already exists. If not, instantiate the new model
-
-    params:
-        process_id (int): Id of the parent process.
-
-    returns: vw: The cb model
-    """
-    model_path = f'instance_router/private/cb_models/cb_model_process_id={process_id}'
-    if os.path.exists(model_path):
-        vw = vowpalwabbit.Workspace(f'--cb_explore_adf -q UA -i {model_path} --epsilon 0.2', quiet=True)
-    else: 
-        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --epsilon 0.2', quiet=True)
-    return vw
-
-
-def write_to_csv(process_id: int):
-    """
-    Write the (context, action, prob_a, prob_b, reward) of each iteration to a csv file.
-    All iterations that belong to the same process, are written to the same csv file.
-
-    params:
-        process_id (int): Id of the parent process.
-    """
-    path = f'instance_router/private/results/learning_history_{process_id}.csv'
-    df = pd.DataFrame.from_dict(learning_hist, orient='columns')
-    # If csv files already exists, append data.
-    if os.path.exists(path):
-        df.to_csv(path, mode='a', index=False, header=False)
-    else:
-        df.to_csv(path, index=False)
-
-
-def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str):
+def run_iteration(orgas: list, actions: list, reward_function: get_reward, duration: float, hist_action: str, customer_category: str):
     """
         
     param:
@@ -207,15 +132,12 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
         do_learn (bool, optional): Signal to learn on iteration. Defaults to True.
     return: reward
     """
-    # Set random seed
-    # random.seed(1)
-    #organisation = choose_orga(orgas)
     # 1. Set the context 
     context = {'orga': customer_category}
     # 2. Set the chosen action
     action = hist_action.value.upper()
     # Retrieve probabilty for the given context and action
-    agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
+    agent_stats_list = get_action_prob_per_context_dict(orgas, actions)
     for elem in agent_stats_list:
         if elem['orga'] == customer_category:
             prob = elem[action]
@@ -223,11 +145,6 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # 3. Get reward of the action we chose
     reward = reward_function(duration)
     logging.info(f'Reward: {reward}')
-    # Write info of iteration to csv file
-    prob_dict = calculate_counterprobability(action,prob)
-    dict = {'context': customer_category, 'action': action, 'prob_a': prob_dict['prob_a'], 'prob_b': prob_dict['prob_b'], 'reward': reward}
-    learning_hist.append(dict)
-    # Learn on the current example
     # 4. Inform VW of what happened so we can learn from it
     vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
                          vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
@@ -236,7 +153,7 @@ def run_simulation(vw, orgas: list, actions: list, reward_function: get_reward, 
     # 6. Let VW know you're done with these objects
     vw.finish_example(vw_format)
     # Return the reward of the current iteration
-    return reward
+    return reward, prob
 
 
 def learn_and_set_new_batch_policy_proposal(process_id: int):
@@ -250,8 +167,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-    # Load model
-    vw = load_model(process_id)
+    global latest_process_id
+    global vw
+    # Set latest process
+    if latest_process_id != process_id:
+        latest_process_id = process_id
+        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.2', quiet=True)
     # Get context
     metadata = get_process_metadata(process_id)
     orgas = metadata['customer_categories'].split('-')
@@ -259,19 +180,13 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
         # Calculate duration
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)
         # Learn 
-        reward = run_simulation(vw, orgas, actions, get_reward, duration, instance.decision, instance.customer_category)
+        reward, prob = run_iteration(orgas, actions, get_reward, duration, instance.decision, instance.customer_category)
         # Update db
         instance.reward = reward
+        instance.rl_prob = prob
     db.session.commit()
-    # Store learning history in csv file
-    if not debugging:
-        write_to_csv(process_id)
-    learning_hist.clear()
     # Set batch policy proposal accordingly
-    agent_stats_list = get_action_prob_per_context_dict(vw, orgas, actions)
+    agent_stats_list = get_action_prob_per_context_dict(orgas, actions)
+    logging.info(agent_stats_list)
     set_bapol_proposal(process_id, orgas, [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
                                                         [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
-    # Save model
-    if not debugging:
-        vw.save(f'instance_router/private/cb_models/cb_model_process_id={process_id}')
-        del vw
