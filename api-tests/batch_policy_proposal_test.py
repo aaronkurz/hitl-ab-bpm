@@ -25,8 +25,8 @@ def test_first_one_automatically_created():
     """ Test whether the first, naive bapol proposal is created for a new proposal """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     assert utils.get_process_count() == 1
     params = {
         'process-id': utils.get_currently_active_process_id()
@@ -48,8 +48,8 @@ def test_first_one_automatically_created():
 def test_new_proposal_after_batch():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=0.02,
-                             a_hist_max_duration=3.6)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process({
         "batchSize": 5,
@@ -93,8 +93,8 @@ def test_requests_in_between_batches():
     }
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     # one open proposal at the beginning
     assert utils.get_bapol_proposal_count_active_process() == 1
     # setting a batch policy with size 5 and finishing it

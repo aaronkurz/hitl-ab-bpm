@@ -24,8 +24,8 @@ def test_set_process():
     """ Test if setting of new process with variants works """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     assert utils.get_process_count() == 1
 
 
@@ -33,13 +33,13 @@ def test_set_2_processes():
     """ Test if setting of new process with variants works """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     utils.post_processes_a_b("helicopter_license_fast",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='b',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     assert utils.get_process_count() == 2
 
 
@@ -48,8 +48,8 @@ def test_get_active_process_metadata():
     # given
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     # when
     response = requests.get(BASE_URL + "/process/active-meta")
     # then
@@ -59,6 +59,7 @@ def test_get_active_process_metadata():
     assert response_json.get('defaultVersion') == 'a'
     assert response_json.get('id') is not None
     assert response_json.get('customerCategories') == "public-gov"
+    assert response_json.get('defaultInterarrivalTimeHistory') == 0.98
     assert response_json.get('addedTime') is not None
     assert response_json.get('decisionTime') is None
     assert response_json.get("winningVersion") is None
@@ -90,13 +91,13 @@ def test_files_are_overwritten():
     # given
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='b',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     # when
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='b', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='b',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     # then
     assert utils.get_process_count() == 1
 

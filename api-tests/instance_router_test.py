@@ -42,8 +42,8 @@ def meta_run_manual_choice(version: str):
     assert version in ['a', 'b']
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5)
@@ -60,8 +60,8 @@ def meta_run_manual_choice(version: str):
 def test_instantiation():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     for i in range(10):
@@ -74,8 +74,8 @@ def test_instantiation():
 def test_instantiation_failing_customer_category():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     params = {
         "process-id": utils.get_currently_active_process_id(),
@@ -103,8 +103,8 @@ def test_aggregate_data():
     }
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
@@ -132,8 +132,8 @@ def test_aggregate_data():
 def test_aggregate_data_before_instantiation():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     assert utils.get_bapol_count() == 1
@@ -164,8 +164,8 @@ def test_two_manual_choices_not_possible():
     """ We want to check that setting a second (manual) decision is not possible """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     post_manual_decision('a')
     try:
@@ -179,8 +179,8 @@ def test_client_requests_data_empty():
     """ We want to check if the client requests endpoint works even with zero requested instances """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BASE_URL + "/instance-router/aggregate-data/client-requests", params=params)
     assert response.status_code == requests.codes.ok
@@ -204,8 +204,8 @@ def test_client_requests_data():
 def test_finished_instances_are_collected():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [
@@ -252,8 +252,8 @@ def test_detailed_batch_instance_info():
     }
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     active_process_id = utils.get_currently_active_process_id()
     # finish three batches
     for i in range(3):
@@ -304,8 +304,8 @@ def test_detailed_batch_instance_info():
 def test_routing_follows_bapol_b():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [
@@ -337,8 +337,8 @@ def test_routing_follows_bapol_b():
 def test_routing_follows_bapol_a():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [
@@ -370,8 +370,8 @@ def test_routing_follows_bapol_a():
 def test_routing_follows_bapol_both():
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a', a_hist_min_duration=1,
-                             a_hist_max_duration=3)
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [

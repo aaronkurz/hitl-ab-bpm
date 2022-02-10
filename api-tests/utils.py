@@ -20,17 +20,16 @@ def remove_everything_from_db():
 
 # PROCESS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
-                       a_hist_min_duration: float, a_hist_max_duration: float):
+                       path_history: str):
     # given
     files_in = {
         "variantA": open(path_a),
-        "variantB": open(path_b)
+        "variantB": open(path_b),
+        "defaultHistory": open(path_history)
     }
     params = {
         'customer-categories': "-".join(customer_categories),
-        'default-version': default_version,
-        "a-hist-min-duration": a_hist_min_duration,
-        "a-hist-max-duration": a_hist_max_duration
+        'default-version': default_version
     }
     # when
     response = requests.post(BASE_URL + "/process/" + process_name, files=files_in, params=params)

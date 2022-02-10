@@ -1,25 +1,30 @@
+import json
 import os
 import shutil
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
 from sqlalchemy import and_
-
+from scipy.stats.mstats import mquantiles
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.process_instance import ProcessInstance
 from models import db
 from models.process import Process, Version
 from rest import utils
-
-ALLOWED_EXTENSIONS = {'bpmn'}
+from config import K_QUANTILES_REWARD_FUNC
 
 process_api = Blueprint('process-variants', __name__)
 
 
-def allowed_file(filename):
+def allowed_file_models(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in ['bpmn']
+
+
+def allowed_file_history(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ['json']
 
 
 @process_api.route('/<process_name>', methods=['POST'])
@@ -31,12 +36,15 @@ def set_process(process_name):
      customer-categories: separate categories with '-'
      """
     # check if the post request has the correct file part
-    if not ('variantA' in request.files and 'variantB' in request.files):
+    if not ('variantA' in request.files and 'variantB' in request.files and 'defaultHistory' in request.files):
         abort(400, description='No variantA and/or variantB file part')
     variant_a_file = request.files['variantA']
     variant_b_file = request.files['variantB']
-    if not (allowed_file(variant_a_file.filename) and allowed_file(variant_b_file.filename)):
-        abort(400, description='Only .bpmn files allowed')
+    history_durations_file = request.files['defaultHistory']
+    if not (allowed_file_models(variant_a_file.filename)
+            and allowed_file_models(variant_b_file.filename)
+            and allowed_file_history(history_durations_file.filename)):
+        abort(400, description='Only .bpmn files allowed for models and .json files allowed for history')
 
     # get default version
     default_version = request.args.get('default-version')
@@ -50,12 +58,7 @@ def set_process(process_name):
     # get relevant customer categories
     all_customer_categories = request.args.get('customer-categories').split('-')
 
-    # get upper and lower time of version a history
-    a_hist_min_duration = float(request.args.get('a-hist-min-duration'))
-    a_hist_max_duration = float(request.args.get('a-hist-max-duration'))
-    if a_hist_min_duration is None or a_hist_max_duration is None:
-        abort(400, 'Missing query parameter a-hist-min-duration or a-hist-max-duration')
-
+    # Storing the BPMNs in filesystem
     # Directory
     directory = process_name
     # Parent Directory path
@@ -84,14 +87,32 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
+    # Storing the json file in file system
+    path_json = os.path.join(os.getcwd(), path + '/duration-history-' + default_version.value + ".json")
+    history_durations_file.save(path_json)
+
+    # Extracting the quantiles from the json file
+    with open(path_json) as json_file:
+        history_data: dict = json.load(json_file)
+        if not (sorted(list(history_data.keys())) == sorted(['durations', 'interarrivalTime'])
+                and isinstance(history_data.get('durations'), list)
+                and isinstance(history_data.get('durations')[0], float)
+                and isinstance(history_data.get('interarrivalTime'), float)):
+            abort(400, "Wrong json format interarrival time file")
+        quantiles = mquantiles(history_data.get('durations'),
+                               prob=[round((1/20)*x, 2) for x in range(0, K_QUANTILES_REWARD_FUNC + 1)])
+        quantiles_list = quantiles.tolist()
+        quantiles_list.sort()
+        interarrival_time = history_data.get('interarrivalTime')
+
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
                               variant_a_camunda_id=camunda_id_a,
                               variant_b_camunda_id=camunda_id_b,
                               default_version=default_version,
-                              a_hist_min_duration=a_hist_min_duration,
-                              a_hist_max_duration=a_hist_max_duration,
+                              quantiles_default_history=quantiles_list,
+                              interarrival_default_history=interarrival_time,
                               customer_categories=request.args.get('customer-categories'))
 
     # change old active process to inactive
@@ -130,6 +151,7 @@ def get_active_process_variants_metadata():
         'customerCategories': active_process_entry.customer_categories,
         'defaultVersion':
             None if active_process_entry.default_version is None else active_process_entry.default_version.value,
+        'defaultInterarrivalTimeHistory': active_process_entry.interarrival_default_history,
         'winningVersion':
             None if active_process_entry.winning_version is None else active_process_entry.winning_version.value,
         'decisionTime': active_process_entry.datetime_decided

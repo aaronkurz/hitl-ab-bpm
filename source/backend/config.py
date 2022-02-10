@@ -26,3 +26,5 @@ CAMUNDA_ENGINE_URI = f"http://{camunda_host}:8080/engine-rest"
 
 CELERY_BROKER_URL=f'redis://{redis_host}:6379/0'
 CELERY_RESULT_BACKEND=f'redis://{redis_host}:6379/0'
+
+K_QUANTILES_REWARD_FUNC = 20  # set the amount of quantiles you want for the reward function
