@@ -5,14 +5,15 @@ from datetime import datetime
 import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
-from models.process import get_process_metadata
+from models.process import get_process_metadata, Process
 from models.batch_policy_proposal import set_bapol_proposal
 from sqlalchemy import and_
+from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTOFF_REWARD_FUNC
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Array containing
-QUANTILES = None
+QUANTILES = []
 # Store latest process_id
 LATEST_PROCESS_ID = None
 # Load model
@@ -23,17 +24,22 @@ ACTIONS = ["A", "B"]
 
 def get_reward(duration: float):
     """
-        Return the reward for the action taken based on the duration of the process instance.
+        Return the reward for the action taken based on the duration of the process instance and
+        the history of the default proces version.
     params:
         duration (float): Duration of the process instance
-
-    returns:  1 - duration. If the duration >= 1, 0 as the reward is returned
+    returns:  Reward between 0 and 1
     """
-    # TODO proper reward function
-    neg_duration = 1.0 - duration
-    if neg_duration <= 0:
-        neg_duration = 0.0
-    return neg_duration
+    step_height = (UPPER_CUTOFF_REWARD_FUNC - LOWER_CUTOFF_REWARD_FUNC) / K_QUANTILES_REWARD_FUNC
+    QUANTILES.sort()
+    if duration < QUANTILES[0]:
+        return 1.0
+    elif duration >= QUANTILES[K_QUANTILES_REWARD_FUNC]:
+        return 0.0
+    else:
+        for i in range(1, K_QUANTILES_REWARD_FUNC + 1):
+            if duration < QUANTILES[i]:
+                return UPPER_CUTOFF_REWARD_FUNC - (i * step_height)
 
 
 def to_vw_example_format(context, actions, cb_label=None):
@@ -168,10 +174,12 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
                                                            ProcessInstance.reward == None))
     global LATEST_PROCESS_ID
     global VW
+    global QUANTILES
     # Set latest process
     if LATEST_PROCESS_ID != process_id:
         LATEST_PROCESS_ID = process_id
         VW = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.2', quiet=True)
+        QUANTILES = Process.query.filter(Process.id == process_id).first().quantiles_default_history
     # Get context
     metadata = get_process_metadata(process_id)
     orgas = metadata['customer_categories'].split('-')
