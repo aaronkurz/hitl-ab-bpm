@@ -14,26 +14,22 @@ def upload_files():
                                                 help=help.CUSTOMER_CATEGORIES_INPUT)
             default=st.radio("Default version", ('a', 'b'),
                              help=help.DEFAULT_VERSION_INPUT)
-            min_dur_a = st.number_input("Minimum duration A (s)",
-                                        step=0.1,
-                                        help=help.MIN_DURATION_INPUT)
-            max_dur_a = st.number_input("Maximum duration A (s)", step=0.1)
+            default_history = st.file_uploader("Upload data about default version", type=['json'],
+                                               help=help.HISTORY_UPLOAD_DEFAULT)
             if st.form_submit_button("Submit"):
                 if f_a is not None \
                         and f_b is not None \
                         and process_name.replace(" ", "") != ""\
                         and customer_categories.replace(" ", "") != ""\
-                        and min_dur_a != 0.0\
-                        and max_dur_a != 0.0:
+                        and default_history is not None:
                     files_in = {
                         "variantA": f_a,
-                        "variantB": f_b
+                        "variantB": f_b,
+                        "defaultHistory": default_history
                     }
                     params = {
                         'customer-categories': customer_categories,
                         'default-version': default,
-                        "a-hist-min-duration": min_dur_a,
-                        "a-hist-max-duration": max_dur_a
                     }
                     response = requests.post(BACKEND_URI + "process/" + process_name, files=files_in, params=params)
                     if response.status_code == requests.codes.ok:

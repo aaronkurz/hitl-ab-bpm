@@ -23,3 +23,18 @@ BATCH_SIZE_HELP = """
 Here you can choose how many of the next incoming process instantiation requests will be part of this experimental \
 batch.
 """
+
+HISTORY_UPLOAD_DEFAULT = """
+Should be a .json file with this content format:
+{
+  "interarrivalTime": 0.98,
+  "durations": [
+    0.198,
+    0.041,
+    0.124,
+    0.04,
+    0.099,
+    0.144
+    ]
+}
+"""
