@@ -119,3 +119,35 @@ def test_requests_in_between_batches():
     # making sure there is a new proposal
     assert utils.new_open_proposal_exists_active_process() is True
     assert utils.get_bapol_proposal_count_active_process() == 3
+
+
+def test_after_manual_decision_no_proposal():
+    bapol_5_size = {
+        "batchSize": 5,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+    # one open proposal at the beginning
+    assert utils.new_open_proposal_exists_active_process()
+    # setting a batch policy with size 5 and finishing it
+    utils.post_bapol_currently_active_process(bapol_5_size)
+    cs.start_client_simulation(5)
+    # making sure after first batch is finished that there is a new open proposal
+    assert utils.new_open_proposal_exists_active_process()
+    utils.post_manual_decision('b')
+    # assert that after manual decision there is no open proposal anymore
+    assert not utils.new_open_proposal_exists_active_process()

@@ -115,6 +115,17 @@ def get_sum_of_started_instances_outside_batch(process_id: int):
     return response_json.get('numberOfRequests')
 
 
+def post_manual_decision(manual_decision: str):
+    """ Set a manual decision for currently active process in backend """
+    assert manual_decision in ['a', 'b']
+    params = {
+        "process-id": get_currently_active_process_id(),
+        "version-decision": manual_decision
+    }
+    response = requests.post(BASE_URL + "/instance-router/manual-decision", params=params)
+    assert response.status_code == requests.codes.ok
+
+
 # BATCH POLICY PROPOSAL
 def delete_all_proposals():
     response = requests.delete(BASE_URL + "/batch-policy-proposal")

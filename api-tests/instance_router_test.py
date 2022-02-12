@@ -1,11 +1,10 @@
-from time import sleep
-
 import pytest
 import requests
 
 import client_simulator_api_tests as cs
 import utils
 from config import BASE_URL
+from utils import post_manual_decision
 
 CUSTOMER_CATEGORIES = ["public", "gov"]
 
@@ -24,17 +23,6 @@ def after_all():
     yield
     # v Will be executed after the last test
     utils.remove_everything_from_db()
-
-
-def post_manual_decision(manual_decision: str):
-    """ Set a manual decision for currently active process in backend """
-    assert manual_decision in ['a', 'b']
-    params = {
-        "process-id": utils.get_currently_active_process_id(),
-        "version-decision": manual_decision
-    }
-    response = requests.post(BASE_URL + "/instance-router/manual-decision", params=params)
-    assert response.status_code == requests.codes.ok
 
 
 def meta_run_manual_choice(version: str):

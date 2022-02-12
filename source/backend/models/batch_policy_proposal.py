@@ -65,6 +65,8 @@ def _new_proposal_can_be_set(process_id) -> bool:
 
 
 def exists_bapol_proposal_without_bapol(process_id) -> bool:
+    if Process.query.filter(Process.id == process_id).first().winning_version != None:
+        return False
     count_props_without_bapol = BatchPolicyProposal.query. \
         filter(and_(BatchPolicyProposal.process_id == process_id,
                     BatchPolicyProposal.batch_policy_id == None)).count()
