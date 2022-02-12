@@ -38,3 +38,11 @@ Should be a .json file with this content format:
     ]
 }
 """
+
+DASHBOARD_HELP = "This is where the human process expert can control the experiment."
+
+DEV_MODE_HELP = """
+If you are just using the app for development purposes or to try it out \
+you can simulate process instantiation requests instead of having real requests from customers/clients. \
+An additional client simulator area will pop up in the dashboard if you activate dev mode.
+"""

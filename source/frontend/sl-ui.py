@@ -14,19 +14,16 @@ def setup():
         st.session_state['data_detailed_batch_open'] = False
     if 'bapol_upload_success' not in st.session_state:
         st.session_state['bapol_upload_success'] = False
+    if 'dev_mode' not in st.session_state:
+        st.session_state['dev_mode'] = False
 
 
 def main():
-    setup()
     st.set_page_config(page_title="HITL-AB-BPM", page_icon="🔁")
+    setup()
     st.title("HITL-AB-BPM Experiment-Cockpit")
     uploader.upload_files()
     dashboard.dashboard()
-
-    # set_bapol()
-    # experiment_cockpit()
-    # display_results()
-    # view_results()
 
 
 if __name__ == '__main__':
