@@ -1,3 +1,4 @@
+import datetime
 import help
 import streamlit as st
 import requests
@@ -17,6 +18,7 @@ def controls():
     st.write('### Controls')
     manual_decision()
     if st.button("Check for new batch policy proposal") or st.session_state['new_proposal'] is True:
+        interarrival_time_sec = utils.get_currently_active_process_meta().get('defaultInterarrivalTimeHistory')
         params = {
             'process-id': utils.get_currently_active_process_id()
         }
@@ -32,6 +34,9 @@ def controls():
             proposal_json = bapol_proposal_response.json().get('proposal')
 
             batch_size = st.number_input("Enter batch size", step=1, value=10, help=help.BATCH_SIZE_HELP)
+            st.write("Given this batch size of ", batch_size, ", it will take approximately ",
+                     datetime.timedelta(seconds=(interarrival_time_sec * batch_size)),
+                     " (hours:minutes:seconds) until the next batch policy proposal will be available.")
             exploration_probabilities_a = []
             exploration_probabilities_b = []
             for i in range(len(proposal_json.get('executionStrategy'))):
