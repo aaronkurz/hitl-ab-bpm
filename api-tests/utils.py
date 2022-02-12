@@ -20,17 +20,16 @@ def remove_everything_from_db():
 
 # PROCESS API
 def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_categories: [str], default_version: str,
-                       a_hist_min_duration: float, a_hist_max_duration: float):
+                       path_history: str):
     # given
     files_in = {
         "variantA": open(path_a),
-        "variantB": open(path_b)
+        "variantB": open(path_b),
+        "defaultHistory": open(path_history)
     }
     params = {
         'customer-categories': "-".join(customer_categories),
-        'default-version': default_version,
-        "a-hist-min-duration": a_hist_min_duration,
-        "a-hist-max-duration": a_hist_max_duration
+        'default-version': default_version
     }
     # when
     response = requests.post(BASE_URL + "/process/" + process_name, files=files_in, params=params)
@@ -114,6 +113,17 @@ def get_sum_of_started_instances_outside_batch(process_id: int):
     response_json = response.json()
     assert response.status_code == requests.codes.ok
     return response_json.get('numberOfRequests')
+
+
+def post_manual_decision(manual_decision: str):
+    """ Set a manual decision for currently active process in backend """
+    assert manual_decision in ['a', 'b']
+    params = {
+        "process-id": get_currently_active_process_id(),
+        "version-decision": manual_decision
+    }
+    response = requests.post(BASE_URL + "/instance-router/manual-decision", params=params)
+    assert response.status_code == requests.codes.ok
 
 
 # BATCH POLICY PROPOSAL

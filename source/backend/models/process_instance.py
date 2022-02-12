@@ -18,6 +18,8 @@ class ProcessInstance(db.Model):
     # v these are set by the camunda_collector after an instance is terminated
     finished_time = db.Column(db.DateTime, nullable=True)  # if null, instance has not been determined as finished yet
     reward = db.Column(db.Float, nullable=True)  # if null, instance has not been taken into account for learning yet
+    rl_prob = db.Column(db.Float, nullable=True)  # Probability with which the agent would have chosen the action...
+    # ... (decision) given customer_category
 
 
 class TimeBasedCost(db.Model):

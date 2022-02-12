@@ -133,16 +133,6 @@ paths:
           description: Which customer categories exist for that process (the different contexts of the contextual bandit). Format with dash separator ('-', e.g. 'public-gov')
           schema:
             type: string
-        - name: a_hist_min_duration
-          in: query
-          description: Mimunum instance duration in process history of old version (a), used to evaluate new instances. In seconds.
-          schema:
-            type: number
-        - name: a_hist_max_duration
-          in: query
-          description: Maximum instance duration in process history of old version (a), used to evaluate new instances. In seconds.
-          schema:
-            type: number
       requestBody:
         content:
           multipart/form-data:
@@ -153,6 +143,9 @@ paths:
                   type: string
                   format: binary
                 variantB:
+                  type: string
+                  format: binary
+                defaultHistory:
                   type: string
                   format: binary
       responses:
@@ -207,7 +200,18 @@ paths:
                     type: integer
                   name:
                     type: string
-                  added:
+                  addedTime:
+                    type: string
+                  customerCategories:
+                    type: string
+                  defaultVersion:
+                    type: string
+                  defaultInterarrivalTimeHistory:
+                    type: number
+                    description: Avg. seconds between starts of new instances in process history of default version, from data submitted by user
+                  winningVersion:
+                    type: string
+                  decisionTime:
                     type: string
   /process/variant-file/{a_or_b}:
     get:
@@ -428,6 +432,9 @@ paths:
                           type: string
                         reward:
                           type: number
+                        rlProb:
+                          type: number
+                          description: Probability with which the agent would have chosen the action (decision) given customer_category
         500:
           description: server error
         400:

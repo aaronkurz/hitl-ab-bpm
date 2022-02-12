@@ -4,6 +4,7 @@ from models.process_instance import ProcessInstance
 from models.batch_policy import BatchPolicy
 from sqlalchemy.orm import relationship
 from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
+from sqlalchemy.dialects.postgresql import ARRAY
 
 
 class Process(db.Model):
@@ -18,8 +19,8 @@ class Process(db.Model):
     variant_a_camunda_id = db.Column(db.String, nullable=False)
     variant_b_camunda_id = db.Column(db.String, nullable=False)
     default_version = db.Column(db.Enum(Version), nullable=False)
-    a_hist_min_duration = db.Column(db.Float, nullable=False)
-    a_hist_max_duration = db.Column(db.Float, nullable=False)
+    quantiles_default_history = db.Column(ARRAY(db.Float), nullable=False) # in seconds
+    interarrival_default_history = db.Column(db.Float, nullable=False)
     winning_version = db.Column(db.Enum(Version), nullable=True)  # Will be set after learning is done
     winning_reason = db.Column(db.Enum(WinningReasonEnum), nullable=True)
     datetime_decided = db.Column(db.DateTime, nullable=True)

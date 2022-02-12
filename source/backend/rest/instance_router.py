@@ -162,7 +162,8 @@ def get_instances_batch():
             "customerCategory": instance.customer_category,
             "startTime": instance.instantiation_time,
             "endTime": instance.finished_time,
-            "reward": instance.reward
+            "reward": instance.reward,
+            "rlProb": instance.rl_prob
         })
     return data
 

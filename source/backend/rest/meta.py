@@ -10,7 +10,7 @@ meta_api = Blueprint('meta_api', __name__)
 @meta_api.route('/all', methods=['DELETE'])
 def empty_database():
     # delete process versions from filesystem
-    folder = os.path.join(os.getcwd(), 'resources/bpmn/')
+    folder = os.path.join(os.getcwd(), 'resources/')
     if not os.path.exists(folder):
         os.makedirs(folder)
 

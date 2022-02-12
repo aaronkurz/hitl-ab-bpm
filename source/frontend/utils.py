@@ -10,6 +10,12 @@ def get_currently_active_process_id():
     return response.json().get("id")
 
 
+def get_currently_active_process_meta():
+    response = requests.get(BACKEND_URI + "process/active-meta")
+    assert response.status_code == requests.codes.ok
+    return response.json()
+
+
 def post_manual_decision(manual_decision: str) -> bool:
     assert manual_decision in ['a', 'b']
     params = {

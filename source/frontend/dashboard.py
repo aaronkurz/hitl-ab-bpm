@@ -1,3 +1,4 @@
+import datetime
 import help
 import streamlit as st
 import requests
@@ -5,10 +6,19 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 from config import BACKEND_URI
 import utils
+import client_simulator
 
 
 def dashboard():
     st.write('## Dashboard')
+    with st.expander('What is the dashboard?', expanded=False):
+        st.write(help.DASHBOARD_HELP)
+        st.write("---")
+        dev_mode = st.checkbox('Activate Dev Mode', help=help.DEV_MODE_HELP)
+        if dev_mode is True:
+            st.session_state['dev_mode'] = True
+        elif dev_mode is False:
+            st.session_state['dev_mode'] = False
     controls()
     data()
 
@@ -17,6 +27,7 @@ def controls():
     st.write('### Controls')
     manual_decision()
     if st.button("Check for new batch policy proposal") or st.session_state['new_proposal'] is True:
+        interarrival_time_sec = utils.get_currently_active_process_meta().get('defaultInterarrivalTimeHistory')
         params = {
             'process-id': utils.get_currently_active_process_id()
         }
@@ -32,6 +43,9 @@ def controls():
             proposal_json = bapol_proposal_response.json().get('proposal')
 
             batch_size = st.number_input("Enter batch size", step=1, value=10, help=help.BATCH_SIZE_HELP)
+            st.write("Given this batch size of ", batch_size, ", it will take approximately ",
+                     datetime.timedelta(seconds=(interarrival_time_sec * batch_size)),
+                     " (hours:minutes:seconds) until the next batch policy proposal will be available.")
             exploration_probabilities_a = []
             exploration_probabilities_b = []
             for i in range(len(proposal_json.get('executionStrategy'))):
@@ -66,19 +80,35 @@ def controls():
                     st.session_state['bapol_upload_success'] = False
                     st.write("🚨 Upload of Batch Policy failed: HTTP status code " + str(response.status_code))
     if st.session_state['bapol_upload_success'] is True:
-        st.write("✅ Upload successful")
+        st.write("✅ Last Batch Policy upload attempt was successful")
+
+    if st.session_state['dev_mode']:
+        st.write("#### Dev Mode: Client Simulator")
+        simulate_batch_size = st.number_input("Enter batch size to be simulated", step=1, value=10)
+        simulate_batch_interarrival_time = st.number_input("Enter average break between instantiations (in seconds)",
+                                                           step=0.1, value=1.0)
+        if st.button("Simulate"):
+            client_simulator.run_simulation(simulate_batch_size, simulate_batch_interarrival_time)
+            st.write("Simulation running ...")
 
 
 def manual_decision():
+    col1, col2 = st.columns(2)
     successfully_posted_manual_dec = None
-    if st.button("Manual decision: Version A"):
-        successfully_posted_manual_dec = utils.post_manual_decision('a')
-    if st.button("Manual decision: Version B"):
-        successfully_posted_manual_dec = utils.post_manual_decision('b')
-    if successfully_posted_manual_dec:
-        st.write("✅")
-    elif successfully_posted_manual_dec is False:
-        st.write("🚨 Something went wrong")
+    with col1:
+        if st.button("Manual decision: Version A"):
+            successfully_posted_manual_dec = utils.post_manual_decision('a')
+        if successfully_posted_manual_dec:
+            st.write("✅")
+        elif successfully_posted_manual_dec is False:
+            st.write("🚨 Something went wrong")
+    with col2:
+        if st.button("Manual decision: Version B"):
+            successfully_posted_manual_dec = utils.post_manual_decision('b')
+        if successfully_posted_manual_dec:
+            st.write("✅")
+        elif successfully_posted_manual_dec is False:
+            st.write("🚨 Something went wrong")
 
 
 def plot_instances():
@@ -143,7 +173,15 @@ def detailed_data():
                     st.write("Batch Number: ", response_batch_instances.json().get("batchNumber"))
                     st.table(batch_instances_df)
 
+                    batch_instanes_csv = batch_instances_df.to_csv().encode('utf-8')
 
+                    st.download_button(
+                        "Download as CSV",
+                        batch_instanes_csv,
+                        "batch_" + str(batch_choice) + "_instances.csv",
+                        "text/csv",
+                        key='download-batch-instances-csv'
+                    )
 
 
 def aggregate_data():
