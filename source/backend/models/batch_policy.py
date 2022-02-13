@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import desc, asc
 
 from models import db
+from models.process_instance import ProcessInstance
 from models.utils import CASCADING_DELETE
 
 
@@ -88,3 +89,19 @@ def get_batch_size_sum(process_id: int) -> int:
     for bapol in relevant_batch_policies:
         batch_size_counter += bapol.batch_size
     return batch_size_counter
+
+
+def get_number_finished_bapols(process_id) -> int:
+    relevant_bapols = BatchPolicy.query.filter(BatchPolicy.process_id == process_id)
+    counter = 0
+    for bapol in relevant_bapols:
+        instances_bapol_count = ProcessInstance.query.filter(ProcessInstance.batch_policy_id == bapol.id).count()
+        if instances_bapol_count == bapol.batch_size:
+            counter += 1
+    return counter
+
+
+def get_average_batch_size(process_id) -> float:
+    bapol_count = BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count()
+    bapol_size_sum = get_batch_size_sum(process_id)
+    return bapol_size_sum / bapol_count

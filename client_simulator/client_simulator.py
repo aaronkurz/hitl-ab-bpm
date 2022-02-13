@@ -16,7 +16,7 @@ def get_random_customer_category():
 
 
 def get_currently_active_process_id():
-    response = requests.get(BASE_URL + "/process/active-meta")
+    response = requests.get(BASE_URL + "/process/active/meta")
     assert response.status_code == requests.codes.ok
     return response.json().get('id')
 

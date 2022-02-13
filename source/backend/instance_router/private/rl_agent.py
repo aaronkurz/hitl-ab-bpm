@@ -6,7 +6,7 @@ import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
 from models.process import get_process_metadata, Process
-from models.batch_policy_proposal import set_bapol_proposal
+from models.batch_policy_proposal import set_bapol_proposal, set_or_update_final_bapol_proposal
 from sqlalchemy import and_
 from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTOFF_REWARD_FUNC
 
@@ -161,11 +161,12 @@ def run_iteration(orgas: list, actions: list, reward_function: get_reward, durat
     return reward, prob
 
 
-def learn_and_set_new_batch_policy_proposal(process_id: int):
+def learn_and_set_new_batch_policy_proposal(process_id: int, in_cool_off: bool):
     """
     Query process instances which still have to be evaluated. With the calculated duration,
     train the agent and update the database with the reward.
     :param process_id:
+    :param in_cool_off:
     :return: new batch policy proposal
     """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
@@ -195,5 +196,17 @@ def learn_and_set_new_batch_policy_proposal(process_id: int):
     # Set batch policy proposal accordingly
     agent_stats_list = get_action_prob_per_context_dict(orgas, ACTIONS)
     logging.info(agent_stats_list)
-    set_bapol_proposal(process_id, orgas, [round(agent_stats_list[0]['A'],2), round(agent_stats_list[-1]['A'],2)], 
-                                                        [round(agent_stats_list[0]['B'],2), round(agent_stats_list[-1]['B'],2)])
+    if in_cool_off:
+        set_or_update_final_bapol_proposal(process_id,
+                                            orgas,
+                                            [round(agent_stats_list[0]['A'], 2),
+                                             round(agent_stats_list[-1]['A'], 2)],
+                                            [round(agent_stats_list[0]['B'], 2),
+                                             round(agent_stats_list[-1]['B'], 2)])
+    else:
+        set_bapol_proposal(process_id,
+                           orgas,
+                           [round(agent_stats_list[0]['A'], 2),
+                            round(agent_stats_list[-1]['A'], 2)],
+                           [round(agent_stats_list[0]['B'], 2),
+                            round(agent_stats_list[-1]['B'], 2)])
