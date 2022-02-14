@@ -11,4 +11,4 @@ pytest==7.0.0
 pycamunda==0.6.0
 scipy==1.8.0
 celery==5.2.3
-redis==3.5.3
+redis==4.1.3
