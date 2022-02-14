@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from sqlalchemy import and_
 from models import db
 from models.utils import Version
 
@@ -45,3 +45,9 @@ class RewardOverIteration(db.Model):
     __tablename__ = "reward_over_iteration"
     iteration_id = db.Column(db.Integer, primary_key=True)
     reward = db.Column(db.Float, default=0, nullable=False)
+
+
+def unevaluated_instances_still_exist(process_id: int) -> bool:
+    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                             ProcessInstance.do_evaluate == True,
+                                             ProcessInstance.reward == None)).count() > 0
