@@ -5,7 +5,7 @@ from models.batch_policy import BatchPolicy
 from models.process import set_winning, is_valid_customer_category
 from models.process_instance import ProcessInstance, TimeBasedCost, RewardOverIteration, ActionProbability
 from sqlalchemy import and_, asc
-from models.utils import Version
+from models.utils import Version, WinningReasonEnum
 from rest.utils import validate_backend_process_id
 import statistics
 import requests
@@ -88,16 +88,6 @@ def count_a_b():
             "averageReward": b_average_reward
         }
     }
-
-
-@instance_router_api.route('/manual-decision', methods=['POST'])
-def manual_decision():
-    """ API endpoint to allow human expert to manually make a decision """
-    process_id = int(request.args.get('process-id'))
-    validate_backend_process_id(process_id)
-    decision = request.args.get('version-decision')
-    set_winning(process_id, decision)
-    return "Success"
 
 
 @instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])

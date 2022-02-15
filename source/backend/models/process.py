@@ -1,6 +1,6 @@
 from datetime import datetime
 from models import db
-from models.process_instance import ProcessInstance
+from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import BatchPolicy
 from sqlalchemy.orm import relationship
 from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
@@ -21,6 +21,7 @@ class Process(db.Model):
     default_version = db.Column(db.Enum(Version), nullable=False)
     quantiles_default_history = db.Column(ARRAY(db.Float), nullable=False) # in seconds
     interarrival_default_history = db.Column(db.Float, nullable=False)
+    in_cool_off = db.Column(db.Boolean, nullable=False, default=False)
     winning_version = db.Column(db.Enum(Version), nullable=True)  # Will be set after learning is done
     winning_reason = db.Column(db.Enum(WinningReasonEnum), nullable=True)
     datetime_decided = db.Column(db.DateTime, nullable=True)
@@ -63,9 +64,10 @@ def get_active_process_metadata() -> dict:
     return get_process_metadata(active_process_entry_id)
 
 
-def set_winning(process_id: int, decision: str) -> dict:
-    """ Finish an experiment and set a winning version for a process
+def set_winning(process_id: int, decision: str, winning_reason: WinningReasonEnum) -> dict:
+    """ Finish an experiment and set a winning version for a process, as well as a winning reason
 
+     :param winning_reason:
      :param process_id: process id in backend
      :param decision: 'a' or 'b'
     """
@@ -75,7 +77,7 @@ def set_winning(process_id: int, decision: str) -> dict:
     if relevant_process.winning_version is not None:
         raise RuntimeError("This process already has a winning version")
     relevant_process.winning_version = decision
-    relevant_process.winning_reason = WinningReasonEnum.manualChoice
+    relevant_process.winning_reason = winning_reason
     relevant_process.datetime_decided = datetime.now()
     db.session.commit()
     return get_process_metadata(process_id)
@@ -89,3 +91,15 @@ def is_valid_customer_category(process_id: int, customer_category: str):
     else:
         return False
 
+
+def in_cool_off(process_id: int) -> bool:
+    """ Checks whether a certain process is in cool-off period """
+    return Process.query.filter(Process.id == process_id).first().in_cool_off
+
+
+def cool_off_over(process_id: int) -> bool:
+    """ Checks whether a certein process is in cool-off period AND all  instances have been evaluated """
+    if in_cool_off(process_id) and not unevaluated_instances_still_exist(process_id):
+        return True
+    else:
+        return False

@@ -1,13 +1,14 @@
 """ Main "organizer" of instance routing """
 from sqlalchemy import and_
-
+from random import randint
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector
 from scipy.stats import bernoulli
 from models import process, db
-from models.process_instance import ProcessInstance
+from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import append_process_instance_to_bapol
-from models.process import Process
+from models.batch_policy import get_average_batch_size
+from models.process import Process, in_cool_off
 from models import batch_policy
 from instance_router.private import rl_agent
 
@@ -75,7 +76,16 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     winning_version = get_winning_version(process_id)
     is_in_batch_marker = False
     if winning_version is None:
-        if not is_in_batch(process_id):
+        if in_cool_off(process_id):
+            decision = get_decision_outside_batch(process_id)
+            # relearn with a probability of 1/avg_batch_size;
+            # this means that when the average batch size was 15, will learn about
+            # at about every 15th incoming instantiation request
+            if round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id))) \
+                    and unevaluated_instances_still_exist(process_id):
+                camunda_collector.collect_finished_instances(process_id)
+                rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=True)
+        elif not is_in_batch(process_id):
             decision = get_decision_outside_batch(process_id)
             new_batch_policy_proposal_available = True
         else:
@@ -83,7 +93,7 @@ def instantiate(process_id: int, customer_category: str) -> dict:
             decision = get_decision_in_batch(process_id, customer_category)
             if end_of_batch_reached(process_id):
                 camunda_collector.collect_finished_instances(process_id)
-                rl_agent.learn_and_set_new_batch_policy_proposal(process_id)
+                rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=False)
                 new_batch_policy_proposal_available = True
     else:
         decision = winning_version

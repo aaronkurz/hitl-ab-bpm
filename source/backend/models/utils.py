@@ -3,11 +3,14 @@ import enum
 
 CASCADING_DELETE = "all, delete"
 
+
 class WinningReasonEnum(enum.Enum):
-    experimentEnded = "Experiment ended"
-    manualChoice = "Manual choice by human expert"
+    """ Enum defining possible reasons for how the winning version was determined """
+    EXPERIMENT_ENDED = "Experiment ended normally"
+    MANUAL_CHOICE = "Manual choice by human expert"
 
 
 class Version(enum.Enum):
+    """ Possible process version shorthands """
     a = 'a'
     b = 'b'

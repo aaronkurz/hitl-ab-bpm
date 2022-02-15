@@ -37,7 +37,7 @@ def test_first_one_automatically_created():
 
     # make sure the id is of the process just posted
     bapol_prop_process_id = response.json().get('proposal').get('processId')
-    response_process_meta = requests.get(BASE_URL + "/process/active-meta")
+    response_process_meta = requests.get(BASE_URL + "/process/active/meta")
     current_process_id = response_process_meta.json().get('id')
     assert current_process_id == bapol_prop_process_id
     
@@ -122,21 +122,7 @@ def test_requests_in_between_batches():
 
 
 def test_after_manual_decision_no_proposal():
-    bapol_5_size = {
-        "batchSize": 5,
-        "executionStrategy": [
-            {
-                "customerCategory": "public",
-                "explorationProbabilityA": 0.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
-                "explorationProbabilityA": 0.7,
-                "explorationProbabilityB": 0.3
-            }
-        ]
-    }
+    bapol_5_size = utils.example_batch_policy_size(5)
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
                              "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
@@ -150,4 +136,22 @@ def test_after_manual_decision_no_proposal():
     assert utils.new_open_proposal_exists_active_process()
     utils.post_manual_decision('b')
     # assert that after manual decision there is no open proposal anymore
+    assert not utils.new_open_proposal_exists_active_process()
+
+
+def test_bapol_prop_goes_away_cool_off():
+    """ The open batch policy proposal should not be served anymore after the cool-off period has been started """
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
+                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+    # finish a batch
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    cs.start_client_simulation(5)
+    # one open proposal
+    assert utils.new_open_proposal_exists_active_process()
+    # start cool-off period
+    response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
+    assert response_post_cool_off.status_code == requests.codes.ok
+    # no more open proposal
     assert not utils.new_open_proposal_exists_active_process()

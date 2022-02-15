@@ -38,14 +38,38 @@ def post_processes_a_b(process_name: str, path_a: str, path_b: str, customer_cat
 
 
 def get_currently_active_process_id():
-    response = requests.get(BASE_URL + "/process/active-meta")
+    response = requests.get(BASE_URL + "/process/active/meta")
     assert response.status_code == requests.codes.ok
     return response.json().get('id')
+
+
+def get_currently_active_process_meta():
+    response = requests.get(BASE_URL + "/process/active/meta")
+    assert response.status_code == requests.codes.ok
+    return response.json()
 
 
 # BATCH POLICY API
 example_batch_policy = {
         "batchSize": 200,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.7,
+                "explorationProbabilityB": 0.3
+            }
+        ]
+    }
+
+
+def example_batch_policy_size(size: int) -> dict:
+    return {
+        "batchSize": size,
         "executionStrategy": [
             {
                 "customerCategory": "public",
@@ -119,10 +143,9 @@ def post_manual_decision(manual_decision: str):
     """ Set a manual decision for currently active process in backend """
     assert manual_decision in ['a', 'b']
     params = {
-        "process-id": get_currently_active_process_id(),
         "version-decision": manual_decision
     }
-    response = requests.post(BASE_URL + "/instance-router/manual-decision", params=params)
+    response = requests.post(BASE_URL + "/process/active/manual-decision", params=params)
     assert response.status_code == requests.codes.ok
 
 

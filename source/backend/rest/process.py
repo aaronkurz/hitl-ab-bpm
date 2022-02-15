@@ -4,13 +4,13 @@ import shutil
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
-from sqlalchemy import and_
 from scipy.stats.mstats import mquantiles
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
-from models.process_instance import ProcessInstance
+from models.batch_policy import get_number_finished_bapols
 from models import db
-from models.process import Process, Version
+from models.process import Process, Version, cool_off_over, set_winning
+from models.utils import WinningReasonEnum
 from rest import utils
 from config import K_QUANTILES_REWARD_FUNC
 
@@ -25,6 +25,29 @@ def allowed_file_models(filename):
 def allowed_file_history(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ['json']
+
+
+def get_active_process_entry():
+    active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
+    if active_process_entry_query.count() == 0:
+        abort(404, "No active process/experiment in db yet")
+    elif active_process_entry_query.count() > 1:
+        return abort(500, "More than one active process")
+    return active_process_entry_query.first()
+
+
+def get_experiment_state(process: Process):
+    if process.winning_version is None:
+        if cool_off_over(process.id):
+            return 'Cool-Off over, waiting for final decision'
+        elif process.in_cool_off:
+            return 'In Cool-Off'
+        else:
+            return 'Running'
+    else:
+        if process.winning_reason is None:
+            abort(500, "Server Error: Winning version without winning reason.")
+        return "Done, " + process.winning_reason.value
 
 
 @process_api.route('/<process_name>', methods=['POST'])
@@ -136,18 +159,15 @@ def get_processes_count():
     return json_data
 
 
-@process_api.route('/active-meta', methods=['GET'])
+@process_api.route('/active/meta', methods=['GET'])
 def get_active_process_variants_metadata():
-    active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
-    if active_process_entry_query.count() == 0:
-        abort(500, "No active process in db")
-    elif active_process_entry_query.count() > 1:
-        return abort(500, "More than one active process")
-    active_process_entry = active_process_entry_query.first()
+    """ Get metadata about running experiment/process """
+    active_process_entry = get_active_process_entry()
     ap_info = {
         'id': active_process_entry.id,
         'name': active_process_entry.name,
         'addedTime': active_process_entry.datetime_added,
+        'experimentState': get_experiment_state(active_process_entry),
         'customerCategories': active_process_entry.customer_categories,
         'defaultVersion':
             None if active_process_entry.default_version is None else active_process_entry.default_version.value,
@@ -157,6 +177,53 @@ def get_active_process_variants_metadata():
         'decisionTime': active_process_entry.datetime_decided
     }
     return ap_info
+
+
+@process_api.route('/active/cool-off', methods=['POST'])
+def start_cool_off_active():
+    """ Start cool-off period
+
+    Condition: can only be started after one finished batch.
+    """
+    active_process_entry = get_active_process_entry()
+    number_finished_bapols = get_number_finished_bapols(active_process_entry.id)
+    if number_finished_bapols == 0:
+        abort(404, """
+        No bapol has been finished yet. The cool-off period can only be started after at least one finished bapol
+        """)
+    elif number_finished_bapols > 0:
+        active_process_entry.in_cool_off = True
+        db.session.commit()
+        return {
+            'experimentState': get_experiment_state(active_process_entry)
+        }
+    elif number_finished_bapols < 0:
+        abort(500, "Unexpected finished bapol count < 0")
+
+
+@process_api.route('/active/winning', methods=['POST'])
+def set_winning_version():
+    """ Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over') """
+    active_process_entry = get_active_process_entry()
+    if not cool_off_over(active_process_entry.id):
+        abort(404, "No active process that has a finished cool off period available")
+
+    winning_version = request.args.get('winning-version')
+    if winning_version not in ['a', 'b']:
+        abort(400, "winning-version has to be 'a' or 'b'")
+    set_winning(active_process_entry.id, winning_version, WinningReasonEnum.EXPERIMENT_ENDED)
+    return {
+        'experimentState': get_experiment_state(active_process_entry)
+    }
+
+
+@process_api.route('active/manual-decision', methods=['POST'])
+def manual_decision():
+    """ API endpoint to allow human expert to manually make a decision """
+    active_process_entry = get_active_process_entry()
+    decision = request.args.get('version-decision')
+    set_winning(active_process_entry.id, decision, WinningReasonEnum.MANUAL_CHOICE)
+    return "Success"
 
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
@@ -196,22 +263,3 @@ def get_process_variant_files(a_or_b):
             abort(404)
     else:
         abort(400, description='requested variant must be a or b (e.g. process-variants/variant-file/a)')
-
-
-@process_api.route('/experiment-state', methods=['GET'])
-def get_process_state():
-    process_id = int(request.args.get('process-id'))
-    utils.validate_backend_process_id(process_id)
-    if Process.query.filter(Process.id == process_id).count == 0:
-        abort(404, "No such process/experiment.")
-    if Process.query.filter(Process.id == process_id).first().winning_version is not None \
-            and ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                  ProcessInstance.do_evaluate == True,
-                                                  ProcessInstance.reward is not None)):
-        state = "Finished"
-    else:
-        state = "Running"
-
-    return {
-        'state': state
-    }
