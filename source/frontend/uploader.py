@@ -33,8 +33,8 @@ def upload_files():
                     }
                     response = requests.post(BACKEND_URI + "process/" + process_name, files=files_in, params=params)
                     if response.status_code == requests.codes.ok:
-                        st.write("✅ Files uploaded, continue below.")
+                        st.success("Files uploaded, continue below.")
                     else:
-                        st.write("🚨️ File upload unsuccessful! Try again.")
+                        st.exception("File upload unsuccessful! Try again.")
                 else:
-                    st.write("⚠️ All fields have to be supplied.")
+                    st.warning("All fields have to be supplied.")
