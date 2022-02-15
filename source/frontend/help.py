@@ -39,10 +39,21 @@ Should be a .json file with this content format:
 }
 """
 
-DASHBOARD_HELP = "This is where the human process expert can control the experiment."
+CONTROLS_HELP = "This is where the human process expert can control the experiment."
 
 DEV_MODE_HELP = """
 If you are just using the app for development purposes or to try it out \
 you can simulate process instantiation requests instead of having real requests from customers/clients. \
 An additional client simulator area will pop up in the dashboard if you activate dev mode.
+"""
+
+EXPERIMENT_METADATA = "Here, you can find useful metadata about the running experiment."
+
+COOL_OFF_DETAILED = """
+*Q: What is Cool-Off/the Cool-Off period?* \n
+A: When you want to conclude the experiment, there might still be some long running, \
+unevaluated process instances. Since it is important to take them into account for your \
+final decision, we have implemented the cool off period. This makes sure, that all the \
+instances that were part of any experimental batch are finished and have been evaluated and taken \
+into account before we present the final proposal and you make the final decision.
 """
