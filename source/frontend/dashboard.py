@@ -303,17 +303,17 @@ def end_of_experiment():
             st.write("**Customer Category: " + exec_strat.get('customerCategory') +"**")
             st.write("Likelihood, with which agent would choose version a: ", exec_strat.get('explorationProbabilityA'))
             st.write("Likelihood, with which agent would choose version b: ", exec_strat.get('explorationProbabilityB'))
+        winning_version = st.radio("Choose winning version overall", ('a', 'b'))
+        if st.button("Submit Choice"):
+            response_set_winner = requests.post(BACKEND_URI + "process/active/winning", params={
+                'winning-version': winning_version
+            })
+            if response_set_winner.status_code == requests.codes.ok:
+                st.success("Winning version set successfully")
+                st.session_state['cool_off'] = False
+            else:
+                st.exception("Setting winning version failed.")
     elif response_final_prop.status_code == 404:
         st.warning("No final proposal available at the moment.")
     else:
         st.exception("Fetching of final proposal failed.")
-    winning_version = st.radio("Choose winning version overall", ('a', 'b'))
-    if st.button("Submit Choice"):
-        response_set_winner = requests.post(BACKEND_URI + "process/active/winning", params={
-            'winning-version': winning_version
-        })
-        if response_set_winner.status_code == requests.codes.ok:
-            st.success("Winning version set successfully")
-            st.session_state['cool_off'] = False
-        else:
-            st.exception("Setting winning version failed.")
