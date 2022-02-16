@@ -117,7 +117,7 @@ def test_experiment_state_manual_decision():
                              path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     utils.post_manual_decision('a')
     exp_state = utils.get_currently_active_process_meta().get('experimentState')
@@ -130,7 +130,7 @@ def test_experiment_state_cool_off():
                              customer_categories=["public", "gov"], default_version='a',
                              path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
     assert 'Cool-Off' in response_post_cool_off.json().get('experimentState')
@@ -148,10 +148,10 @@ def test_cool_off_only_after_batch_finished():
     assert response_post_cool_off.status_code == requests.codes.not_found
     # not yet finish a batch
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
-    cs.start_client_simulation(3)
+    cs.start_client_simulation(3, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.not_found
-    cs.start_client_simulation(2)
+    cs.start_client_simulation(2, 1)
     # finish batch
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
@@ -163,7 +163,7 @@ def test_cool_off_period():
                              customer_categories=["public", "gov"], default_version='a',
                              path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
     # checking whether cool off is done (should not be the case since the
@@ -177,7 +177,7 @@ def test_cool_off_period():
     meta = utils.get_currently_active_process_meta()
     assert "In Cool-Off" == meta.get('experimentState')
     # start some more instances to trigger collection and learning with last open instances
-    cs.start_client_simulation(15)
+    cs.start_client_simulation(20, 0.5)
     # cool off should be done now, check for final bapol proposal
     meta = utils.get_currently_active_process_meta()
     assert "Cool-Off over, waiting for final decision" == meta.get('experimentState')

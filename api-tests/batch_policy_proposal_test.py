@@ -67,7 +67,7 @@ def test_new_proposal_after_batch():
         ]
     })
     assert utils.get_bapol_count() == 1
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     assert utils.get_bapol_proposal_count_active_process() == 2
     response = requests.get(BASE_URL + "/batch-policy-proposal/open",
                             params={'process-id': utils.get_currently_active_process_id()})
@@ -100,22 +100,22 @@ def test_requests_in_between_batches():
     # setting a batch policy with size 5 and finishing it
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     # making sure after first batch is finished that there are two proposals
     assert utils.get_bapol_proposal_count_active_process() == 2
     assert utils.new_open_proposal_exists_active_process() is True
     # starting 5 instances in between batches
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     # setting a new bapol
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 2
     # not finishing bapol
-    cs.start_client_simulation(3)
+    cs.start_client_simulation(3, 1)
     # making sure that there is no new proposal yet
     assert utils.new_open_proposal_exists_active_process() is False
     assert utils.get_bapol_proposal_count_active_process() == 2
     # finishing bapol
-    cs.start_client_simulation(2)
+    cs.start_client_simulation(2, 1)
     # making sure there is a new proposal
     assert utils.new_open_proposal_exists_active_process() is True
     assert utils.get_bapol_proposal_count_active_process() == 3
@@ -131,7 +131,7 @@ def test_after_manual_decision_no_proposal():
     assert utils.new_open_proposal_exists_active_process()
     # setting a batch policy with size 5 and finishing it
     utils.post_bapol_currently_active_process(bapol_5_size)
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     # making sure after first batch is finished that there is a new open proposal
     assert utils.new_open_proposal_exists_active_process()
     utils.post_manual_decision('b')
@@ -147,7 +147,7 @@ def test_bapol_prop_goes_away_cool_off():
                              path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     # finish a batch
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     # one open proposal
     assert utils.new_open_proposal_exists_active_process()
     # start cool-off period

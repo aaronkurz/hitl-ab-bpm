@@ -34,10 +34,10 @@ def meta_run_manual_choice(version: str):
                              path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     post_manual_decision(version)
-    cs.start_client_simulation(5)
+    cs.start_client_simulation(5, 1)
     # check that still only 5 got routed inside batch
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     # check that 5 additional ones got routes outside batch
@@ -96,7 +96,7 @@ def test_aggregate_data():
     assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
-    cs.start_client_simulation(10)
+    cs.start_client_simulation(10, 1)
     assert utils.get_bapol_proposal_count_active_process() == 2
     assert utils.new_open_proposal_exists_active_process() is True
     currently_active_process_id = utils.get_currently_active_process_id()
@@ -214,7 +214,7 @@ def test_finished_instances_are_collected():
     }
     response = requests.get(BASE_URL + "/instance-router/finished-instance-count", params=params)
     assert response.json().get('finishedInstanceCount') == 0
-    cs.start_client_simulation(10)
+    cs.start_client_simulation(10, 1)
     params = {
         "process-id": utils.get_currently_active_process_id()
     }
@@ -246,10 +246,10 @@ def test_detailed_batch_instance_info():
     # finish three batches
     for i in range(3):
         utils.post_bapol_currently_active_process(bapol_size_5)
-        cs.start_client_simulation(5)
+        cs.start_client_simulation(5, 1)
     # finish half of a batch
     utils.post_bapol_currently_active_process(bapol_size_5)
-    cs.start_client_simulation(2)
+    cs.start_client_simulation(2, 1)
     response = requests.get(BASE_URL + "/batch-policy/count", params={"process-id": active_process_id})
     assert response.json().get('batchPolicyCount') == 4
     # test batch policy instances details
@@ -309,7 +309,7 @@ def test_routing_follows_bapol_b():
             }
         ]
     })
-    cs.start_client_simulation(10)
+    cs.start_client_simulation(10, 1)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1
@@ -342,7 +342,7 @@ def test_routing_follows_bapol_a():
             }
         ]
     })
-    cs.start_client_simulation(10)
+    cs.start_client_simulation(10, 1)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1
@@ -375,7 +375,7 @@ def test_routing_follows_bapol_both():
             }
         ]
     })
-    cs.start_client_simulation(10)
+    cs.start_client_simulation(10, 1)
     params = {
         "process-id": utils.get_currently_active_process_id(),
         "batch-number": 1
@@ -392,3 +392,39 @@ def test_routing_follows_bapol_both():
         elif instance.get('decision') == 'b':
             b_counter += 1
     assert a_counter > 0 and b_counter > 0
+
+
+def test_a_better_right_decision():
+    utils.post_processes_a_b("helicopter_license",
+                             "resources/bpmn/helicopter_license_fast_a_better/helicopter_fast_a_better_vA.bpmn",
+                             "resources/bpmn/helicopter_license_fast_a_better/helicopter_fast_a_better_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+    utils.post_bapol_currently_active_process({
+        "batchSize": 100,
+        "executionStrategy": [
+            {
+                "customerCategory": "public",
+                "explorationProbabilityA": 0.5,
+                "explorationProbabilityB": 0.5
+            },
+            {
+                "customerCategory": "gov",
+                "explorationProbabilityA": 0.5,
+                "explorationProbabilityB": 0.5
+            }
+        ]
+    })
+    cs.start_client_simulation(100, 0.5)
+    params = {
+        'process-id': utils.get_currently_active_process_id()
+    }
+    bapol_proposal_response = requests.get(BASE_URL + "/batch-policy-proposal/open", params=params)
+    assert bapol_proposal_response.status_code == requests.codes.ok
+    proposal_json = bapol_proposal_response.json().get('proposal')
+    for execution_strategy in proposal_json.get('executionStrategy'):
+        # make sure that version a is preferred (since it is very clearly better)
+        assert execution_strategy.get('explorationProbabilityA') > 0.75
+        # make sure that the exploration probabilities are 1 in sum
+        assert execution_strategy.get('explorationProbabilityA') \
+               + execution_strategy.get('explorationProbabilityB') == 1
