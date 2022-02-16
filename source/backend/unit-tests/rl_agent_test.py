@@ -17,7 +17,7 @@ def get_rounded_reward_2(duration: float):
 @patch('config.K_QUANTILES_REWARD_FUNC', 20)
 @patch('config.LOWER_CUTOFF_REWARD_FUNC', 0.2)
 @patch('config.UPPER_CUTOFF_REWARD_FUNC', 0.8)
-@patch('instance_router.private.rl_agent.QUANTILES', [0.021, 0.053, 0.06, 0.064, 0.068, 0.072, 0.075, 0.079, 0.082,
+@patch('instance_router.private.rl_agent.quantiles', [0.021, 0.053, 0.06, 0.064, 0.068, 0.072, 0.075, 0.079, 0.082,
                                                       0.085, 0.09, 0.095, 0.102, 0.108, 0.117, 0.126, 0.14, 0.16057,
                                                       0.208, 0.314, 3.681])
 def test_reward_func():

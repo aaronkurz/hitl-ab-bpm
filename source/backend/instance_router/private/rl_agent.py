@@ -13,11 +13,11 @@ from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTO
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Array containing
-QUANTILES = []
+quantiles = []
 # Store latest process_id
-LATEST_PROCESS_ID = None
+latest_process_id = None
 # Load model
-VW = None
+vw = None
 # Actions
 ACTIONS = ["A", "B"]
 
@@ -31,14 +31,14 @@ def get_reward(duration: float):
     returns:  Reward between 0 and 1
     """
     step_height = (UPPER_CUTOFF_REWARD_FUNC - LOWER_CUTOFF_REWARD_FUNC) / K_QUANTILES_REWARD_FUNC
-    QUANTILES.sort()
-    if duration < QUANTILES[0]:
+    quantiles.sort()
+    if duration < quantiles[0]:
         return 1.0
-    elif duration >= QUANTILES[K_QUANTILES_REWARD_FUNC]:
+    elif duration >= quantiles[K_QUANTILES_REWARD_FUNC]:
         return 0.0
     else:
         for i in range(1, K_QUANTILES_REWARD_FUNC + 1):
-            if duration < QUANTILES[i]:
+            if duration < quantiles[i]:
                 return UPPER_CUTOFF_REWARD_FUNC - (i * step_height)
 
 
@@ -104,7 +104,7 @@ def get_action_prob_per_context_dict(orgas, actions):
     for elem in orgas:
         tmp = {'orga': elem}
         vw_text_example = to_vw_example_format(tmp, actions)
-        pmf = VW.predict(vw_text_example)
+        pmf = vw.predict(vw_text_example)
         prob_dict = {}
         prob_dict.update(tmp)
         count = 0
@@ -151,12 +151,12 @@ def run_iteration(orgas: list, actions: list, reward_function: get_reward, durat
     reward = reward_function(duration)
     logging.info(f'Reward: {reward}')
     # 4. Inform VW of what happened so we can learn from it
-    vw_format = VW.parse(to_vw_example_format(context, actions, (action, reward, prob)),
+    vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
                          vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
     # 5. Learn
-    VW.learn(vw_format)
+    vw.learn(vw_format)
     # 6. Let VW know you're done with these objects
-    VW.finish_example(vw_format)
+    vw.finish_example(vw_format)
     # Return the reward of the current iteration
     return reward, prob
 
@@ -173,14 +173,14 @@ def learn_and_set_new_batch_policy_proposal(process_id: int, in_cool_off: bool):
                                                            ProcessInstance.finished_time != None,
                                                            ProcessInstance.do_evaluate == True,
                                                            ProcessInstance.reward == None))
-    global LATEST_PROCESS_ID
-    global VW
-    global QUANTILES
+    global latest_process_id
+    global vw
+    global quantiles
     # Set latest process
-    if LATEST_PROCESS_ID != process_id:
-        LATEST_PROCESS_ID = process_id
-        VW = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.2', quiet=True)
-        QUANTILES = Process.query.filter(Process.id == process_id).first().quantiles_default_history
+    if latest_process_id != process_id:
+        latest_process_id = process_id
+        vw = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.025', quiet=True)
+        quantiles = Process.query.filter(Process.id == process_id).first().quantiles_default_history
     # Get context
     metadata = get_process_metadata(process_id)
     orgas = metadata['customer_categories'].split('-')
