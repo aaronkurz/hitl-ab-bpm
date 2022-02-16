@@ -149,9 +149,11 @@ def run_iteration(orgas: list, actions: list, reward_function: get_reward, durat
     logging.info(f'Action: {action}, Prob: {prob}, Context: {context}')
     # 3. Get reward of the action we chose
     reward = reward_function(duration)
-    logging.info(f'Reward: {reward}')
+    # vowpalwabbit uses a cost instead of a reward (lower = better)
+    cost = 1 - reward
+    logging.info(f'Cost: {cost}')
     # 4. Inform VW of what happened so we can learn from it
-    vw_format = vw.parse(to_vw_example_format(context, actions, (action, reward, prob)),
+    vw_format = vw.parse(to_vw_example_format(context, actions, (action, cost, prob)),
                          vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
     # 5. Learn
     vw.learn(vw_format)
