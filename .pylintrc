@@ -45,7 +45,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=pylint.extensions.docparams
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -87,8 +87,11 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         import-error,
-        too-few-public-methods,
-        import-outside-toplevel
+        too-few-public-methods, # because sqlalchemy model classes have no public methods
+        import-outside-toplevel, # too annoying to set up for now, maybe later
+        inconsistent-return-statements, # otherwise pylint will complain when we use abort() to make flask endpoint fail
+        import-self, # too annoying to set up for now, maybe later
+        no-name-in-module # too annoying to set up for now, maybe later
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

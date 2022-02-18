@@ -1,5 +1,5 @@
-from flask import Blueprint, abort, request, jsonify
-
+""" Rest endpoints regarding batch policies """
+from flask import Blueprint, abort, request
 from rest import utils
 from models import db
 from models.batch_policy import BatchPolicy, ExecutionStrategyBaPol, get_current_bapol_data
@@ -9,7 +9,6 @@ from models.batch_policy_proposal import exists_bapol_proposal_without_bapol, ge
 batch_policy_api = Blueprint('batch_policy_api', __name__)
 
 
-# TODO: add sanity checks of data (percentages add up e.g.)
 @batch_policy_api.route('', methods=['POST'])
 def set_batch_policy():
     """ Set new batch policy for currently active process

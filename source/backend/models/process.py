@@ -1,13 +1,17 @@
+""" sqlalchemy model for processes and related functions.
+A process row is a certain experiment with multiple versions of that process and further metadata.
+"""
 from datetime import datetime
 from models import db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import BatchPolicy
-from sqlalchemy.orm import relationship
 from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
 
 
 class Process(db.Model):
+    """ sqlalchemy model for processes/experiments """
     __tablename__ = "process"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -44,8 +48,10 @@ def get_process_metadata(process_id: int) -> dict:
         'variant_b_path': relevant_process_entry.variant_b_path,
         'variant_a_camunda_id': relevant_process_entry.variant_a_camunda_id,
         'variant_b_camunda_id': relevant_process_entry.variant_b_camunda_id,
-        'default_version':  None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
-        'winning_version': None if relevant_process_entry.winning_version is None else relevant_process_entry.winning_version.value,
+        'default_version':
+            None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
+        'winning_version':
+            None if relevant_process_entry.winning_version is None else relevant_process_entry.winning_version.value,
         'winning_reason': relevant_process_entry.winning_reason,
         'datetime_decided': relevant_process_entry.datetime_decided,
         'number_batch_policies':
@@ -66,10 +72,11 @@ def get_active_process_metadata() -> dict:
 
 def set_winning(process_id: int, decision: str, winning_reason: WinningReasonEnum) -> dict:
     """ Finish an experiment and set a winning version for a process, as well as a winning reason
-
-     :param winning_reason:
-     :param process_id: process id in backend
-     :param decision: 'a' or 'b'
+    :raises RuntimeError: process already has winning version
+    :raises RuntimeError: version-decision query parameter must be 'a' or 'b'
+    :param winning_reason:
+    :param process_id: process id in backend
+    :param decision: 'a' or 'b'
     """
     if decision not in ['a', 'b']:
         raise RuntimeError("version-decision query parameter must be 'a' or 'b'")
@@ -83,7 +90,13 @@ def set_winning(process_id: int, decision: str, winning_reason: WinningReasonEnu
     return get_process_metadata(process_id)
 
 
-def is_valid_customer_category(process_id: int, customer_category: str):
+def is_valid_customer_category(process_id: int, customer_category: str) -> bool:
+    """
+    Checks whether a customer_category string is part of the customer categories of a certain process.
+    :param process_id: process to be checked
+    :param customer_category: category to be checked
+    :return: True or False
+    """
     process = Process.query.filter(Process.id == process_id).first()
     customer_categories_list = process.customer_categories.split("-")
     return customer_category in customer_categories_list

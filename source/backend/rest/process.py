@@ -40,10 +40,9 @@ def get_experiment_state(process: Process):
     if process.winning_version is None:
         if cool_off_over(process.id):
             return 'Cool-Off over, waiting for final decision'
-        elif process.in_cool_off:
+        if process.in_cool_off:
             return 'In Cool-Off'
-        else:
-            return 'Running'
+        return 'Running'
     else:
         if process.winning_reason is None:
             abort(500, "Server Error: Winning version without winning reason.")
@@ -72,9 +71,9 @@ def set_process(process_name):
     # get default version
     default_version = request.args.get('default-version')
     if default_version == 'a':
-        default_version = Version.a
+        default_version = Version.A
     elif default_version == 'b':
-        default_version = Version.b
+        default_version = Version.B
     else:
         abort(400, 'Default version has to be specified in query argument \'defaultVersion\'')
 
@@ -115,7 +114,7 @@ def set_process(process_name):
     history_durations_file.save(path_json)
 
     # Extracting the quantiles from the json file
-    with open(path_json) as json_file:
+    with open(path_json, encoding='us-ascii') as json_file:
         history_data: dict = json.load(json_file)
         if not (sorted(list(history_data.keys())) == sorted(['durations', 'interarrivalTime'])
                 and isinstance(history_data.get('durations'), list)

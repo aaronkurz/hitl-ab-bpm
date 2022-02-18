@@ -12,5 +12,5 @@ class WinningReasonEnum(enum.Enum):
 
 class Version(enum.Enum):
     """ Possible process version shorthands """
-    a = 'a'
-    b = 'b'
+    A = 'a'
+    B = 'b'

@@ -1,5 +1,6 @@
 """ SQLAlchemy models for batch policy proposal and related functions """
 from datetime import datetime
+from typing import List, Dict
 from sqlalchemy import and_, desc
 from models import db
 from models.process import Process, cool_off_over
@@ -27,7 +28,7 @@ class ExecutionStrategyBaPolProp(db.Model):
     exploration_probability_b = db.Column(db.Float, nullable=False)
 
 
-def set_naive_bapol_proposal(process_id: int, customer_categories: [str]):
+def set_naive_bapol_proposal(process_id: int, customer_categories: List[str]):
     """
      Will set a naive (50:50) batch policy proposal for a certain process
     :param process_id: process id
@@ -42,20 +43,28 @@ def set_naive_bapol_proposal(process_id: int, customer_categories: [str]):
 
 
 def set_bapol_proposal(process_id: int,
-                       customer_categories: [str],
-                       expl_probs_a: [float],
-                       expl_probs_b: [float]) -> bool:
+                       customer_categories: List[str],
+                       expl_probs_a: List[float],
+                       expl_probs_b: List[float]) -> bool:
+    """
+    Create a new batch policy proposal for a certain process
+    :param process_id: process id in backend
+    :param customer_categories: relevant customer categories of process
+    :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
+    :param expl_probs_b: exploration probabilities for b, the first one is for the first customer category and so on
+    :return: True
+    """
     assert _new_proposal_can_be_set(process_id)
     assert len(customer_categories) == len(expl_probs_a) \
            and len(expl_probs_a) == len(expl_probs_b), "Length of input lists must be the same"
     exec_strat_props = []
-    for i in range(len(customer_categories)):
-        assert expl_probs_a[i] + expl_probs_b[i] == 1.0, "Probabilities do not add up to 1.0 for each category"
+    for index, _ in enumerate(customer_categories):
+        assert expl_probs_a[index] + expl_probs_b[index] == 1.0, "Probabilities do not add up to 1.0 for each category"
         exec_strat_props.append(
             ExecutionStrategyBaPolProp(
-                customer_category=customer_categories[i],
-                exploration_probability_a=expl_probs_a[i],
-                exploration_probability_b=expl_probs_b[i]
+                customer_category=customer_categories[index],
+                exploration_probability_a=expl_probs_a[index],
+                exploration_probability_b=expl_probs_b[index]
             )
         )
     new_proposal = BatchPolicyProposal(
@@ -68,11 +77,21 @@ def set_bapol_proposal(process_id: int,
 
 
 def set_or_update_final_bapol_proposal(process_id: int,
-                       customer_categories: [str],
-                       expl_probs_a: [float],
-                       expl_probs_b: [float]) -> bool:
+                       customer_categories: List[str],
+                       expl_probs_a: List[float],
+                       expl_probs_b: List[float]) -> bool:
+    """
+    Create a final batch policy proposal or update an existing final batch policy proposal for a given process id.
+    In case there already is a final batch policy proposal, it is updated with the values passed to this funktion
+    :raises RuntimeError: Problem with parameter customer_categories or unexpected number of bapol proposals
+    :param process_id: process id in our backend
+    :param customer_categories: relevant customer categories of process
+    :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
+    :param expl_probs_b: exploration probabilities for b, the first one is for the first customer category and so on
+    :return: True
+    """
     relevant_bapol_props = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
-                                                                 BatchPolicyProposal.final_proposal == True))
+                                                                 BatchPolicyProposal.final_proposal.is_(True)))
     if relevant_bapol_props.count() == 1:
         prop = relevant_bapol_props.first()
         exec_strats = ExecutionStrategyBaPolProp.query\
@@ -87,14 +106,15 @@ def set_or_update_final_bapol_proposal(process_id: int,
             exec_strat.exploration_probability_a = expl_probs_a[relevant_index]
             exec_strat.exploration_probability_b = expl_probs_b[relevant_index]
         db.session.commit()
-    elif relevant_bapol_props.count() == 0:
+        return True
+    if relevant_bapol_props.count() == 0:
         set_bapol_proposal(process_id, customer_categories, expl_probs_a, expl_probs_b)
         final_bapol_prop = BatchPolicyProposal.query.filter(BatchPolicyProposal.process_id == process_id)\
             .order_by(desc(BatchPolicyProposal.id)).first()
         final_bapol_prop.final_proposal = True
         db.session.commit()
-    else:
-        raise RuntimeError("Unexpected number of final batch policy proposals")
+        return True
+    raise RuntimeError("Unexpected number of final batch policy proposals")
 
 
 def _new_proposal_can_be_set(process_id) -> bool:
@@ -104,13 +124,20 @@ def _new_proposal_can_be_set(process_id) -> bool:
     return True
 
 
-def exists_bapol_proposal_without_bapol(process_id) -> bool:
-    if Process.query.filter(Process.id == process_id).first().winning_version != None \
-            or Process.query.filter(Process.id == process_id).first().in_cool_off == True:
+def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
+    """
+    Checks whether there is a batch policy proposal without a corresponding batch policy that has been set as a 'reply'
+    for a certain process
+    :raises RuntimeError: Illegal state: More than one batch policy proposal without corresponding batch policy
+    :param process_id: process id in backend
+    :return: True or False
+    """
+    if Process.query.filter(Process.id == process_id).first().winning_version is not None \
+            or Process.query.filter(Process.id == process_id).first().in_cool_off is True:
         return False
     count_props_without_bapol = BatchPolicyProposal.query. \
         filter(and_(BatchPolicyProposal.process_id == process_id,
-                    BatchPolicyProposal.batch_policy_id == None)).count()
+                    BatchPolicyProposal.batch_policy_id.is_(None))).count()
     if count_props_without_bapol == 0:
         return False
     if count_props_without_bapol == 1:
@@ -118,7 +145,14 @@ def exists_bapol_proposal_without_bapol(process_id) -> bool:
     raise RuntimeError("Illegal state: More than one batch policy proposal without corresponding batch policy")
 
 
-def get_current_open_proposal_data(process_id: int) -> dict:
+def get_current_open_proposal_data(process_id: int) -> Dict[int, int, List[Dict[str, float, float]]]:
+    """
+    Get data of currently open/unanswered (no corresponding batch policy yet) batch policy proposal for specified
+    process id.
+    :raises RuntimeError: There is no open batch policy proposal for specified process
+    :param process_id: process id in backend
+    :return: dict containing batch policy proposal
+    """
     if not exists_bapol_proposal_without_bapol(process_id):
         raise RuntimeError("No open batch policy proposal")
 
@@ -137,20 +171,32 @@ def get_current_open_proposal_data(process_id: int) -> dict:
 
 
 def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
+    """
+    Get BatchPolicyProposal for open proposal
+    :raises RuntimeError: No open batch policy proposal for process
+    :param process_id: process id in backend
+    :return:
+    """
     if not exists_bapol_proposal_without_bapol(process_id):
         raise RuntimeError("No open batch policy proposal")
 
     relevant_bapol_prop = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
-                                                                BatchPolicyProposal.batch_policy_id == None)).first()
+                                                                BatchPolicyProposal.batch_policy_id.is_(None))).first()
 
     return relevant_bapol_prop
 
 
-def get_final_proposal_data(process_id: int) -> dict:
+def get_final_proposal_data(process_id: int) -> Dict[int, int, List[Dict[str, float, float]]]:
+    """
+    Get data of final proposal.
+    :raises RuntimeError: No final proposal available yet
+    :param process_id: process id in backend
+    :return: Final proposal
+    """
     if not cool_off_over(process_id):
         raise RuntimeError("Final proposal not ready")
     relevant_bapol_prop_query = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
-                                                                BatchPolicyProposal.final_proposal == True))
+                                                                BatchPolicyProposal.final_proposal.is_(True)))
     assert relevant_bapol_prop_query.count() == 1
 
     relevant_bapol_prop = relevant_bapol_prop_query.first()

@@ -39,7 +39,7 @@ def get_latest_bapol_entry(process_id: int):
     return BatchPolicy.query.filter(BatchPolicy.process_id == process_id).order_by(desc(BatchPolicy.id)).first()
 
 
-def append_process_instance_to_bapol(process_id: int, process_instance):
+def append_process_instance_to_bapol(process_id: int, process_instance: ProcessInstance):
     """
     Append a process instance to a bapol
     :param process_id: id of process in our backend
@@ -81,6 +81,7 @@ def get_current_bapol_data_active_process():
 def is_latest_batch_done(process_id: int) -> bool:
     """
     Check whether the latest batch policy is done
+    :raises RuntimeError: Illegal internal state: Batch Policy size has been exceeded (too many instances)
     :param process_id: Process id in our backend
     :return: True or False
     """
@@ -115,7 +116,7 @@ def get_batch_size_sum(process_id: int) -> int:
     return batch_size_counter
 
 
-def get_number_finished_bapols(process_id) -> int:
+def get_number_finished_bapols(process_id: int) -> int:
     """
     Get number of finished batch policy proposals for a process
     :param process_id: Process id
@@ -130,7 +131,7 @@ def get_number_finished_bapols(process_id) -> int:
     return counter
 
 
-def get_average_batch_size(process_id) -> float:
+def get_average_batch_size(process_id: int) -> float:
     """
     Get average batch size of a certain process
     :param process_id: Process id

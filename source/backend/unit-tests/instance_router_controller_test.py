@@ -13,12 +13,12 @@ def before_all():
 
 
 def test_get_winning_version_a():
-    Process.query.filter.return_value.first.return_value = Mock(winning_version=Version.a)
+    Process.query.filter.return_value.first.return_value = Mock(winning_version=Version.A)
     assert controller.get_winning_version(38) == 'a'
 
 
 def test_get_winning_version_b():
-    Process.query.filter.return_value.first.return_value = Mock(winning_version=Version.b)
+    Process.query.filter.return_value.first.return_value = Mock(winning_version=Version.B)
     assert controller.get_winning_version(4) == 'b'
 
 

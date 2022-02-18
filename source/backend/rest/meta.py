@@ -1,6 +1,6 @@
+""" REST endpoints that do not concern any singular other endpoint but are more general """
 import os
 import shutil
-
 from flask import Blueprint, abort
 from models import db
 
@@ -9,6 +9,7 @@ meta_api = Blueprint('meta_api', __name__)
 
 @meta_api.route('/all', methods=['DELETE'])
 def empty_database():
+    """ Empty database and delete stored state on filesystem """
     # delete process versions from filesystem
     folder = os.path.join(os.getcwd(), 'resources/')
     if not os.path.exists(folder):
