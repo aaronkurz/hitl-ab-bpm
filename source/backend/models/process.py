@@ -86,10 +86,7 @@ def set_winning(process_id: int, decision: str, winning_reason: WinningReasonEnu
 def is_valid_customer_category(process_id: int, customer_category: str):
     process = Process.query.filter(Process.id == process_id).first()
     customer_categories_list = process.customer_categories.split("-")
-    if customer_category in customer_categories_list:
-        return True
-    else:
-        return False
+    return customer_category in customer_categories_list
 
 
 def in_cool_off(process_id: int) -> bool:
@@ -99,7 +96,4 @@ def in_cool_off(process_id: int) -> bool:
 
 def cool_off_over(process_id: int) -> bool:
     """ Checks whether a certein process is in cool-off period AND all  instances have been evaluated """
-    if in_cool_off(process_id) and not unevaluated_instances_still_exist(process_id):
-        return True
-    else:
-        return False
+    return in_cool_off(process_id) and not unevaluated_instances_still_exist(process_id)

@@ -1,11 +1,12 @@
+""" SQLAlchemy models for batch policy proposal and related functions """
 from datetime import datetime
 from sqlalchemy import and_, desc
-
 from models import db
 from models.process import Process, cool_off_over
 
 
 class BatchPolicyProposal(db.Model):
+    """ sqlalchemy model for batch policy proposal """
     __tablename__ = 'batch_policy_proposal'
     id = db.Column(db.Integer, primary_key=True)
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'))
@@ -18,6 +19,7 @@ class BatchPolicyProposal(db.Model):
 
 
 class ExecutionStrategyBaPolProp(db.Model):
+    """ sqlalchemy model for execution strategies for batch policy proposals """
     __tablename__ = "execution_strategy_bapol_prop"
     batch_policy_proposal_id = db.Column(db.Integer, db.ForeignKey('batch_policy_proposal.id'), primary_key=True)
     customer_category = db.Column(db.String(100), primary_key=True)
@@ -26,6 +28,11 @@ class ExecutionStrategyBaPolProp(db.Model):
 
 
 def set_naive_bapol_proposal(process_id: int, customer_categories: [str]):
+    """
+     Will set a naive (50:50) batch policy proposal for a certain process
+    :param process_id: process id
+    :param customer_categories: relevant customer categories for that process id
+    """
     expl_probs_a = []
     expl_probs_b = []
     for _ in customer_categories:
@@ -73,8 +80,10 @@ def set_or_update_final_bapol_proposal(process_id: int,
         for exec_strat in exec_strats:
             try:
                 relevant_index = customer_categories.index(exec_strat.customer_category)
-            except ValueError:
-                raise RuntimeError("Missing customer category to update final batch policy proposal in cool off period")
+            except ValueError as value_error:
+                raise RuntimeError(
+                    "Missing customer category to update final batch policy proposal in cool off period"
+                ) from value_error
             exec_strat.exploration_probability_a = expl_probs_a[relevant_index]
             exec_strat.exploration_probability_b = expl_probs_b[relevant_index]
         db.session.commit()
@@ -92,8 +101,7 @@ def _new_proposal_can_be_set(process_id) -> bool:
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None or exists_bapol_proposal_without_bapol(process_id):
         return False
-    else:
-        return True
+    return True
 
 
 def exists_bapol_proposal_without_bapol(process_id) -> bool:
@@ -105,10 +113,9 @@ def exists_bapol_proposal_without_bapol(process_id) -> bool:
                     BatchPolicyProposal.batch_policy_id == None)).count()
     if count_props_without_bapol == 0:
         return False
-    elif count_props_without_bapol == 1:
+    if count_props_without_bapol == 1:
         return True
-    else:
-        raise RuntimeError("Illegal state: More than one batch policy proposal without corresponding batch policy")
+    raise RuntimeError("Illegal state: More than one batch policy proposal without corresponding batch policy")
 
 
 def get_current_open_proposal_data(process_id: int) -> dict:
