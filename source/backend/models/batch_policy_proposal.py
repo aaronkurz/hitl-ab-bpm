@@ -145,7 +145,7 @@ def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
     raise RuntimeError("Illegal state: More than one batch policy proposal without corresponding batch policy")
 
 
-def get_current_open_proposal_data(process_id: int) -> dict[int, int, List[dict[str, float, float]]]:
+def get_current_open_proposal_data(process_id: int) -> dict:
     """
     Get data of currently open/unanswered (no corresponding batch policy yet) batch policy proposal for specified
     process id.
@@ -186,7 +186,7 @@ def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
     return relevant_bapol_prop
 
 
-def get_final_proposal_data(process_id: int) -> dict[int, int, List[dict[str, float, float]]]:
+def get_final_proposal_data(process_id: int) -> dict:
     """
     Get data of final proposal.
     :raises RuntimeError: No final proposal available yet
