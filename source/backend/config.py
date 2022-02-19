@@ -1,8 +1,9 @@
+""" Configurations for flask app """
 import os
 
 from dotenv import load_dotenv
 
-inside_docker = os.getenv('INSIDE_DOCKER', False)
+inside_docker = os.getenv('INSIDE_DOCKER', 'False')
 
 if inside_docker:
     load_dotenv('docker.env')

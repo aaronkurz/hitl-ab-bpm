@@ -1,8 +1,8 @@
 """ Main "organizer" of instance routing """
-from sqlalchemy import and_
 from random import randint
+from sqlalchemy import and_
 from camunda.client import CamundaClient
-from instance_router.private import camunda_collector
+from instance_router.private import camunda_collector, rl_agent
 from scipy.stats import bernoulli
 from models import process, db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
@@ -10,61 +10,71 @@ from models.batch_policy import append_process_instance_to_bapol
 from models.batch_policy import get_average_batch_size
 from models.process import Process, in_cool_off
 from models import batch_policy
-from instance_router.private import rl_agent
+from models.utils import Version
 
 
-def get_winning_version(process_id: int) -> str or None:
+def get_winning_version(process_id: int) -> Version or None:
     """ In case the experiment is already done or a manual decision has been made, this will return that version
 
-    :returns 'a' or 'b' or None
+    :returns Version.A or Version.B or None
     """
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None:
-        return relevant_process.winning_version.value
-    else:
-        return None
+        return relevant_process.winning_version
+    return None
 
 
-def get_decision_in_batch(process_id, customer_category) -> str:
+def get_decision_in_batch(process_id: int, customer_category: str) -> Version:
     """ Will return the decision based on the currently active batch policy.
-
-   :param process_id: process id in backend
-   :param customer_category: customer category of instantiation request
-   :return: 'a' or 'b'
-   """
+    :raises RuntimeError: Specified customer category not found in batch policy of process
+    :param process_id: process id in backend
+    :param customer_category: customer category of instantiation request
+    :return: Version.A or Version.B
+    """
     bapol_dict = batch_policy.get_current_bapol_data(process_id)
     for elem in bapol_dict.get('executionStrategy'):
         if elem.get('customerCategory') == customer_category:
-            rv = bernoulli(elem.get('explorationProbabilityB'))
-            return ['a', 'b'][rv.rvs(1)[0]]
+            r_v = bernoulli(elem.get('explorationProbabilityB'))
+            return [Version.A, Version.B][r_v.rvs(1)[0]]
             # rv.rvs(sample-size) will return either 0 or 1, and 1 with the probability of p in bernoulli(p)
     raise RuntimeError('No suitable customer category found in batch policy: ' + str(customer_category))
 
 
-def get_decision_outside_batch(process_id) -> str:
+def get_decision_outside_batch(process_id: int) -> Version:
     """
-   :param process_id:
-   :return: 'a' or 'b'
+    Get a decision to route if we are outside of the batch
+   :param process_id: process id
+   :return: Version.A or Version.B
    """
     relevant_process = Process.query.filter(Process.id == process_id).first()
-    return relevant_process.default_version.value
+    return relevant_process.default_version
 
 
-def is_in_batch(process_id):
+def is_in_batch(process_id: int):
+    """
+    Check whether certain process experiment currently is in experimental batch
+    :param process_id: process id
+    :return: True or False
+    """
     return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                             ProcessInstance.do_evaluate == True)).count() <\
+                                             ProcessInstance.do_evaluate.is_(True))).count() < \
            batch_policy.get_batch_size_sum(process_id)
 
 
-def end_of_batch_reached(process_id):
+def end_of_batch_reached(process_id: int):
+    """
+    Check whether we are at the end of the batch for a certain process (last instantiation request of batch)
+    :param process_id: id of process
+    :return: True or False
+    """
     return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                             ProcessInstance.do_evaluate == True)).count() + 1 ==\
+                                             ProcessInstance.do_evaluate.is_(True))).count() + 1 == \
            batch_policy.get_batch_size_sum(process_id)
 
 
 def instantiate(process_id: int, customer_category: str) -> dict:
     """ Create a new process instance
-
+    :raises RuntimeError: Illegal internal response; Unexpected decision by reinforcement learning environment
     :param process_id: process id that we want to start
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
@@ -100,12 +110,12 @@ def instantiate(process_id: int, customer_category: str) -> dict:
 
     # instantiate according to decision
     client = CamundaClient()
-    if decision == 'a':
+    if decision == Version.A:
         variant_key = 'variant_a_camunda_id'
-    elif decision == 'b':
+    elif decision == Version.B:
         variant_key = 'variant_b_camunda_id'
     else:
-        raise Exception('Unexpected decision by reinforcement learning environment: ' + str(decision))
+        raise RuntimeError('Unexpected decision by reinforcement learning environment: ' + str(decision))
 
     variant_camunda_id = process_metadata[variant_key]
     camunda_instance_id = client.start_instance(variant_camunda_id)

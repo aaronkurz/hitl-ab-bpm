@@ -70,16 +70,16 @@ def get_active_process_metadata() -> dict:
     return get_process_metadata(active_process_entry_id)
 
 
-def set_winning(process_id: int, decision: str, winning_reason: WinningReasonEnum) -> dict:
+def set_winning(process_id: int, decision: Version, winning_reason: WinningReasonEnum) -> dict:
     """ Finish an experiment and set a winning version for a process, as well as a winning reason
     :raises RuntimeError: process already has winning version
     :raises RuntimeError: version-decision query parameter must be 'a' or 'b'
     :param winning_reason:
     :param process_id: process id in backend
-    :param decision: 'a' or 'b'
+    :param decision: Version.A or Version.B
     """
-    if decision not in ['a', 'b']:
-        raise RuntimeError("version-decision query parameter must be 'a' or 'b'")
+    if decision not in [Version.A, Version.B]:
+        raise RuntimeError("version-decision query parameter must be Version.A or Version.B")
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None:
         raise RuntimeError("This process already has a winning version")

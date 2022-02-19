@@ -22,13 +22,13 @@ def empty_database():
                 os.unlink(file_path)
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
-        except Exception as e:
-            abort(500, 'Failed to delete %s. Reason: %s' % (file_path, e))
+        except (NotImplementedError, OSError) as file_path_error:
+            abort(500, f'Failed to delete {file_path}. Reason: {file_path_error}')
 
     # delete all db content
     meta = db.metadata
     for table in reversed(meta.sorted_tables):
-        print('Clear table %s' % table)
+        print(f'Clear table {table}')
         db.session.execute(table.delete())
     db.session.commit()
     return "Success"

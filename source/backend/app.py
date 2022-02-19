@@ -1,15 +1,14 @@
+""" Meta tasks to set up and coordinate flask app"""
 from flask_swagger_ui import get_swaggerui_blueprint
-
 import config
 import create_app
 from camunda.client import CamundaClient
 from rest.instance_router import instance_router_api
 from rest.batch_policy import batch_policy_api
 from rest.process import process_api
-from rest.batch_policy_proposal import batch_policy_proposal_api
-from task_scheduler.celery_app import long_task,short_task,custom_task
-
 from rest.meta import meta_api
+from rest.batch_policy_proposal import batch_policy_proposal_api
+from task_scheduler.celery_app import long_task, short_task, custom_task
 
 app = create_app.create_app()
 
@@ -35,10 +34,10 @@ def index():
     """ Just used to manually test whether app is live """
     return "Hello World!"
 
-import time
-from flask import jsonify
+
 @app.route("/celery_test")
 def celery():
+    """ Endpoint to test celery """
     long_task.delay()
     long_task.delay()
     short_task.delay()

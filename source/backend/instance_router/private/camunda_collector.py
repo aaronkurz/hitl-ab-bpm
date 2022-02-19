@@ -1,3 +1,4 @@
+""" Collects data about finished instances from camunda engine """
 import requests
 from sqlalchemy import and_
 from config import CAMUNDA_ENGINE_URI
@@ -6,8 +7,12 @@ from models.process_instance import ProcessInstance
 
 
 def collect_finished_instances(process_id):
+    """
+    Collect data about instances which have been finished in camunda engine but from
+    which we have not collected the relevant information yet.
+    """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                           ProcessInstance.finished_time == None))
+                                                           ProcessInstance.finished_time.is_(None)))
     query_param = dict(finished='true')
     history_url = '/history/process-instance?'
     query_url = CAMUNDA_ENGINE_URI + history_url

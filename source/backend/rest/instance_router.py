@@ -43,49 +43,53 @@ def count_a_b():
     """
     process_id = request.args.get('process-id')
     validate_backend_process_id(process_id)
-    a_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                             ProcessInstance.decision == 'a',
-                                                             ProcessInstance.do_evaluate.is_(True)))
-    b_all_relevant_query = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                             ProcessInstance.decision == 'b',
-                                                             ProcessInstance.do_evaluate.is_(True)))
+    relevant_queries_ab = {
+        Version.A: ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == Version.A,
+                                                             ProcessInstance.do_evaluate.is_(True))),
+        Version.B: ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                                             ProcessInstance.decision == Version.B,
+                                                             ProcessInstance.do_evaluate.is_(True)))}
 
-    a_number_started = a_all_relevant_query.count()
-    b_number_started = b_all_relevant_query.count()
+    number_started_ab = {
+        Version.A: relevant_queries_ab[Version.A].count(),
+        Version.B: relevant_queries_ab[Version.B].count()}
 
-    a_all_relevant_query_finished = a_all_relevant_query.filter(ProcessInstance.finished_time.is_not(None))
-    b_all_relevant_query_finished = b_all_relevant_query.filter(ProcessInstance.finished_time.is_not(None))
+    all_relevant_query_finished_ab = {
+        Version.A: relevant_queries_ab[Version.A].filter(ProcessInstance.finished_time.is_not(None)),
+        Version.B: relevant_queries_ab[Version.B].filter(ProcessInstance.finished_time.is_not(None))}
+
     # Test if reward was calculated for all finished instances in batches, as expected
-    assert a_all_relevant_query_finished.count() == a_all_relevant_query\
+    assert all_relevant_query_finished_ab[Version.A].count() == relevant_queries_ab[Version.A]\
         .filter(ProcessInstance.reward.is_not(None)).count()\
-        and b_all_relevant_query_finished.count() == b_all_relevant_query\
+        and all_relevant_query_finished_ab[Version.B].count() == relevant_queries_ab[Version.B]\
             .filter(ProcessInstance.reward.is_not(None)).count(),\
         "Server Error: Reward was not calculated properly for all finished instances"
 
-    a_number_finished = a_all_relevant_query_finished.count()
-    b_number_finished = b_all_relevant_query_finished.count()
+    a_number_finished = all_relevant_query_finished_ab[Version.A].count()
+    b_number_finished = all_relevant_query_finished_ab[Version.B].count()
 
     a_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
-                        for instance in a_all_relevant_query_finished]
+                        for instance in all_relevant_query_finished_ab[Version.A]]
     b_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
-                         for instance in b_all_relevant_query_finished]
+                         for instance in all_relevant_query_finished_ab[Version.B]]
     a_average_duration_sec = None if len(a_list_durations) == 0 else statistics.mean(a_list_durations)
     b_average_duration_sec = None if len(b_list_durations) == 0 else statistics.mean(b_list_durations)
 
-    a_list_rew = [instance.reward for instance in a_all_relevant_query_finished]
-    b_list_rew = [instance.reward for instance in b_all_relevant_query_finished]
+    a_list_rew = [instance.reward for instance in all_relevant_query_finished_ab[Version.A]]
+    b_list_rew = [instance.reward for instance in all_relevant_query_finished_ab[Version.B]]
     a_average_reward = None if len(a_list_rew) == 0 else statistics.mean(a_list_rew)
     b_average_reward = None if len(b_list_rew) == 0 else statistics.mean(b_list_rew)
 
     return {
         "a": {
-            "numberStarted": a_number_started,
+            "numberStarted": number_started_ab[Version.A],
             "numberFinished": a_number_finished,
             "averageDurationSec": a_average_duration_sec,
             "averageReward": a_average_reward
         },
         "b": {
-            "numberStarted": b_number_started,
+            "numberStarted": number_started_ab[Version.B],
             "numberFinished": b_number_finished,
             "averageDurationSec": b_average_duration_sec,
             "averageReward": b_average_reward
