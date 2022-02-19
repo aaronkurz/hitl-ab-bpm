@@ -2,12 +2,12 @@
 import json
 import os
 import shutil
+from typing import Tuple, List
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
 from scipy.stats.mstats import mquantiles
 from werkzeug.datastructures import FileStorage
-
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols
@@ -70,7 +70,7 @@ def get_experiment_state(process: Process) -> str:
     return "Done, " + process.winning_reason.value
 
 
-def extract_data_from_history(path_json: str) -> tuple[list[float], float]:
+def extract_data_from_history(path_json: str) -> Tuple[List[float], float]:
     """
     Extract quantiles list and interarrival time from history data
     :param path_json: path to history json file
