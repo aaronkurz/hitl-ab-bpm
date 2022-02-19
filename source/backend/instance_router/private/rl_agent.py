@@ -1,6 +1,7 @@
 """ Here, the RL agent is implemented """
 import logging
 from datetime import datetime
+from typing import List
 import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
@@ -87,7 +88,7 @@ def calculate_duration(start_time: datetime, end_time: datetime):
     return (end_time - start_time).total_seconds()
 
 
-def run_iteration(orgas: list[str], duration: float, hist_action: str, customer_category: str):
+def run_iteration(orgas: List[str], duration: float, hist_action: str, customer_category: str):
     """
     :param orgas: List of organisations the agent can choose from
     :param duration: Duration of a process instance
