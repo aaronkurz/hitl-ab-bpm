@@ -35,7 +35,11 @@ class Process(db.Model):
 
 
 def get_process_metadata(process_id: int) -> dict:
-    """ Get data about specified process """
+    """Get data about specified process.
+
+    :param process_id: specify process
+    :return: metadata about process
+    """
     relevant_process_entry_query = db.session.query(Process).filter(Process.id == process_id)
     assert relevant_process_entry_query.count() == 1, "Active processes != 1: " + \
                                                       str(relevant_process_entry_query.count())
@@ -63,7 +67,10 @@ def get_process_metadata(process_id: int) -> dict:
 
 
 def get_active_process_metadata() -> dict:
-    """ Get data about currently active process """
+    """Get data about currently active process.
+
+    :return: data about active process
+    """
     active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
     assert active_process_entry_query.count() == 1, "Active processes != 1: " + str(active_process_entry_query.count())
     active_process_entry_id = active_process_entry_query.first().id
@@ -72,11 +79,13 @@ def get_active_process_metadata() -> dict:
 
 def set_winning(process_id: int, decision: Version, winning_reason: WinningReasonEnum) -> dict:
     """ Finish an experiment and set a winning version for a process, as well as a winning reason
+
     :raises RuntimeError: process already has winning version
     :raises RuntimeError: version-decision query parameter must be 'a' or 'b'
     :param winning_reason:
     :param process_id: process id in backend
     :param decision: Version.A or Version.B
+    :return: process metadata
     """
     if decision not in [Version.A, Version.B]:
         raise RuntimeError("version-decision query parameter must be Version.A or Version.B")
@@ -91,8 +100,8 @@ def set_winning(process_id: int, decision: Version, winning_reason: WinningReaso
 
 
 def is_valid_customer_category(process_id: int, customer_category: str) -> bool:
-    """
-    Checks whether a customer_category string is part of the customer categories of a certain process.
+    """Checks whether a customer_category string is part of the customer categories of a certain process.
+
     :param process_id: process to be checked
     :param customer_category: category to be checked
     :return: True or False
@@ -103,10 +112,18 @@ def is_valid_customer_category(process_id: int, customer_category: str) -> bool:
 
 
 def in_cool_off(process_id: int) -> bool:
-    """ Checks whether a certain process is in cool-off period """
+    """Checks whether a certain process is in cool-off period.
+
+    :param process_id: specify process
+    :return: True or False
+    """
     return Process.query.filter(Process.id == process_id).first().in_cool_off
 
 
 def cool_off_over(process_id: int) -> bool:
-    """ Checks whether a certein process is in cool-off period AND all  instances have been evaluated """
+    """Checks whether a certain process is in cool-off period AND all  instances have been evaluated.
+
+    :param process_id: specify process
+    :return: True or False
+    """
     return in_cool_off(process_id) and not unevaluated_instances_still_exist(process_id)

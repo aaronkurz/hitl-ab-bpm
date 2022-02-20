@@ -6,10 +6,10 @@ import config
 from models import db
 
 
-def create_app():
-    """
-    Creates the app and connects to database
-    :return Flask app instance
+def create_app() -> any:
+    """Creates the app and connects to database.
+
+    :return: Flask app instance
     """
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI

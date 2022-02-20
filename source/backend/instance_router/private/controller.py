@@ -16,7 +16,8 @@ from models.utils import Version
 def get_winning_version(process_id: int) -> Version or None:
     """ In case the experiment is already done or a manual decision has been made, this will return that version
 
-    :returns Version.A or Version.B or None
+    :param process_id: specify process
+    :return: Version.A or Version.B or None
     """
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None:
@@ -41,18 +42,18 @@ def get_decision_in_batch(process_id: int, customer_category: str) -> Version:
 
 
 def get_decision_outside_batch(process_id: int) -> Version:
+    """Get a decision to route if we are outside of the batch.
+
+    :param process_id: process id
+    :return: Version.A or Version.B
     """
-    Get a decision to route if we are outside of the batch
-   :param process_id: process id
-   :return: Version.A or Version.B
-   """
     relevant_process = Process.query.filter(Process.id == process_id).first()
     return relevant_process.default_version
 
 
-def is_in_batch(process_id: int):
-    """
-    Check whether certain process experiment currently is in experimental batch
+def is_in_batch(process_id: int) -> bool:
+    """Check whether certain process experiment currently is in experimental batch.
+
     :param process_id: process id
     :return: True or False
     """
@@ -61,9 +62,9 @@ def is_in_batch(process_id: int):
            batch_policy.get_batch_size_sum(process_id)
 
 
-def end_of_batch_reached(process_id: int):
-    """
-    Check whether we are at the end of the batch for a certain process (last instantiation request of batch)
+def end_of_batch_reached(process_id: int) -> bool:
+    """Check whether we are at the end of the batch for a certain process (last instantiation request of batch).
+
     :param process_id: id of process
     :return: True or False
     """
@@ -72,8 +73,26 @@ def end_of_batch_reached(process_id: int):
            batch_policy.get_batch_size_sum(process_id)
 
 
+def handle_decision_in_cool_off(process_id: int) -> Version:
+    """Get routing decision and trigger collection from camunda and do reinforcement learning with new data
+
+    :param process_id: specify process
+    :return: Version.A or Version.B
+    """
+    decision = get_decision_outside_batch(process_id)
+    # relearn with a probability of 1/avg_batch_size;
+    # this means that when the average batch size was 15, will learn about
+    # at about every 15th incoming instantiation request
+    if round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id))) \
+            and unevaluated_instances_still_exist(process_id):
+        camunda_collector.collect_finished_instances(process_id)
+        rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=True)
+    return decision
+
+
 def instantiate(process_id: int, customer_category: str) -> dict:
-    """ Create a new process instance
+    """Create a new process instance.
+
     :raises RuntimeError: Illegal internal response; Unexpected decision by reinforcement learning environment
     :param process_id: process id that we want to start
     :param customer_category: customer category of client
@@ -87,14 +106,7 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     is_in_batch_marker = False
     if winning_version is None:
         if in_cool_off(process_id):
-            decision = get_decision_outside_batch(process_id)
-            # relearn with a probability of 1/avg_batch_size;
-            # this means that when the average batch size was 15, will learn about
-            # at about every 15th incoming instantiation request
-            if round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id))) \
-                    and unevaluated_instances_still_exist(process_id):
-                camunda_collector.collect_finished_instances(process_id)
-                rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=True)
+            decision = handle_decision_in_cool_off(process_id)
         elif not is_in_batch(process_id):
             decision = get_decision_outside_batch(process_id)
             new_batch_policy_proposal_available = True

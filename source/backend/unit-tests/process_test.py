@@ -40,7 +40,13 @@ expected = {
 
 @pytest.fixture(scope='module', autouse=True)
 def before_all():
-    """ preparations """
+    """ Preparations
+
+    Yields
+    ------
+    Nothing
+        Nothing is yielded
+    """
     proc_var.name = "taxi-request"
     db.session.query.return_value.filter.return_value = pre_proc_var
     pre_proc_var.first.return_value = proc_var

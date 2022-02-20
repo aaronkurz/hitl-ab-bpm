@@ -1,6 +1,5 @@
 """ SQLAlchemy models for batch policy proposal and related functions """
 from datetime import datetime
-from typing import List
 from sqlalchemy import and_, desc
 from models import db
 from models.process import Process, cool_off_over
@@ -28,9 +27,9 @@ class ExecutionStrategyBaPolProp(db.Model):
     exploration_probability_b = db.Column(db.Float, nullable=False)
 
 
-def set_naive_bapol_proposal(process_id: int, customer_categories: List[str]):
-    """
-     Will set a naive (50:50) batch policy proposal for a certain process
+def set_naive_bapol_proposal(process_id: int, customer_categories: list[str]):
+    """Will set a naive (50:50) batch policy proposal for a certain process
+
     :param process_id: process id
     :param customer_categories: relevant customer categories for that process id
     """
@@ -43,11 +42,11 @@ def set_naive_bapol_proposal(process_id: int, customer_categories: List[str]):
 
 
 def set_bapol_proposal(process_id: int,
-                       customer_categories: List[str],
-                       expl_probs_a: List[float],
-                       expl_probs_b: List[float]) -> bool:
-    """
-    Create a new batch policy proposal for a certain process
+                       customer_categories: list[str],
+                       expl_probs_a: list[float],
+                       expl_probs_b: list[float]) -> bool:
+    """Create a new batch policy proposal for a certain process.
+
     :param process_id: process id in backend
     :param customer_categories: relevant customer categories of process
     :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
@@ -77,11 +76,11 @@ def set_bapol_proposal(process_id: int,
 
 
 def set_or_update_final_bapol_proposal(process_id: int,
-                       customer_categories: List[str],
-                       expl_probs_a: List[float],
-                       expl_probs_b: List[float]) -> bool:
-    """
-    Create a final batch policy proposal or update an existing final batch policy proposal for a given process id.
+                       customer_categories: list[str],
+                       expl_probs_a: list[float],
+                       expl_probs_b: list[float]) -> bool:
+    """Create a final batch policy proposal or update an existing final batch policy proposal for a given process id.
+
     In case there already is a final batch policy proposal, it is updated with the values passed to this funktion
     :raises RuntimeError: Problem with parameter customer_categories or unexpected number of bapol proposals
     :param process_id: process id in our backend
@@ -117,7 +116,12 @@ def set_or_update_final_bapol_proposal(process_id: int,
     raise RuntimeError("Unexpected number of final batch policy proposals")
 
 
-def _new_proposal_can_be_set(process_id) -> bool:
+def _new_proposal_can_be_set(process_id: int) -> bool:
+    """ Check if a new batch policy proposal can be set for a certain process
+
+    :param process_id: specifies which process
+    :return: True or False
+    """
     relevant_process = Process.query.filter(Process.id == process_id).first()
     if relevant_process.winning_version is not None or exists_bapol_proposal_without_bapol(process_id):
         return False
@@ -125,7 +129,8 @@ def _new_proposal_can_be_set(process_id) -> bool:
 
 
 def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
-    """
+    """Checks whether there is a batch policy proposal without a corresponding batch policy
+
     Checks whether there is a batch policy proposal without a corresponding batch policy that has been set as a 'reply'
     for a certain process
     :raises RuntimeError: Illegal state: More than one batch policy proposal without corresponding batch policy
@@ -146,7 +151,8 @@ def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
 
 
 def get_current_open_proposal_data(process_id: int) -> dict:
-    """
+    """Get data of currently open/unanswered (no corresponding batch policy yet) batch policy proposal
+
     Get data of currently open/unanswered (no corresponding batch policy yet) batch policy proposal for specified
     process id.
     :raises RuntimeError: There is no open batch policy proposal for specified process
@@ -171,8 +177,8 @@ def get_current_open_proposal_data(process_id: int) -> dict:
 
 
 def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
-    """
-    Get BatchPolicyProposal for open proposal
+    """Get BatchPolicyProposal for open proposal.
+
     :raises RuntimeError: No open batch policy proposal for process
     :param process_id: process id in backend
     :return:
@@ -187,8 +193,8 @@ def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
 
 
 def get_final_proposal_data(process_id: int) -> dict:
-    """
-    Get data of final proposal.
+    """Get data of final proposal.
+
     :raises RuntimeError: No final proposal available yet
     :param process_id: process id in backend
     :return: Final proposal

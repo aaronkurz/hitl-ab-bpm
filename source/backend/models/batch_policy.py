@@ -30,9 +30,9 @@ class ExecutionStrategyBaPol(db.Model):
     exploration_probability_b = db.Column(db.Float, default=0.5, nullable=False)
 
 
-def get_latest_bapol_entry(process_id: int):
-    """
-    Get latest Batch Policy table entry
+def get_latest_bapol_entry(process_id: int) -> BatchPolicy:
+    """Get latest Batch Policy table entry.
+
     :param process_id: Process id in our backend
     :return: Instance of BatchPolicy
     """
@@ -40,8 +40,8 @@ def get_latest_bapol_entry(process_id: int):
 
 
 def append_process_instance_to_bapol(process_id: int, process_instance: ProcessInstance):
-    """
-    Append a process instance to a bapol
+    """Append a process instance to a bapol.
+
     :param process_id: id of process in our backend
     :param process_instance: instance of models.process.ProcessInstance
     """
@@ -50,9 +50,13 @@ def append_process_instance_to_bapol(process_id: int, process_instance: ProcessI
 
 
 def get_current_bapol_data(process_id: int) -> dict:
-    """ Get the latest (= currently active) bapol of specified process """
+    """ Get the latest (= currently active) bapol of specified process
+
+    :param process_id: specify which process
+    :return: data of current batch policy for process
+    """
     latest_bapol = get_latest_bapol_entry(process_id)
-    exec_strats_rows: [ExecutionStrategyBaPol] = latest_bapol.execution_strategies
+    exec_strats_rows: list[ExecutionStrategyBaPol] = latest_bapol.execution_strategies
     exec_strats_dict = []
     for elem in exec_strats_rows:
         exec_strat = {
@@ -72,15 +76,18 @@ def get_current_bapol_data(process_id: int) -> dict:
     return data
 
 
-def get_current_bapol_data_active_process():
-    """ Get the latest (= currently active) bapol of specified process """
+def get_current_bapol_data_active_process() -> dict:
+    """ Get the latest (= currently active) bapol of specified process
+
+    :return: data of current batch policy for active process
+    """
     from models.process import get_active_process_metadata
     return get_current_bapol_data(get_active_process_metadata().get('id'))
 
 
 def is_latest_batch_done(process_id: int) -> bool:
-    """
-    Check whether the latest batch policy is done
+    """Check whether the latest batch policy is done.
+
     :raises RuntimeError: Illegal internal state: Batch Policy size has been exceeded (too many instances)
     :param process_id: Process id in our backend
     :return: True or False
@@ -95,8 +102,8 @@ def is_latest_batch_done(process_id: int) -> bool:
 
 
 def is_latest_batch_active_process_done() -> bool:
-    """
-    Check whether the latest batch policy of the currently active process/experiment is done
+    """Check whether the latest batch policy of the currently active process/experiment is done.
+
     :return: True or False
     """
     from models.process import get_active_process_metadata
@@ -104,8 +111,8 @@ def is_latest_batch_active_process_done() -> bool:
 
 
 def get_batch_size_sum(process_id: int) -> int:
-    """
-    Get sum of sizes of all batches of a process
+    """Get sum of sizes of all batches of a process.
+
     :param process_id: Process id
     :return: Sum of batch sizes for a process
     """
@@ -117,8 +124,8 @@ def get_batch_size_sum(process_id: int) -> int:
 
 
 def get_number_finished_bapols(process_id: int) -> int:
-    """
-    Get number of finished batch policy proposals for a process
+    """Get number of finished batch policy proposals for a process.
+
     :param process_id: Process id
     :return: Number of finished batch policy proposals
     """
@@ -132,8 +139,8 @@ def get_number_finished_bapols(process_id: int) -> int:
 
 
 def get_average_batch_size(process_id: int) -> float:
-    """
-    Get average batch size of a certain process
+    """Get average batch size of a certain process.
+
     :param process_id: Process id
     :return: Average batch size
     """

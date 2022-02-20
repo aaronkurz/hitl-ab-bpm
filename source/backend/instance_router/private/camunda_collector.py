@@ -6,10 +6,11 @@ from models import db
 from models.process_instance import ProcessInstance
 
 
-def collect_finished_instances(process_id):
-    """
-    Collect data about instances which have been finished in camunda engine but from
-    which we have not collected the relevant information yet.
+def collect_finished_instances(process_id: int):
+    """Collect data about instances which have been finished in camunda engine
+
+    ... but from which we have not collected the relevant information yet.
+    :param process_id: specify process
     """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                                            ProcessInstance.finished_time.is_(None)))

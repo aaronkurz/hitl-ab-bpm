@@ -2,7 +2,6 @@
 import json
 import os
 import shutil
-from typing import Tuple, List
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
@@ -21,8 +20,8 @@ process_api = Blueprint('process-variants', __name__)
 
 
 def allowed_file_models(filename: str) -> bool:
-    """
-    Check whether the type is allowed for a bpmn model file
+    """Check whether the type is allowed for a bpmn model file.
+
     :param filename: name of the file
     :return: True or False
     """
@@ -31,8 +30,8 @@ def allowed_file_models(filename: str) -> bool:
 
 
 def allowed_file_history(filename: str) -> bool:
-    """
-    Check whether the type is allowed for a file history file
+    """Check whether the type is allowed for a file history file.
+
     :param filename: name of the file
     :return: True or False
     """
@@ -41,8 +40,8 @@ def allowed_file_history(filename: str) -> bool:
 
 
 def get_active_process_entry() -> Process:
-    """
-    Get the currently active process entry.
+    """Get the currently active process entry.
+
     :return: Currently active process entry instance from process table
     """
     active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
@@ -54,8 +53,8 @@ def get_active_process_entry() -> Process:
 
 
 def get_experiment_state(process: Process) -> str:
-    """
-    Get the current state of the experiment for a certain process
+    """Get the current state of the experiment for a certain process.
+
     :param process: Process instance
     :return: State of process experiment
     """
@@ -70,9 +69,9 @@ def get_experiment_state(process: Process) -> str:
     return "Done, " + process.winning_reason.value
 
 
-def extract_data_from_history(path_json: str) -> Tuple[List[float], float]:
-    """
-    Extract quantiles list and interarrival time from history data
+def extract_data_from_history(path_json: str) -> tuple[list[float], float]:
+    """Extract quantiles list and interarrival time from history data.
+
     :param path_json: path to history json file
     :return: list with quantile borders and average interarrival time
     """
@@ -95,9 +94,9 @@ def store_files_on_filesystem(process_name: str,
                               variant_a_file: FileStorage,
                               variant_b_file: FileStorage,
                               history_durations_file: FileStorage,
-                              default_version: Version):
-    """
-    Store submitted files on filesystem of server
+                              default_version: Version) -> tuple[str, str, str]:
+    """Store submitted files on filesystem of server.
+
     :param process_name: Name of process
     :param variant_a_file: Variant a file
     :param variant_b_file: Variant b file
@@ -127,8 +126,11 @@ def store_files_on_filesystem(process_name: str,
 
 
 @process_api.route('/<process_name>', methods=['POST'])
-def set_process(process_name):
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def set_process(process_name: str):
     """ Add a new process with two variants
+
+    :param process_name: Name of process, from url param
 
      Query params:
      default-version: 'a' or 'b'
@@ -201,6 +203,7 @@ def set_process(process_name):
 
 
 @process_api.route('/count', methods=['GET'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_processes_count():
     """ Get amount of processes that have been set / entries in processes db table """
     data = {
@@ -211,6 +214,7 @@ def get_processes_count():
 
 
 @process_api.route('/active/meta', methods=['GET'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_active_process_variants_metadata():
     """ Get metadata about running experiment/process """
     active_process_entry = get_active_process_entry()
@@ -231,6 +235,7 @@ def get_active_process_variants_metadata():
 
 
 @process_api.route('/active/cool-off', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def start_cool_off_active():
     """ Start cool-off period
 
@@ -253,6 +258,7 @@ def start_cool_off_active():
 
 
 @process_api.route('/active/winning', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def set_winning_version():
     """ Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over') """
     active_process_entry = get_active_process_entry()
@@ -273,6 +279,7 @@ def set_winning_version():
 
 
 @process_api.route('active/manual-decision', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def manual_decision():
     """ API endpoint to allow human expert to manually make a decision """
     active_process_entry = get_active_process_entry()
@@ -288,8 +295,12 @@ def manual_decision():
 
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
-def get_process_variant_files(a_or_b):
-    """ Retrieve the bpmn file of a certain process and version via the API """
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def get_process_variant_files(a_or_b: str):
+    """ Retrieve the bpmn file of a certain process and version via the API
+
+    :param a_or_b: 'a' or 'b'
+    """
     requested_id = int(request.args.get('id'))
     utils.validate_backend_process_id(requested_id)
     if requested_id is None:

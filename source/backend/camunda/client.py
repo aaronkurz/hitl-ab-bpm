@@ -10,15 +10,23 @@ class CamundaClient:
 
     # Status
     @classmethod
-    def status_code_successful(cls, status_code: int):
-        """ Assert whether an HTTP status code is successful """
+    def status_code_successful(cls, status_code: int) -> bool:
+        """Assert whether an HTTP status code is successful
+
+        :param status_code: HTTP status code
+        :return: True or False
+        """
         return str(status_code)[0] == '2'
 
     ### Section: Deployment & Starting ##
 
     # Deploying a single process
-    def deploy_process(self, path_bpmn_file: str):
-        """ Send a process to Camunda Engine and retrieve process id in Camunda Engine """
+    def deploy_process(self, path_bpmn_file: str) -> str:
+        """Send a process to Camunda Engine and retrieve process id in Camunda Engine.
+
+        :param path_bpmn_file: path of bpmn file on filesystem of server
+        :return: id of process in camunda engine
+        """
         with open(path_bpmn_file, 'r', encoding="UTF-8") as bpmn_file:
             multipart_form_data = {
                 'deployment-name': (None, 'store'),
@@ -35,8 +43,12 @@ class CamundaClient:
             return new_process_id
 
     # Starting a single instance
-    def start_instance(self, process_id: int):
-        """ Start an instance with a certain camunda process id """
+    def start_instance(self, process_id: int) -> str:
+        """Start an instance with a certain camunda process id.
+
+        :param process_id: specify which process with !camunda process id!
+        :return: instance id in camunda engine
+        """
         headers = {'Content-Type': 'application/json'}
         response = requests.post(self.url + "/process-definition/" + str(process_id) + "/start", headers=headers)
         assert self.status_code_successful(response.status_code)

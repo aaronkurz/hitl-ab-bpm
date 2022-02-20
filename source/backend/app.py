@@ -30,12 +30,14 @@ client = CamundaClient(config.CAMUNDA_ENGINE_URI)
 
 
 @app.route("/")
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def index():
     """ Just used to manually test whether app is live """
     return "Hello World!"
 
 
 @app.route("/celery_test")
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def celery():
     """ Endpoint to test celery """
     long_task.delay()

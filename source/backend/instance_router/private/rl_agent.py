@@ -1,7 +1,6 @@
 """ Here, the RL agent is implemented """
 import logging
 from datetime import datetime
-from typing import List
 import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
@@ -18,12 +17,12 @@ rl_agent_globals = dict(latest_process_id=None, vw=None, quantiles=[])
 ACTIONS = ["A", "B"]
 
 
-def get_reward(duration: float):
-    """
-    Return the reward for the action taken based on the duration of the process instance and
-    the history of the default proces version.
+def get_reward(duration: float) -> float:
+    """Return the reward for the action taken
+
+    ...based on the duration of the process instance and the history of the default proces version.
     :param duration: Duration of the process instance
-    :returns  Reward between 0 and 1
+    :return: Reward between 0 and 1
     """
     step_height = (UPPER_CUTOFF_REWARD_FUNC - LOWER_CUTOFF_REWARD_FUNC) / K_QUANTILES_REWARD_FUNC
     rl_agent_globals['quantiles'].sort()
@@ -36,14 +35,13 @@ def get_reward(duration: float):
             return UPPER_CUTOFF_REWARD_FUNC - (i * step_height)
 
 
-def to_vw_example_format(context: str, actions: list, cb_label: tuple=None):
-    """
-    Modify (context, action, cost, probability) to a VW friendly format.
+def to_vw_example_format(context: str, actions: list, cb_label: tuple=None) -> str:
+    """Modify (context, action, cost, probability) to a VW friendly format.
 
     :param context: The context of the cb
     :param actions: List of all possible actions
     :param cb_label: ?
-    :returns VW friendly String
+    :return: VW friendly String
     """
     if cb_label is not None:
         chosen_action, cost, prob = cb_label
@@ -57,12 +55,12 @@ def to_vw_example_format(context: str, actions: list, cb_label: tuple=None):
     return example_string[:-1]
 
 
-def get_action_prob_per_context_dict(orgas: list, actions: list):
-    """
-    Retrieve the probability for each action given any context.
+def get_action_prob_per_context_dict(orgas: list, actions: list) -> dict:
+    """Retrieve the probability for each action given any context.
+
     :param orgas: The context
     :param actions: All possible actions
-    :returns Dictionary containing the probabilities of each action under given context
+    :return: Dictionary containing the probabilities of each action under given context
     """
     # Multiple contexts, loop over list of contexts
     dict_list = []
@@ -80,21 +78,24 @@ def get_action_prob_per_context_dict(orgas: list, actions: list):
     return dict_list
 
 
-def calculate_duration(start_time: datetime, end_time: datetime):
-    """
-    Calculate the duration of a process instance given start and end timestamp
-    :param start_time, end_time
+def calculate_duration(start_time: datetime, end_time: datetime) -> float:
+    """Calculate the duration of a process instance given start and end timestamp.
+
+    :param start_time: start
+    :param end_time: end
+    :return: duration in seconds
     """
     return (end_time - start_time).total_seconds()
 
 
-def run_iteration(orgas: List[str], duration: float, hist_action: str, customer_category: str):
-    """
+def run_iteration(orgas: list[str], duration: float, hist_action: str, customer_category: str) -> tuple[float, float]:
+    """Run learning for one instance.
+
     :param orgas: List of organisations the agent can choose from
     :param duration: Duration of a process instance
     :param hist_action: Action retrieved from the database
     :param customer_category: Context retrieved from the database
-    :returns reward
+    :return: reward and probability with which the agent would have chosen that action
     """
     # 1. Set the context
     context = {'orga': customer_category}
@@ -123,7 +124,8 @@ def run_iteration(orgas: List[str], duration: float, hist_action: str, customer_
 
 
 def learn_and_set_new_batch_policy_proposal(process_id: int, in_cool_off: bool):
-    """
+    """Learn with finished but unevaluated instances of process and set new batch policy proposal
+
     Query process instances which still have to be evaluated. With the calculated duration,
     train the agent and update the database with the reward.
     :param process_id: id of process

@@ -25,8 +25,8 @@ class ProcessInstance(db.Model):
 
 
 def unevaluated_instances_still_exist(process_id: int) -> bool:
-    """
-    Checks whether unevaluated instances still exist for a given process id
+    """Checks whether unevaluated instances still exist for a given process id.
+
     :param process_id: process id
     :return: True or False
     """

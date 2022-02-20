@@ -8,7 +8,13 @@ from instance_router.private import controller
 
 @pytest.fixture(scope='module', autouse=True)
 def before_all():
-    """ Preparations """
+    """ Preparations
+
+    Yields
+    ------
+    Nothing
+        Nothing is yielded
+    """
     Process.query = MagicMock()
     # ^ Will be executed before the first test
     yield

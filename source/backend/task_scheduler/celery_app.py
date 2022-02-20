@@ -39,8 +39,11 @@ def short_task():
 
 
 @celery.task()
-def custom_task(seconds):
-    """ Custom Task """
+def custom_task(seconds: float):
+    """ Custom Task
+
+    :param seconds: seconds
+    """
     start_time=datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
 
     sleep(seconds)

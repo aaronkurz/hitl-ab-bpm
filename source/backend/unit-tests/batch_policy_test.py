@@ -9,7 +9,13 @@ db.session = MagicMock()
 
 @pytest.fixture(scope='module', autouse=True)
 def before_all():
-    """ Preparations """
+    """ Preparations
+
+    Yields
+    ------
+    Nothing
+        Nothing is yielded
+    """
     exec_strat = Mock(customer_category="public",
                       exploration_probability_a=0.3,
                       exploration_probability_b=0.7,)
@@ -65,9 +71,7 @@ def test_active_count_too_many():
 
 
 def test_active_count_correct():
-    """
-    Test whether get_current_bapol_data_active_process works as expected when there is exactly one bapol currently
-    """
+    """ Test whether get_current_bapol_data_active_process works as expected when exactly one bapol currently."""
     db.session.query.return_value.filter.return_value.count.return_value = 1
     assert {
                'baPolId': 10,

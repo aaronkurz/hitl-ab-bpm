@@ -6,14 +6,24 @@ from instance_router.private.rl_agent import get_reward
 
 @pytest.fixture(scope='module', autouse=True)
 def before_all():
-    """ Preparations """
+    """ Preparations
+
+    Yields
+    ------
+    Nothing
+        Nothing is yielded
+    """
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
 
 
-def get_rounded_reward_2(duration: float):
-    """ Helper function to round reward """
+def get_rounded_reward_2(duration: float) -> float:
+    """ Helper function to round reward.
+
+    :param duration: not rounded duration
+    :return: rounded duration, two decimal points
+    """
     return round(get_reward(duration), 2)
 
 
