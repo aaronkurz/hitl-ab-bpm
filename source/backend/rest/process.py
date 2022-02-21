@@ -1,3 +1,4 @@
+""" REST endpoints regarding processes/experiments """
 import json
 import os
 import shutil
@@ -5,54 +6,131 @@ from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
 from scipy.stats.mstats import mquantiles
+from werkzeug.datastructures import FileStorage
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols
 from models import db
-from models.process import Process, Version, cool_off_over, set_winning
-from models.utils import WinningReasonEnum
+from models.process import Process, cool_off_over, set_winning
+from models.utils import WinningReasonEnum, Version
 from rest import utils
 from config import K_QUANTILES_REWARD_FUNC
 
 process_api = Blueprint('process-variants', __name__)
 
 
-def allowed_file_models(filename):
+def allowed_file_models(filename: str) -> bool:
+    """Check whether the type is allowed for a bpmn model file.
+
+    :param filename: name of the file
+    :return: True or False
+    """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ['bpmn']
 
 
-def allowed_file_history(filename):
+def allowed_file_history(filename: str) -> bool:
+    """Check whether the type is allowed for a file history file.
+
+    :param filename: name of the file
+    :return: True or False
+    """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ['json']
 
 
-def get_active_process_entry():
+def get_active_process_entry() -> Process:
+    """Get the currently active process entry.
+
+    :return: Currently active process entry instance from process table
+    """
     active_process_entry_query = db.session.query(Process).filter(Process.active.is_(True))
     if active_process_entry_query.count() == 0:
         abort(404, "No active process/experiment in db yet")
     elif active_process_entry_query.count() > 1:
-        return abort(500, "More than one active process")
+        abort(500, "More than one active process")
     return active_process_entry_query.first()
 
 
-def get_experiment_state(process: Process):
+def get_experiment_state(process: Process) -> str:
+    """Get the current state of the experiment for a certain process.
+
+    :param process: Process instance
+    :return: State of process experiment
+    """
     if process.winning_version is None:
         if cool_off_over(process.id):
             return 'Cool-Off over, waiting for final decision'
-        elif process.in_cool_off:
+        if process.in_cool_off:
             return 'In Cool-Off'
-        else:
-            return 'Running'
-    else:
-        if process.winning_reason is None:
-            abort(500, "Server Error: Winning version without winning reason.")
-        return "Done, " + process.winning_reason.value
+        return 'Running'
+    if process.winning_reason is None:
+        abort(500, "Server Error: Winning version without winning reason.")
+    return "Done, " + process.winning_reason.value
+
+
+def extract_data_from_history(path_json: str) -> tuple[list[float], float]:
+    """Extract quantiles list and interarrival time from history data.
+
+    :param path_json: path to history json file
+    :return: list with quantile borders and average interarrival time
+    """
+    with open(path_json, encoding='us-ascii') as json_file:
+        history_data: dict = json.load(json_file)
+        if not (sorted(list(history_data.keys())) == sorted(['durations', 'interarrivalTime'])
+                and isinstance(history_data.get('durations'), list)
+                and isinstance(history_data.get('durations')[0], float)
+                and isinstance(history_data.get('interarrivalTime'), float)):
+            abort(400, "Wrong json format interarrival time file")
+        quantiles = mquantiles(history_data.get('durations'),
+                               prob=[round((1 / 20) * x, 2) for x in range(0, K_QUANTILES_REWARD_FUNC + 1)])
+        quantiles_list = quantiles.tolist()
+        quantiles_list.sort()
+        interarrival_time = history_data.get('interarrivalTime')
+        return quantiles_list, interarrival_time
+
+
+def store_files_on_filesystem(process_name: str,
+                              variant_a_file: FileStorage,
+                              variant_b_file: FileStorage,
+                              history_durations_file: FileStorage,
+                              default_version: Version) -> tuple[str, str, str]:
+    """Store submitted files on filesystem of server.
+
+    :param process_name: Name of process
+    :param variant_a_file: Variant a file
+    :param variant_b_file: Variant b file
+    :param history_durations_file: History durations file
+    :param default_version: which is the default version
+    :return: Path of variant a and b and history json on filesystem
+    """
+    # Directory
+    directory = process_name
+    # Parent Directory path
+    parent_dir = os.path.join(os.getcwd(), 'resources/bpmn/')
+    # Path
+    path = os.path.join(parent_dir, directory)
+    # Create the directory
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+    if len(os.listdir(path)) != 0:
+        abort(500, "Directory for bpmn files with process name should be empty")
+    path_variant_a = os.path.join(path, variant_a_file.filename)
+    path_variant_b = os.path.join(path, variant_b_file.filename)
+
+    # Storing the json file in file system
+    path_json = os.path.join(os.getcwd(), path + '/duration-history-' + default_version.value + ".json")
+    history_durations_file.save(path_json)
+    return path_variant_a, path_variant_b, path_json
 
 
 @process_api.route('/<process_name>', methods=['POST'])
-def set_process(process_name):
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def set_process(process_name: str):
     """ Add a new process with two variants
+
+    :param process_name: Name of process, from url param
 
      Query params:
      default-version: 'a' or 'b'
@@ -72,30 +150,21 @@ def set_process(process_name):
     # get default version
     default_version = request.args.get('default-version')
     if default_version == 'a':
-        default_version = Version.a
+        default_version = Version.A
     elif default_version == 'b':
-        default_version = Version.b
+        default_version = Version.B
     else:
         abort(400, 'Default version has to be specified in query argument \'defaultVersion\'')
 
     # get relevant customer categories
     all_customer_categories = request.args.get('customer-categories').split('-')
 
-    # Storing the BPMNs in filesystem
-    # Directory
-    directory = process_name
-    # Parent Directory path
-    parent_dir = os.path.join(os.getcwd(), 'resources/bpmn/')
-    # Path
-    path = os.path.join(parent_dir, directory)
-    # Create the directory
-    if os.path.exists(path):
-        shutil.rmtree(path)
-    os.makedirs(path)
-    if len(os.listdir(path)) != 0:
-        abort(500, "Directory for bpmn files with process name should be empty")
-    path_variant_a = os.path.join(path, variant_a_file.filename)
-    path_variant_b = os.path.join(path, variant_b_file.filename)
+    # Storing the files in filesystem
+    path_variant_a, path_variant_b, path_history_json = store_files_on_filesystem(process_name,
+                                                                                  variant_a_file,
+                                                                                  variant_b_file,
+                                                                                  history_durations_file,
+                                                                                  default_version)
 
     existing = db.session.query(Process).filter(Process.name == process_name)
     if existing.count() == 1:
@@ -110,23 +179,7 @@ def set_process(process_name):
     camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
     camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
 
-    # Storing the json file in file system
-    path_json = os.path.join(os.getcwd(), path + '/duration-history-' + default_version.value + ".json")
-    history_durations_file.save(path_json)
-
-    # Extracting the quantiles from the json file
-    with open(path_json) as json_file:
-        history_data: dict = json.load(json_file)
-        if not (sorted(list(history_data.keys())) == sorted(['durations', 'interarrivalTime'])
-                and isinstance(history_data.get('durations'), list)
-                and isinstance(history_data.get('durations')[0], float)
-                and isinstance(history_data.get('interarrivalTime'), float)):
-            abort(400, "Wrong json format interarrival time file")
-        quantiles = mquantiles(history_data.get('durations'),
-                               prob=[round((1/20)*x, 2) for x in range(0, K_QUANTILES_REWARD_FUNC + 1)])
-        quantiles_list = quantiles.tolist()
-        quantiles_list.sort()
-        interarrival_time = history_data.get('interarrivalTime')
+    quantiles_list, interarrival_time = extract_data_from_history(path_history_json)
 
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
@@ -150,6 +203,7 @@ def set_process(process_name):
 
 
 @process_api.route('/count', methods=['GET'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_processes_count():
     """ Get amount of processes that have been set / entries in processes db table """
     data = {
@@ -160,6 +214,7 @@ def get_processes_count():
 
 
 @process_api.route('/active/meta', methods=['GET'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_active_process_variants_metadata():
     """ Get metadata about running experiment/process """
     active_process_entry = get_active_process_entry()
@@ -180,6 +235,7 @@ def get_active_process_variants_metadata():
 
 
 @process_api.route('/active/cool-off', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def start_cool_off_active():
     """ Start cool-off period
 
@@ -202,6 +258,7 @@ def start_cool_off_active():
 
 
 @process_api.route('/active/winning', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def set_winning_version():
     """ Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over') """
     active_process_entry = get_active_process_entry()
@@ -209,25 +266,41 @@ def set_winning_version():
         abort(404, "No active process that has a finished cool off period available")
 
     winning_version = request.args.get('winning-version')
-    if winning_version not in ['a', 'b']:
-        abort(400, "winning-version has to be 'a' or 'b'")
-    set_winning(active_process_entry.id, winning_version, WinningReasonEnum.EXPERIMENT_ENDED)
+    if winning_version == 'a':
+        winning_version_enum = Version.A
+    elif winning_version == 'b':
+        winning_version_enum = Version.B
+    else:
+        abort(400, "Illegal winning-version query parameter, only 'a' or 'b' allowed")
+    set_winning(active_process_entry.id, winning_version_enum, WinningReasonEnum.EXPERIMENT_ENDED)
     return {
         'experimentState': get_experiment_state(active_process_entry)
     }
 
 
 @process_api.route('active/manual-decision', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
 def manual_decision():
     """ API endpoint to allow human expert to manually make a decision """
     active_process_entry = get_active_process_entry()
     decision = request.args.get('version-decision')
-    set_winning(active_process_entry.id, decision, WinningReasonEnum.MANUAL_CHOICE)
+    if decision == 'a':
+        decision_enum = Version.A
+    elif decision == 'b':
+        decision_enum = Version.B
+    else:
+        abort(400, "Illegal version-decision query parameter, only 'a' or 'b' allowed")
+    set_winning(active_process_entry.id, decision_enum, WinningReasonEnum.MANUAL_CHOICE)
     return "Success"
 
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
-def get_process_variant_files(a_or_b):
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def get_process_variant_files(a_or_b: str):
+    """ Retrieve the bpmn file of a certain process and version via the API
+
+    :param a_or_b: 'a' or 'b'
+    """
     requested_id = int(request.args.get('id'))
     utils.validate_backend_process_id(requested_id)
     if requested_id is None:

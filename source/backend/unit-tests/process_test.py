@@ -1,5 +1,6 @@
-import pytest
+""" Unit tests regarding the process functionality """
 from unittest.mock import MagicMock
+import pytest
 from models.process import get_process_metadata, get_active_process_metadata
 from models.process_instance import ProcessInstance
 from models.batch_policy import BatchPolicy
@@ -39,6 +40,13 @@ expected = {
 
 @pytest.fixture(scope='module', autouse=True)
 def before_all():
+    """ Preparations
+
+    Yields
+    ------
+    Nothing
+        Nothing is yielded
+    """
     proc_var.name = "taxi-request"
     db.session.query.return_value.filter.return_value = pre_proc_var
     pre_proc_var.first.return_value = proc_var
@@ -51,34 +59,40 @@ def before_all():
 
 
 def test_get_process_assertion_error_below():
+    """ Check whether get_process_metadata raises error when there is no process """
     pre_proc_var.count.return_value = 0
     with pytest.raises(AssertionError):
         get_process_metadata(5)
 
 
 def test_get_process_assertion_error_above():
+    """ Check whether get_process_metadata raises error when there are two processes with corresponding id """
     pre_proc_var.count.return_value = 2
     with pytest.raises(AssertionError):
         get_process_metadata(5)
 
 
 def test_get_process_valid():
+    """ Check whether get_process_metadata returns expected result when there is one relevant process entry """
     pre_proc_var.count.return_value = 1
     assert expected == get_process_metadata(5)
 
 
 def test_get_active_process_assertion_error_below():
+    """ Check whether get_active_process_metadata raises error when there is no process """
     pre_proc_var.count.return_value = 0
     with pytest.raises(AssertionError):
         get_active_process_metadata()
 
 
 def test_get_active_process_assertion_error_above():
+    """ Check whether get_active_process_metadata raises error when there are two processes with corresponding id """
     pre_proc_var.count.return_value = 2
     with pytest.raises(AssertionError):
         get_active_process_metadata()
 
 
 def test_get_active_process_valid():
+    """ Check whether get_active_process_metadata returns expected result when there is one relevant process entry """
     pre_proc_var.count.return_value = 1
     assert expected == get_active_process_metadata()

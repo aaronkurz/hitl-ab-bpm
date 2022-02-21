@@ -1,10 +1,9 @@
+""" Configurations for flask app """
 import os
 
 from dotenv import load_dotenv
 
-inside_docker = os.getenv('INSIDE_DOCKER', False)
-
-if inside_docker:
+if inside_docker := os.getenv('INSIDE_DOCKER', 'False'):
     load_dotenv('docker.env')
 else:
     load_dotenv()
@@ -21,7 +20,7 @@ SQLALCHEMY_DATABASE_URI = (
     f"postgresql+psycopg2://{user}:{password}@{hostname}:{port}/{database}"
 )
 
-CAMUNDA_ENGINE_URI = f"http://{camunda_host}:8080/engine-rest"
+(CAMUNDA_ENGINE_URI) = f"http://{camunda_host}:8080/engine-rest"
 
 
 CELERY_BROKER_URL=f'redis://{redis_host}:6379/0'

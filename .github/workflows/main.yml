@@ -1,4 +1,4 @@
-name: API-Unit-Test
+name: CI
 
 # Controls when the workflow will run
 on:
@@ -13,8 +13,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  Test:
+  Lint-Test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -23,33 +22,44 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
       - name: General preparations
         # create empty source/backend/resources/bpmn folder necessary for running certain functionalities
         run: |
           cd source/backend
           mkdir -p resources/bpmn
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run backend unit tests
+      - name: Backend unit tests
         run: |
           cd source/backend
           export PYTHONPATH=. pytest
           pytest -v
 
-      - name: Build and run docker containers
+      - name: Pylint
+        run: |
+          pip install pylint
+          pylint --rcfile ./.pylintrc ./source/backend
+
+      - name: Build and run docker
         run: |
           cd source
           docker compose build
           docker compose up -d
           sleep 25s
 
-      - name: Prepare and run API tests
+      - name: API tests
         run: |
           cd api-tests
           pip install -r requirements.txt
           pytest
 
-      - name: Stop docker containers
+      - name: Stop docker
         run: |
           cd source
           docker compose stop

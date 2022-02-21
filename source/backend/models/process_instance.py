@@ -1,3 +1,4 @@
+""" sqlalchemy models to store info about instantiated process instances and related functions """
 from datetime import datetime
 from sqlalchemy import and_
 from models import db
@@ -5,6 +6,7 @@ from models.utils import Version
 
 
 class ProcessInstance(db.Model):
+    """ model to create table for process instances """
     __tablename__ = "process_instance"
     id = db.Column(db.Integer, primary_key=True)
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'))
@@ -22,32 +24,12 @@ class ProcessInstance(db.Model):
     # ... (decision) given customer_category
 
 
-class TimeBasedCost(db.Model):
-    __tablename__ = "time_based_cost"
-    id = db.Column(db.Integer, primary_key=True)
-    schedule_tbc = db.Column(db.Float, default=0, nullable=False)
-    elegibility_test_tbc = db.Column(db.Float, default=0, nullable=False)
-    medical_test_tbc = db.Column(db.Float, default=0, nullable=False)
-    theory_test_tbc = db.Column(db.Float, default=0, nullable=False)
-    practical_test_tbc = db.Column(db.Float, default=0, nullable=False)
-    approve_tbc = db.Column(db.Float, default=0, nullable=False)
-    reject_tbc = db.Column(db.Float, default=0, nullable=False)
-
-
-class ActionProbability(db.Model):
-    __tablename__ = "action_prob"
-    id = db.Column(db.Integer, primary_key=True)
-    variant_a_prob = db.Column(db.Float, default=0, nullable=False)
-    variant_b_prob = db.Column(db.Float, default=0, nullable=False)
-
-
-class RewardOverIteration(db.Model):
-    __tablename__ = "reward_over_iteration"
-    iteration_id = db.Column(db.Integer, primary_key=True)
-    reward = db.Column(db.Float, default=0, nullable=False)
-
-
 def unevaluated_instances_still_exist(process_id: int) -> bool:
+    """Checks whether unevaluated instances still exist for a given process id.
+
+    :param process_id: process id
+    :return: True or False
+    """
     return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                             ProcessInstance.do_evaluate == True,
-                                             ProcessInstance.reward == None)).count() > 0
+                                             ProcessInstance.do_evaluate.is_(True),
+                                             ProcessInstance.reward.is_(None))).count() > 0

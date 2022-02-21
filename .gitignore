@@ -44,3 +44,6 @@ playground/.ipynb_checkpoints
 ### celery ###
 celerybeat-schedule.db
 
+# pytest
+**.pytest_cache**
+
