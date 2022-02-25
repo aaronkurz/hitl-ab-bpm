@@ -11,7 +11,8 @@ from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols
 from models import db
-from models.process import Process, cool_off_over, set_winning
+from models.process import Process, cool_off_over, set_winning, CustomerCategory, get_sorted_customer_category_list, \
+    get_process_metadata, get_experiment_state
 from models.utils import WinningReasonEnum, Version
 from rest import utils
 from config import K_QUANTILES_REWARD_FUNC
@@ -50,23 +51,6 @@ def get_active_process_entry() -> Process:
     elif active_process_entry_query.count() > 1:
         abort(500, "More than one active process")
     return active_process_entry_query.first()
-
-
-def get_experiment_state(process: Process) -> str:
-    """Get the current state of the experiment for a certain process.
-
-    :param process: Process instance
-    :return: State of process experiment
-    """
-    if process.winning_version is None:
-        if cool_off_over(process.id):
-            return 'Cool-Off over, waiting for final decision'
-        if process.in_cool_off:
-            return 'In Cool-Off'
-        return 'Running'
-    if process.winning_reason is None:
-        abort(500, "Server Error: Winning version without winning reason.")
-    return "Done, " + process.winning_reason.value
 
 
 def extract_data_from_history(path_json: str) -> tuple[list[float], float]:
@@ -181,6 +165,10 @@ def set_process(process_name: str):
 
     quantiles_list, interarrival_time = extract_data_from_history(path_history_json)
 
+    customer_category_entries = []
+    for customer_category in all_customer_categories:
+        customer_category_entries.append(CustomerCategory(name=customer_category))
+
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
@@ -189,7 +177,7 @@ def set_process(process_name: str):
                               default_version=default_version,
                               quantiles_default_history=quantiles_list,
                               interarrival_default_history=interarrival_time,
-                              customer_categories=request.args.get('customer-categories'))
+                              customer_categories=customer_category_entries)
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
@@ -218,20 +206,7 @@ def get_processes_count():
 def get_active_process_variants_metadata():
     """ Get metadata about running experiment/process """
     active_process_entry = get_active_process_entry()
-    ap_info = {
-        'id': active_process_entry.id,
-        'name': active_process_entry.name,
-        'addedTime': active_process_entry.datetime_added,
-        'experimentState': get_experiment_state(active_process_entry),
-        'customerCategories': active_process_entry.customer_categories,
-        'defaultVersion':
-            None if active_process_entry.default_version is None else active_process_entry.default_version.value,
-        'defaultInterarrivalTimeHistory': active_process_entry.interarrival_default_history,
-        'winningVersion':
-            None if active_process_entry.winning_version is None else active_process_entry.winning_version.value,
-        'decisionTime': active_process_entry.datetime_decided
-    }
-    return ap_info
+    return get_process_metadata(active_process_entry.id)
 
 
 @process_api.route('/active/cool-off', methods=['POST'])
@@ -251,7 +226,7 @@ def start_cool_off_active():
         active_process_entry.in_cool_off = True
         db.session.commit()
         return {
-            'experimentState': get_experiment_state(active_process_entry)
+            'experimentState': get_experiment_state(active_process_entry.id)
         }
     elif number_finished_bapols < 0:
         abort(500, "Unexpected finished bapol count < 0")
@@ -265,16 +240,21 @@ def set_winning_version():
     if not cool_off_over(active_process_entry.id):
         abort(404, "No active process that has a finished cool off period available")
 
-    winning_version = request.args.get('winning-version')
-    if winning_version == 'a':
-        winning_version_enum = Version.A
-    elif winning_version == 'b':
-        winning_version_enum = Version.B
-    else:
-        abort(400, "Illegal winning-version query parameter, only 'a' or 'b' allowed")
-    set_winning(active_process_entry.id, winning_version_enum, WinningReasonEnum.EXPERIMENT_ENDED)
+    dec_json = request.json
+    assert "decision" in dec_json.keys()
+    decision_parsed = []
+    for part_decision in dec_json.get("decision"):
+        assert "winning_version" in part_decision.keys()
+        assert "customer_category" in part_decision.keys()
+        if part_decision.get('winning_version') == 'a':
+            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'), winning_version=Version.A))
+        elif part_decision.get('winning_version') == 'b':
+            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'), winning_version=Version.B))
+        else:
+            abort(400, "winning_version must be a or b")
+    set_winning(active_process_entry.id, decision_parsed, WinningReasonEnum.EXPERIMENT_ENDED)
     return {
-        'experimentState': get_experiment_state(active_process_entry)
+        'experiment_state': get_experiment_state(active_process_entry.id)
     }
 
 
@@ -283,14 +263,17 @@ def set_winning_version():
 def manual_decision():
     """ API endpoint to allow human expert to manually make a decision """
     active_process_entry = get_active_process_entry()
-    decision = request.args.get('version-decision')
-    if decision == 'a':
-        decision_enum = Version.A
-    elif decision == 'b':
-        decision_enum = Version.B
+    winning_version_str = request.args.get("version-decision")
+    if winning_version_str == 'a':
+        winning_version = Version.A
+    elif winning_version_str == 'b':
+        winning_version = Version.B
     else:
-        abort(400, "Illegal version-decision query parameter, only 'a' or 'b' allowed")
-    set_winning(active_process_entry.id, decision_enum, WinningReasonEnum.MANUAL_CHOICE)
+        abort(400, "version.decision query param must be a or b")
+    decision_list = []
+    for customer_category in get_sorted_customer_category_list(active_process_entry.id):
+        decision_list.append(dict(customer_category=customer_category, winning_version=winning_version))
+    set_winning(active_process_entry.id, decision_list, WinningReasonEnum.MANUAL_CHOICE)
     return "Success"
 
 

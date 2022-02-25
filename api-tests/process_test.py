@@ -57,14 +57,17 @@ def test_get_active_process_metadata():
     response_json = response.json()
     assert response.status_code == requests.codes.ok
     assert response_json.get("name") == "helicopter_license"
-    assert response_json.get('defaultVersion') == 'a'
+    assert response_json.get('default_version') == 'a'
     assert response_json.get('id') is not None
-    assert response_json.get('customerCategories') == "public-gov"
-    assert response_json.get('defaultInterarrivalTimeHistory') == 0.98
-    assert response_json.get('experimentState') == "Running"
-    assert response_json.get('addedTime') is not None
-    assert response_json.get('decisionTime') is None
-    assert response_json.get("winningVersion") is None
+    assert response_json.get('customer_categories') == "gov-public"  # should be alphabetical
+    assert response_json.get('default_interarrival_time_history') == 0.98
+    assert response_json.get('experiment_state') == "Running"
+    assert response_json.get('datetime_added') is not None
+    assert response_json.get('datetime_decided') is None
+    assert response_json.get('number_batch_policies') == 0
+    assert response_json.get('number_instances') == 0
+    assert response_json.get("winning_versions") is None
+    assert response_json.get("winning_reason") is None
 
 
 def test_get_active_process_variants_files():
@@ -120,7 +123,7 @@ def test_experiment_state_manual_decision():
     cs.start_client_simulation(5, 1)
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
     utils.post_manual_decision('a')
-    exp_state = utils.get_currently_active_process_meta().get('experimentState')
+    exp_state = utils.get_currently_active_process_meta().get('experiment_state')
     assert 'Manual' in exp_state and 'Done' in exp_state
 
 
@@ -134,7 +137,7 @@ def test_experiment_state_cool_off():
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
     assert 'Cool-Off' in response_post_cool_off.json().get('experimentState')
-    exp_state = utils.get_currently_active_process_meta().get('experimentState')
+    exp_state = utils.get_currently_active_process_meta().get('experiment_state')
     assert 'Cool-Off' in exp_state
 
 
@@ -171,25 +174,46 @@ def test_cool_off_period():
     final_prop_response = requests.get(BASE_URL + "/batch-policy-proposal/final",
                                        params={'process-id': utils.get_currently_active_process_id()})
     assert final_prop_response.status_code == requests.codes.not_found
+    decision_json = {
+        "decision": [
+            {
+                "customer_category": "public",
+                "winning_version": "a"
+            },
+            {
+                "customer_category": "gov",
+                "winning_version": "b"
+            }
+        ]
+    }
     assert requests.post(BASE_URL + "/process/active/winning",
-                         params={'winning-version': 'b'}).status_code == requests.codes.not_found
+                         json=decision_json).status_code == requests.codes.not_found
     # make sure that meta is in cool-off
     meta = utils.get_currently_active_process_meta()
-    assert "In Cool-Off" == meta.get('experimentState')
+    assert "In Cool-Off" == meta.get('experiment_state')
     # start some more instances to trigger collection and learning with last open instances
     cs.start_client_simulation(20, 0.5)
     # cool off should be done now, check for final bapol proposal
     meta = utils.get_currently_active_process_meta()
-    assert "Cool-Off over, waiting for final decision" == meta.get('experimentState')
+    assert "Cool-Off over, waiting for final decision" == meta.get('experiment_state')
     final_prop_response = requests.get(BASE_URL + "/batch-policy-proposal/final",
                                        params={'process-id': utils.get_currently_active_process_id()})
     assert final_prop_response.status_code == requests.codes.ok
     # winning version should be able to be set
-    set_winning_response = requests.post(BASE_URL + "/process/active/winning", params={'winning-version': 'b'})
+    set_winning_response = requests.post(BASE_URL + "/process/active/winning", json=decision_json)
     assert set_winning_response.status_code == requests.codes.ok
-    assert "Done" in set_winning_response.json().get('experimentState') \
-           and "ended normally" in set_winning_response.json().get('experimentState')
+    assert "Done" in set_winning_response.json().get('experiment_state') \
+           and "ended normally" in set_winning_response.json().get('experiment_state')
     # check whether winning version and experiment state are correct in metadata
     meta = utils.get_currently_active_process_meta()
-    assert "Done" in meta.get('experimentState') and "ended normally" in meta.get('experimentState')
-    assert meta.get('winningVersion') == 'b'
+    assert "Done" in meta.get('experiment_state') and "ended normally" in meta.get('experiment_state')
+    assert meta.get('winning_versions') == [
+        {
+            "customer_category": "public",
+            "winning_version": "a"
+        },
+        {
+            "customer_category": "gov",
+            "winning_version": "b"
+        }
+    ]
