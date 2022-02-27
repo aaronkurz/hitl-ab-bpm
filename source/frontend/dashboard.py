@@ -33,7 +33,7 @@ def controls():
             and st.session_state['post_cool_off_success'] is False:
         with st.expander("Batch Policy Proposal", expanded=True):
             if utils.currently_active_process_exists():
-                interarrival_time_sec = utils.get_currently_active_process_meta().get('defaultInterarrivalTimeHistory')
+                interarrival_time_sec = utils.get_currently_active_process_meta().get('default_interarrival_time_history')
                 params = {
                     'process-id': utils.get_currently_active_process_id()
                 }
@@ -188,13 +188,13 @@ def experiment_metadata():
             col1, col2 = st.columns(2)
             with col1:
                 st.write("*Process name*: ", process_meta_json.get('name'))
-                st.write("*Start of experiment*: ", process_meta_json.get('addedTime'))
-                st.write("*State*: ", process_meta_json.get('experimentState'))
-                st.write("*Customer categories*: ", process_meta_json.get('customerCategories'))
+                st.write("*Start of experiment*: ", process_meta_json.get('datetime_added'))
+                st.write("*State*: ", process_meta_json.get('experiment_state'))
+                st.write("*Customer categories*: ", process_meta_json.get('customer_categories'))
             with col2:
-                st.write("*Default/old version*: ", process_meta_json.get('defaultVersion'))
-                st.write("*Winning version*: ", process_meta_json.get('winningVersion'))
-                st.write("*End of experiment*: ", process_meta_json.get('decisionTime'))
+                st.write("*Default/old version*: ", process_meta_json.get('default_version'))
+                st.write("*Winning versions*: ", process_meta_json.get('winning_versions'))
+                st.write("*End of experiment*: ", process_meta_json.get('datetime_decided'))
         elif response_meta.status_code == 400:
             st.write("No running experiment yet. Upload proces versions above to start an experiment.")
 
@@ -303,10 +303,17 @@ def end_of_experiment():
             st.write("**Customer Category: " + exec_strat.get('customerCategory') +"**")
             st.write("Likelihood, with which agent would choose version a: ", exec_strat.get('explorationProbabilityA'))
             st.write("Likelihood, with which agent would choose version b: ", exec_strat.get('explorationProbabilityB'))
-        winning_version = st.radio("Choose winning version overall", ('a', 'b'))
+        decision = []
+        for exec_strat in response_final_prop.json().get('executionStrategy'):
+            cust_cat = exec_strat.get('customerCategory')
+            winning_version = st.radio("Choose winning version for customer category " + cust_cat, ('a', 'b'))
+            decision.append({
+                'customer_category': cust_cat,
+                'winning_version': winning_version
+            })
         if st.button("Submit Choice"):
-            response_set_winner = requests.post(BACKEND_URI + "process/active/winning", params={
-                'winning-version': winning_version
+            response_set_winner = requests.post(BACKEND_URI + "process/active/winning", json={
+                'decision': decision
             })
             if response_set_winner.status_code == requests.codes.ok:
                 st.success("Winning version set successfully")
