@@ -5,8 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from models import db
-from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
-from models.batch_policy import BatchPolicy
+from models.process_instance import unevaluated_instances_still_exist
 from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -76,7 +75,6 @@ def set_winning(process_id: int, decision: list[dict[str, Version]], winning_rea
     :param decision: A list containing dicts with the decisions for each customer category. Dict format:
     {'customer_category': str, 'winning_version': Version.A or Version.B}
     :param winning_reason: reason for decision
-    :return: Nothing
     """
     if is_decision_made(process_id):
         raise RuntimeError("Winning decision already set")

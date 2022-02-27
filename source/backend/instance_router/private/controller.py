@@ -10,7 +10,7 @@ from models import process, db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import append_process_instance_to_bapol
 from models.batch_policy import get_average_batch_size
-from models.process import Process, in_cool_off, is_decision_made
+from models.process import Process, in_cool_off
 from models import batch_policy
 from models.utils import Version
 
@@ -23,7 +23,7 @@ def get_winning_version(process_id: int, customer_category: str) -> Optional[Ver
     :param customer_category: decision for which customer category
     :return: Version.A or Version.B or None
     """
-    if not is_decision_made(process_id):
+    if not process.is_decision_made(process_id):
         return None
     for part_win in process.get_winning(process_id):
         if part_win['customer_category'] == customer_category:
