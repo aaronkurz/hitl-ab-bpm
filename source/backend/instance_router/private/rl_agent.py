@@ -4,7 +4,7 @@ from datetime import datetime
 import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
-from models.process import get_process_metadata, Process
+from models.process import Process, get_sorted_customer_category_list
 from models.batch_policy_proposal import set_bapol_proposal, set_or_update_final_bapol_proposal
 from sqlalchemy import and_
 from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTOFF_REWARD_FUNC
@@ -141,8 +141,7 @@ def learn_and_set_new_batch_policy_proposal(process_id: int, in_cool_off: bool):
         rl_agent_globals['vw'] = vowpalwabbit.Workspace('--cb_explore_adf -q UA --rnd 3 --epsilon 0.025', quiet=True)
         rl_agent_globals['quantiles'] = Process.query.filter(Process.id == process_id).first().quantiles_default_history
     # Get context
-    metadata = get_process_metadata(process_id)
-    orgas = metadata['customer_categories'].split('-')
+    orgas = get_sorted_customer_category_list(process_id)
     for instance in relevant_instances:
         # Calculate duration
         duration = calculate_duration(instance.instantiation_time, instance.finished_time)

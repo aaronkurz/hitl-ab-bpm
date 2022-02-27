@@ -44,47 +44,6 @@ class CustomerCategory(db.Model):
     winning_version = db.Column(db.Enum(Version), nullable=True)  # Will be set after learning is done
 
 
-def get_process_metadata(process_id: int) -> dict:
-    """Get data about specified process.
-
-    :param process_id: specify process
-    :return: metadata about process
-    """
-    relevant_process_entry = get_process_entry(process_id)
-    # get customer categories
-    customer_category_string = "-".join(get_sorted_customer_category_list(process_id))
-    ap_info = {
-        'id': relevant_process_entry.id,
-        'name': relevant_process_entry.name,
-        'customer_categories': customer_category_string,
-        'datetime_added': relevant_process_entry.datetime_added,
-        'default_interarrival_time_history': relevant_process_entry.interarrival_default_history,
-        'experiment_state': get_experiment_state(process_id),
-        'default_version':
-            None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
-        'winning_versions': [dict(customer_category=part_win['customer_category'],
-                                  winning_version=None if part_win['winning_version'] is None
-                                  else part_win['winning_version'].value)
-                             for part_win in get_winning(process_id)],
-        'winning_reason':
-            None if relevant_process_entry.winning_reason is None else relevant_process_entry.winning_reason.value,
-        'datetime_decided': relevant_process_entry.datetime_decided,
-        'number_batch_policies':
-            BatchPolicy.query.filter(BatchPolicy.process_id == relevant_process_entry.id).count(),
-        'number_instances':
-            ProcessInstance.query.filter(ProcessInstance.process_id == relevant_process_entry.id).count()
-    }
-    return ap_info
-
-
-def get_active_process_metadata() -> dict:
-    """Get data about currently active process.
-
-    :return: data about active process
-    """
-    return get_process_metadata(get_active_process_id())
-
-
 def get_active_process_id() -> int:
     """Get backend id of currently active process.
 
@@ -108,7 +67,7 @@ def get_process_entry(process_id: int) -> Process:
     return active_process_entry_query.first()
 
 
-def set_winning(process_id: int, decision: list[dict[str, Version]], winning_reason: WinningReasonEnum) -> dict:
+def set_winning(process_id: int, decision: list[dict[str, Version]], winning_reason: WinningReasonEnum) -> None:
     """ Finish an experiment and set a winning version for a process, as well as a winning reason
 
     :raises RuntimeError: process already has winning version
@@ -117,7 +76,7 @@ def set_winning(process_id: int, decision: list[dict[str, Version]], winning_rea
     :param decision: A list containing dicts with the decisions for each customer category. Dict format:
     {'customer_category': str, 'winning_version': Version.A or Version.B}
     :param winning_reason: reason for decision
-    :return: process metadata
+    :return: Nothing
     """
     if is_decision_made(process_id):
         raise RuntimeError("Winning decision already set")
@@ -146,7 +105,6 @@ def set_winning(process_id: int, decision: list[dict[str, Version]], winning_rea
     relevant_process.winning_reason = winning_reason
     relevant_process.datetime_decided = datetime.now()
     db.session.commit()
-    return get_process_metadata(process_id)
 
 
 def is_valid_customer_category(process_id: int, customer_category: str) -> bool:
@@ -203,7 +161,7 @@ def get_winning(process_id: int) -> Optional[list[Version]]:
     :param process_id: specify process
     :return: list with winning version for each customer category or None, when no winning version yet
     """
-    if not is_decision_made(process_id) is None:
+    if not is_decision_made(process_id):
         winning_versions = None
     else:
         relevant_process_entry = get_process_entry(process_id)
