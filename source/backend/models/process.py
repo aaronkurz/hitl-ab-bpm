@@ -2,6 +2,8 @@
 A process row is a certain experiment with multiple versions of that process and further metadata.
 """
 from datetime import datetime
+from typing import Optional
+
 from models import db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import BatchPolicy
@@ -51,14 +53,6 @@ def get_process_metadata(process_id: int) -> dict:
     relevant_process_entry = get_process_entry(process_id)
     # get customer categories
     customer_category_string = "-".join(get_sorted_customer_category_list(process_id))
-    # get winning versions
-    if relevant_process_entry.winning_reason is None:
-        winning_versions = None
-    else:
-        winning_versions = []
-        for customer_category in relevant_process_entry.customer_categories:
-            winning_versions.append(dict(customer_category=customer_category.name,
-                                         winning_version=None if customer_category.winning_version is None else customer_category.winning_version.value))
     ap_info = {
         'id': relevant_process_entry.id,
         'name': relevant_process_entry.name,
@@ -68,7 +62,10 @@ def get_process_metadata(process_id: int) -> dict:
         'experiment_state': get_experiment_state(process_id),
         'default_version':
             None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
-        'winning_versions': winning_versions,
+        'winning_versions': [dict(customer_category=part_win['customer_category'],
+                                  winning_version=None if part_win['winning_version'] is None
+                                  else part_win['winning_version'].value)
+                             for part_win in get_winning(process_id)],
         'winning_reason':
             None if relevant_process_entry.winning_reason is None else relevant_process_entry.winning_reason.value,
         'datetime_decided': relevant_process_entry.datetime_decided,
@@ -182,6 +179,7 @@ def get_sorted_customer_category_list(process_id: int) -> list:
 def is_decision_made(process_id: int) -> bool:
     """Check whether a decision has already been made for a certain process
 
+    :raises RuntimeError: Illegal internal state: When only some of the customer categories have winning versions
     :param process_id: specify process
     :return: True or False
     """
@@ -189,9 +187,31 @@ def is_decision_made(process_id: int) -> bool:
     customer_categories = relevant_process.customer_categories
     if all(category.winning_version is None for category in customer_categories):
         return False
-    elif all(category.winning_version is not None for category in customer_categories):
+    if all(category.winning_version is not None for category in customer_categories):
         return True
-    raise RuntimeError("Either all, or none of the custimer categories of a process should have a winning version")
+    raise RuntimeError("Either all, or none of the customer categories of a process should have a winning version")
+
+
+def get_winning(process_id: int) -> Optional[list[Version]]:
+    """Get a dict of the winning process versions per customer category.
+
+    Format of dict:
+    [{
+        'customer_category': str,
+        'winning_version': Version.A or Version.B
+    }]
+    :param process_id: specify process
+    :return: list with winning version for each customer category or None, when no winning version yet
+    """
+    if not is_decision_made(process_id) is None:
+        winning_versions = None
+    else:
+        relevant_process_entry = get_process_entry(process_id)
+        winning_versions = []
+        for customer_category in relevant_process_entry.customer_categories:
+            winning_versions.append(dict(customer_category=customer_category.name,
+                                         winning_version=customer_category.winning_version))
+    return winning_versions
 
 
 def in_cool_off(process_id: int) -> bool:
@@ -215,6 +235,7 @@ def cool_off_over(process_id: int) -> bool:
 def get_experiment_state(process_id: int) -> str:
     """Get the current state of the experiment for a certain process.
 
+    :raises RuntimeError: Illegal internal state: Decision made without winning reason
     :param process_id: Process id
     :return: State of process experiment
     """

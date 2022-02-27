@@ -1,5 +1,7 @@
 """ Main "organizer" of instance routing """
 from random import randint
+from typing import Optional
+
 from sqlalchemy import and_
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector, rl_agent
@@ -8,30 +10,25 @@ from models import process, db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import append_process_instance_to_bapol
 from models.batch_policy import get_average_batch_size
-from models.process import Process, in_cool_off, get_process_metadata
+from models.process import Process, in_cool_off, is_decision_made
 from models import batch_policy
 from models.utils import Version
 
 
-def get_winning_version(process_id: int, customer_category: str) -> Version or None:
+def get_winning_version(process_id: int, customer_category: str) -> Optional[Version] or None:
     """ In case the experiment is already done or a manual decision has been made, this will return that version
 
+    :raises RuntimeError: Invalid customer category in instantiation request
     :param process_id: specify process
     :param customer_category: decision for which customer category
     :return: Version.A or Version.B or None
     """
-    # TODO: not use metadata method?
-    meta = get_process_metadata(process_id)
-    if meta['winning_versions'] is None:
+    if not is_decision_made(process_id):
         return None
-    for part_win in meta['winning_versions']:
+    for part_win in process.get_winning(process_id):
         if part_win['customer_category'] == customer_category:
-            if part_win['winning_version'] == 'a':
-                return Version.A
-            if part_win['winning_version'] == 'b':
-                return Version.B
-            raise RuntimeError("Unexpected winning version")
-    raise RuntimeError("Invalid customer category")
+            return part_win['winning_version']
+    raise RuntimeError("Invalid customer category in instantiation request")
 
 
 def get_decision_in_batch(process_id: int, customer_category: str) -> Version:
