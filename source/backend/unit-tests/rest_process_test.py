@@ -3,10 +3,10 @@ from unittest.mock import MagicMock
 import pytest
 from models import process
 from models.utils import Version
-from rest.process import get_process_metadata, get_active_process_metadata
 from models.process_instance import ProcessInstance
 from models.batch_policy import BatchPolicy
 from models import db
+from rest.process import get_process_metadata, get_active_process_metadata
 
 db.session = MagicMock()
 pre_proc_var = MagicMock()
@@ -14,23 +14,21 @@ ProcessInstance.query = MagicMock()
 BatchPolicy.query = MagicMock()
 default_v = MagicMock(value='a')
 proc_var = MagicMock(id=76,
-                     name='test-proc',
                      datetime_added='2022-02-01',
-                     default_interarrival_time_history=20.2,
+                     interarrival_default_history=20.2,
                      experiment_state="running",
                      default_version=Version.A,
                      winning_reason=None,
-                     datetime_decided=None,
-                     customer_categories=[MagicMock(name="public"), MagicMock(name="gov")])
+                     datetime_decided=None)
 expected = {
     'id': 76,
     'name': "test-proc",
     'customer_categories': 'gov-public',
     'datetime_added': "2022-02-01",
-    'default_interarrival_time_history': "20.2",
+    'default_interarrival_time_history': 20.2,
     'experiment_state': "running",
     'default_version': "a",
-    'winning_version': None,
+    'winning_versions': None,
     'winning_reason': None,
     'datetime_decided': None,
     'number_batch_policies': 2,
@@ -47,13 +45,13 @@ def before_all():
     Nothing
         Nothing is yielded
     """
-    process.get_sorted_customer_category_list = MagicMock(return_value=["gov", "public"])
-    process.is_decision_made = MagicMock(return_value=False)
+    proc_var.name = "test-proc"
     db.session.query.return_value.filter.return_value = pre_proc_var
     pre_proc_var.first.return_value = proc_var
     ProcessInstance.query.filter.return_value.count.return_value = 157
     BatchPolicy.query.filter.return_value.count.return_value = 2
-
+    process.get_sorted_customer_category_list = MagicMock(return_value=['gov', 'public'])
+    process.get_experiment_state = MagicMock(return_value='running')
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test
@@ -76,7 +74,8 @@ def test_get_process_assertion_error_above():
 def test_get_process_valid():
     """ Check whether get_process_metadata returns expected result when there is one relevant process entry """
     pre_proc_var.count.return_value = 1
-    assert expected == get_process_metadata(5)
+
+    assert get_process_metadata(5) == expected
 
 
 def test_get_active_process_assertion_error_below():
@@ -96,4 +95,4 @@ def test_get_active_process_assertion_error_above():
 def test_get_active_process_valid():
     """ Check whether get_active_process_metadata returns expected result when there is one relevant process entry """
     pre_proc_var.count.return_value = 1
-    assert expected == get_active_process_metadata()
+    assert get_active_process_metadata() == expected

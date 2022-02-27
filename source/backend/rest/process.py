@@ -10,7 +10,7 @@ from werkzeug.datastructures import FileStorage
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols, BatchPolicy
-from models import db
+from models import db, process
 from models.process import Process, cool_off_over, set_winning, CustomerCategory, get_sorted_customer_category_list, \
     get_experiment_state, get_process_entry, is_decision_made, get_winning, get_active_process_id
 from models.process_instance import ProcessInstance
@@ -29,14 +29,14 @@ def get_process_metadata(process_id: int) -> dict:
     """
     relevant_process_entry = get_process_entry(process_id)
     # get customer categories
-    customer_category_string = "-".join(get_sorted_customer_category_list(process_id))
+    customer_category_string = "-".join(process.get_sorted_customer_category_list(process_id))
     ap_info = {
         'id': relevant_process_entry.id,
         'name': relevant_process_entry.name,
         'customer_categories': customer_category_string,
         'datetime_added': relevant_process_entry.datetime_added,
         'default_interarrival_time_history': relevant_process_entry.interarrival_default_history,
-        'experiment_state': get_experiment_state(process_id),
+        'experiment_state': process.get_experiment_state(process_id),
         'default_version':
             None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
         'winning_versions': None if not is_decision_made(process_id) else
