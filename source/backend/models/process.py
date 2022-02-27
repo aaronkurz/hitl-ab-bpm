@@ -67,7 +67,7 @@ def get_process_entry(process_id: int) -> Process:
 
 
 def set_winning(process_id: int, decision: list[dict[str, Version]], winning_reason: WinningReasonEnum) -> None:
-    """ Finish an experiment and set a winning version for a process, as well as a winning reason
+    """ Finish an experiment and set the winning versions/decision for a process, as well as a winning reason
 
     :raises RuntimeError: process already has winning version
     :raises RuntimeError: version-decision query parameter must be 'a' or 'b'

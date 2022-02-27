@@ -266,7 +266,10 @@ def start_cool_off_active():
 @process_api.route('/active/winning', methods=['POST'])
 # pylint: disable=missing-return-doc, missing-return-type-doc
 def set_winning_version():
-    """ Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over') """
+    """ Set a decision/winning versions
+
+    Only available if in cool-off and all instances have been evaluates ('cool-off-over')
+    """
     active_process_entry = get_active_process_entry()
     if not cool_off_over(active_process_entry.id):
         abort(404, "No active process that has a finished cool off period available")
@@ -294,7 +297,10 @@ def set_winning_version():
 @process_api.route('active/manual-decision', methods=['POST'])
 # pylint: disable=missing-return-doc, missing-return-type-doc
 def manual_decision():
-    """ API endpoint to allow human expert to manually make a decision """
+    """API endpoint to allow human expert to manually make a decision
+
+    Only supports same decision for all customer categories!
+    """
     active_process_entry = get_active_process_entry()
     winning_version_str = request.args.get("version-decision")
     if winning_version_str == 'a':
