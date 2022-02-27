@@ -202,19 +202,35 @@ paths:
                     type: string
                   addedTime:
                     type: string
-                  customerCategories:
+                  customer_categories:
                     type: string
-                  defaultVersion:
+                  datetime_added:
                     type: string
-                  experimentState:
+                  default_version:
                     type: string
-                  defaultInterarrivalTimeHistory:
+                  experiment_state:
+                    type: string
+                  default_interarrival_time_history:
                     type: number
                     description: Avg. seconds between starts of new instances in process history of default version, from data submitted by user
-                  winningVersion:
+                  winning_versions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        customer_category:
+                          type: string
+                        winning_version:
+                          type: string
+                  winning_reason:
                     type: string
-                  decisionTime:
+                  datetime_decided:
                     type: string
+                  number_batch_policies:
+                    type: integer
+                  number_instances:
+                    type: integer
+                    description: Number of instances routed for that process. In and outside of batches, and even after winning version.
   /process/variant-file/{a_or_b}:
     get:
       summary: Get the bpmn file of a certain process.
@@ -333,7 +349,7 @@ paths:
           description: client error
   /process/active/manual-decision:
     post:
-      summary: Allows human expert to manually make a decision (whether to use version A or B from now on)
+      summary: Allows human expert to manually make a decision (whether to use version A or B from now on, for ALL customer categories!)
       tags:
         - Process
       parameters:
@@ -586,6 +602,22 @@ paths:
       summary: Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over')
       tags:
         - Process
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      customer_category:
+                        type: string
+                      winning_version:
+                        type: number
+                        description: a or b
       responses:
         200:
           description: success
@@ -594,7 +626,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  experimentState:
+                  experiment_state:
                     type: string
         404:
           description: No active process that has a finished cool off period available
