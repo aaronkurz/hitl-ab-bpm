@@ -1,5 +1,7 @@
 """ Main "organizer" of instance routing """
 from random import randint
+from typing import Optional
+
 from sqlalchemy import and_
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector, rl_agent
@@ -13,16 +15,20 @@ from models import batch_policy
 from models.utils import Version
 
 
-def get_winning_version(process_id: int) -> Version or None:
+def get_winning_version(process_id: int, customer_category: str) -> Optional[Version] or None:
     """ In case the experiment is already done or a manual decision has been made, this will return that version
 
+    :raises RuntimeError: Invalid customer category in instantiation request
     :param process_id: specify process
+    :param customer_category: decision for which customer category
     :return: Version.A or Version.B or None
     """
-    relevant_process = Process.query.filter(Process.id == process_id).first()
-    if relevant_process.winning_version is not None:
-        return relevant_process.winning_version
-    return None
+    if not process.is_decision_made(process_id):
+        return None
+    for part_win in process.get_winning(process_id):
+        if part_win['customer_category'] == customer_category:
+            return part_win['winning_version']
+    raise RuntimeError("Invalid customer category in instantiation request")
 
 
 def get_decision_in_batch(process_id: int, customer_category: str) -> Version:
@@ -99,10 +105,10 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     :return: camunda instance id of started instance
     """
     new_batch_policy_proposal_available = False
-    process_metadata = process.get_process_metadata(process_id)
+    process_entry = process.get_process_entry(process_id)
 
     # get decision from process bandit, if no decision has been made yet
-    winning_version = get_winning_version(process_id)
+    winning_version = get_winning_version(process_id, customer_category)
     is_in_batch_marker = False
     if winning_version is None:
         if in_cool_off(process_id):
@@ -123,13 +129,12 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     # instantiate according to decision
     client = CamundaClient()
     if decision == Version.A:
-        variant_key = 'variant_a_camunda_id'
+        variant_camunda_id = process_entry.variant_a_camunda_id
     elif decision == Version.B:
-        variant_key = 'variant_b_camunda_id'
+        variant_camunda_id = process_entry.variant_b_camunda_id
     else:
         raise RuntimeError('Unexpected decision by reinforcement learning environment: ' + str(decision))
 
-    variant_camunda_id = process_metadata[variant_key]
     camunda_instance_id = client.start_instance(variant_camunda_id)
     # add info to database
     if is_in_batch_marker:

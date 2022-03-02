@@ -81,8 +81,8 @@ def get_current_bapol_data_active_process() -> dict:
 
     :return: data of current batch policy for active process
     """
-    from models.process import get_active_process_metadata
-    return get_current_bapol_data(get_active_process_metadata().get('id'))
+    from models.process import get_active_process_id
+    return get_current_bapol_data(get_active_process_id())
 
 
 def is_latest_batch_done(process_id: int) -> bool:
@@ -106,8 +106,8 @@ def is_latest_batch_active_process_done() -> bool:
 
     :return: True or False
     """
-    from models.process import get_active_process_metadata
-    return is_latest_batch_done(get_active_process_metadata().get('id'))
+    from models.process import get_active_process_id
+    return is_latest_batch_done(get_active_process_id())
 
 
 def get_batch_size_sum(process_id: int) -> int:

@@ -9,14 +9,57 @@ from scipy.stats.mstats import mquantiles
 from werkzeug.datastructures import FileStorage
 from camunda.client import CamundaClient
 from models.batch_policy_proposal import set_naive_bapol_proposal
-from models.batch_policy import get_number_finished_bapols
-from models import db
-from models.process import Process, cool_off_over, set_winning
-from models.utils import WinningReasonEnum, Version
+from models.batch_policy import get_number_finished_bapols, BatchPolicy
+from models import db, process
+from models.process import Process, cool_off_over, set_winning, CustomerCategory, get_sorted_customer_category_list, \
+    get_experiment_state, get_process_entry, is_decision_made, get_winning, get_active_process_id
+from models.process_instance import ProcessInstance
+from models.utils import WinningReasonEnum, Version, parse_version_str
 from rest import utils
 from config import K_QUANTILES_REWARD_FUNC
 
 process_api = Blueprint('process-variants', __name__)
+
+
+def get_process_metadata(process_id: int) -> dict:
+    """Get data about specified process.
+
+    :param process_id: specify process
+    :return: metadata about process
+    """
+    relevant_process_entry = get_process_entry(process_id)
+    # get customer categories
+    customer_category_string = "-".join(process.get_sorted_customer_category_list(process_id))
+    ap_info = {
+        'id': relevant_process_entry.id,
+        'name': relevant_process_entry.name,
+        'customer_categories': customer_category_string,
+        'datetime_added': relevant_process_entry.datetime_added,
+        'default_interarrival_time_history': relevant_process_entry.interarrival_default_history,
+        'experiment_state': process.get_experiment_state(process_id),
+        'default_version':
+            None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
+        'winning_versions': None if not is_decision_made(process_id) else
+        [dict(customer_category=part_win['customer_category'],
+              winning_version=part_win['winning_version'].value)
+         for part_win in get_winning(process_id)],
+        'winning_reason':
+            None if relevant_process_entry.winning_reason is None else relevant_process_entry.winning_reason.value,
+        'datetime_decided': relevant_process_entry.datetime_decided,
+        'number_batch_policies':
+            BatchPolicy.query.filter(BatchPolicy.process_id == relevant_process_entry.id).count(),
+        'number_instances':
+            ProcessInstance.query.filter(ProcessInstance.process_id == relevant_process_entry.id).count()
+    }
+    return ap_info
+
+
+def get_active_process_metadata() -> dict:
+    """Get data about currently active process.
+
+    :return: data about active process
+    """
+    return get_process_metadata(get_active_process_id())
 
 
 def allowed_file_models(filename: str) -> bool:
@@ -50,23 +93,6 @@ def get_active_process_entry() -> Process:
     elif active_process_entry_query.count() > 1:
         abort(500, "More than one active process")
     return active_process_entry_query.first()
-
-
-def get_experiment_state(process: Process) -> str:
-    """Get the current state of the experiment for a certain process.
-
-    :param process: Process instance
-    :return: State of process experiment
-    """
-    if process.winning_version is None:
-        if cool_off_over(process.id):
-            return 'Cool-Off over, waiting for final decision'
-        if process.in_cool_off:
-            return 'In Cool-Off'
-        return 'Running'
-    if process.winning_reason is None:
-        abort(500, "Server Error: Winning version without winning reason.")
-    return "Done, " + process.winning_reason.value
 
 
 def extract_data_from_history(path_json: str) -> tuple[list[float], float]:
@@ -147,17 +173,13 @@ def set_process(process_name: str):
             and allowed_file_history(history_durations_file.filename)):
         abort(400, description='Only .bpmn files allowed for models and .json files allowed for history')
 
-    # get default version
-    default_version = request.args.get('default-version')
-    if default_version == 'a':
-        default_version = Version.A
-    elif default_version == 'b':
-        default_version = Version.B
-    else:
-        abort(400, 'Default version has to be specified in query argument \'defaultVersion\'')
-
     # get relevant customer categories
     all_customer_categories = request.args.get('customer-categories').split('-')
+
+    try:
+        default_version = parse_version_str(request.args.get('default-version'))
+    except RuntimeError as r_e:
+        abort(400, str(r_e))
 
     # Storing the files in filesystem
     path_variant_a, path_variant_b, path_history_json = store_files_on_filesystem(process_name,
@@ -175,21 +197,18 @@ def set_process(process_name: str):
     variant_a_file.save(path_variant_a)
     variant_b_file.save(path_variant_b)
 
-    # deploy processes to camunda
-    camunda_id_a = CamundaClient().deploy_process(path_bpmn_file=path_variant_a)
-    camunda_id_b = CamundaClient().deploy_process(path_bpmn_file=path_variant_b)
-
     quantiles_list, interarrival_time = extract_data_from_history(path_history_json)
 
     process_variant = Process(name=process_name,
                               variant_a_path=path_variant_a,
                               variant_b_path=path_variant_b,
-                              variant_a_camunda_id=camunda_id_a,
-                              variant_b_camunda_id=camunda_id_b,
+                              variant_a_camunda_id=CamundaClient().deploy_process(path_bpmn_file=path_variant_a),
+                              variant_b_camunda_id=CamundaClient().deploy_process(path_bpmn_file=path_variant_b),
                               default_version=default_version,
                               quantiles_default_history=quantiles_list,
                               interarrival_default_history=interarrival_time,
-                              customer_categories=request.args.get('customer-categories'))
+                              customer_categories=[CustomerCategory(name=customer_category)
+                                                   for customer_category in all_customer_categories])
 
     # change old active process to inactive
     db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
@@ -218,20 +237,7 @@ def get_processes_count():
 def get_active_process_variants_metadata():
     """ Get metadata about running experiment/process """
     active_process_entry = get_active_process_entry()
-    ap_info = {
-        'id': active_process_entry.id,
-        'name': active_process_entry.name,
-        'addedTime': active_process_entry.datetime_added,
-        'experimentState': get_experiment_state(active_process_entry),
-        'customerCategories': active_process_entry.customer_categories,
-        'defaultVersion':
-            None if active_process_entry.default_version is None else active_process_entry.default_version.value,
-        'defaultInterarrivalTimeHistory': active_process_entry.interarrival_default_history,
-        'winningVersion':
-            None if active_process_entry.winning_version is None else active_process_entry.winning_version.value,
-        'decisionTime': active_process_entry.datetime_decided
-    }
-    return ap_info
+    return get_process_metadata(active_process_entry.id)
 
 
 @process_api.route('/active/cool-off', methods=['POST'])
@@ -251,7 +257,7 @@ def start_cool_off_active():
         active_process_entry.in_cool_off = True
         db.session.commit()
         return {
-            'experimentState': get_experiment_state(active_process_entry)
+            'experimentState': get_experiment_state(active_process_entry.id)
         }
     elif number_finished_bapols < 0:
         abort(500, "Unexpected finished bapol count < 0")
@@ -260,37 +266,53 @@ def start_cool_off_active():
 @process_api.route('/active/winning', methods=['POST'])
 # pylint: disable=missing-return-doc, missing-return-type-doc
 def set_winning_version():
-    """ Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over') """
+    """ Set a decision/winning versions
+
+    Only available if in cool-off and all instances have been evaluates ('cool-off-over')
+    """
     active_process_entry = get_active_process_entry()
     if not cool_off_over(active_process_entry.id):
         abort(404, "No active process that has a finished cool off period available")
 
-    winning_version = request.args.get('winning-version')
-    if winning_version == 'a':
-        winning_version_enum = Version.A
-    elif winning_version == 'b':
-        winning_version_enum = Version.B
-    else:
-        abort(400, "Illegal winning-version query parameter, only 'a' or 'b' allowed")
-    set_winning(active_process_entry.id, winning_version_enum, WinningReasonEnum.EXPERIMENT_ENDED)
+    dec_json = request.json
+    assert "decision" in dec_json.keys()
+    decision_parsed = []
+    for part_decision in dec_json.get("decision"):
+        assert "winning_version" in part_decision.keys()
+        assert "customer_category" in part_decision.keys()
+        if part_decision.get('winning_version') == 'a':
+            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'),
+                                        winning_version=Version.A))
+        elif part_decision.get('winning_version') == 'b':
+            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'),
+                                        winning_version=Version.B))
+        else:
+            abort(400, "winning_version must be a or b")
+    set_winning(active_process_entry.id, decision_parsed, WinningReasonEnum.EXPERIMENT_ENDED)
     return {
-        'experimentState': get_experiment_state(active_process_entry)
+        'experiment_state': get_experiment_state(active_process_entry.id)
     }
 
 
 @process_api.route('active/manual-decision', methods=['POST'])
 # pylint: disable=missing-return-doc, missing-return-type-doc
 def manual_decision():
-    """ API endpoint to allow human expert to manually make a decision """
+    """API endpoint to allow human expert to manually make a decision
+
+    Only supports same decision for all customer categories!
+    """
     active_process_entry = get_active_process_entry()
-    decision = request.args.get('version-decision')
-    if decision == 'a':
-        decision_enum = Version.A
-    elif decision == 'b':
-        decision_enum = Version.B
+    winning_version_str = request.args.get("version-decision")
+    if winning_version_str == 'a':
+        winning_version = Version.A
+    elif winning_version_str == 'b':
+        winning_version = Version.B
     else:
-        abort(400, "Illegal version-decision query parameter, only 'a' or 'b' allowed")
-    set_winning(active_process_entry.id, decision_enum, WinningReasonEnum.MANUAL_CHOICE)
+        abort(400, "version.decision query param must be a or b")
+    decision_list = []
+    for customer_category in get_sorted_customer_category_list(active_process_entry.id):
+        decision_list.append(dict(customer_category=customer_category, winning_version=winning_version))
+    set_winning(active_process_entry.id, decision_list, WinningReasonEnum.MANUAL_CHOICE)
     return "Success"
 
 

@@ -43,7 +43,7 @@ class CamundaClient:
             return new_process_id
 
     # Starting a single instance
-    def start_instance(self, process_id: int) -> str:
+    def start_instance(self, process_id: str) -> str:
         """Start an instance with a certain camunda process id.
 
         :param process_id: specify which process with !camunda process id!

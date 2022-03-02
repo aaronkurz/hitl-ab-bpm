@@ -2,7 +2,7 @@
 from datetime import datetime
 from sqlalchemy import and_, desc
 from models import db
-from models.process import Process, cool_off_over
+from models.process import Process, cool_off_over, is_decision_made
 
 
 class BatchPolicyProposal(db.Model):
@@ -123,7 +123,7 @@ def _new_proposal_can_be_set(process_id: int) -> bool:
     :return: True or False
     """
     relevant_process = Process.query.filter(Process.id == process_id).first()
-    if relevant_process.winning_version is not None or exists_bapol_proposal_without_bapol(process_id):
+    if is_decision_made(relevant_process.id) is True or exists_bapol_proposal_without_bapol(process_id):
         return False
     return True
 
@@ -137,7 +137,7 @@ def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
     :param process_id: process id in backend
     :return: True or False
     """
-    if Process.query.filter(Process.id == process_id).first().winning_version is not None \
+    if is_decision_made(process_id) is True \
             or Process.query.filter(Process.id == process_id).first().in_cool_off is True:
         return False
     count_props_without_bapol = BatchPolicyProposal.query. \
