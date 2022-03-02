@@ -1,0 +1,13 @@
+# Test BPMN Process Models
+
+These process models have been created for testing and experimentation purposes.
+They can be deployed to the Camunda engine, like any BPMN file. But additionally, they have been annotated with extension properties, which allow for the automatic simulation.
+When deployed to a Camunda engine with the [Camunda BPM simulator plugin](https://github.com/camunda-consulting/camunda-bpm-simulator) installed, any instances of a process with such extension properties are simulated.
+Below, you can find an outline on the test processes we created and what behavior you can expect from them.
+
+## Simulation Properties
+
+| Name | Description | Avg. Duration A s | Avg. Duration B s | Ran simulation for data json with break of how many s in between instances |
+|------|-------------|-----------------|-----------------|----------------------------------------------------------------------------|
+|helicopter|Essentially the same as the process in the PhD, but with a different timeframe: 1 week in the PhD equals one second in the simulation|64.2|21| 5                                                                          |
+|fast\_a\_better|A should only take about half the time of B|1.1|2.1| 1                                                                          |
