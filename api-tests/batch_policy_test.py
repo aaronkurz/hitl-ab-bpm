@@ -24,10 +24,10 @@ def after_all():
 def test_count():
     """ Test if count of batch policies is zero when relevant db tables empty """
     # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     # when
     response = requests.get(BASE_URL + "/batch-policy/count",
                             params={"process-id": utils.get_currently_active_process_id()}).json()
@@ -40,26 +40,26 @@ def test_count():
 def test_set_bapol():
     """ Test if setting of new batch policy works and whether it has an associated batch policy proposal """
     # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
-    utils.post_processes_a_b("helicopter_license_fast",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    utils.post_processes_a_b("fast",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     assert utils.get_bapol_count() == 1
 
 
 def test_set_bapol_failing_json():
     # given
-    utils.post_processes_a_b("helicopter_license_fast",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     bapol = {
         "batchSize": 200,
         "executionStrategy": [
@@ -85,11 +85,11 @@ def test_set_bapol_failing_json():
 
 def test_set_bapol_failing_customer_category():
     # given
-    utils.post_processes_a_b("helicopter_license_fast",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     bapol = {
         "batchSize": 200,
         "executionStrategy": [
@@ -116,10 +116,10 @@ def test_set_bapol_failing_customer_category():
 def test_get_latest():
     """ Test if retrieval of the latest batch policy works """
     # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 200,
         "executionStrategy": [
