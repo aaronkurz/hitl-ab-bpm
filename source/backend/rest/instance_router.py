@@ -45,11 +45,11 @@ def count_a_b():
     validate_backend_process_id(process_id)
     relevant_queries_ab = {
         Version.A: ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                             ProcessInstance.decision == Version.A,
-                                                             ProcessInstance.do_evaluate.is_(True))),
+                                                     ProcessInstance.decision == Version.A,
+                                                     ProcessInstance.do_evaluate.is_(True))),
         Version.B: ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                                             ProcessInstance.decision == Version.B,
-                                                             ProcessInstance.do_evaluate.is_(True)))}
+                                                     ProcessInstance.decision == Version.B,
+                                                     ProcessInstance.do_evaluate.is_(True)))}
 
     number_started_ab = {
         Version.A: relevant_queries_ab[Version.A].count(),
@@ -60,10 +60,10 @@ def count_a_b():
         Version.B: relevant_queries_ab[Version.B].filter(ProcessInstance.finished_time.is_not(None))}
 
     # Test if reward was calculated for all finished instances in batches, as expected
-    assert all_relevant_query_finished_ab[Version.A].count() == relevant_queries_ab[Version.A]\
-        .filter(ProcessInstance.reward.is_not(None)).count()\
-        and all_relevant_query_finished_ab[Version.B].count() == relevant_queries_ab[Version.B]\
-            .filter(ProcessInstance.reward.is_not(None)).count(),\
+    assert all_relevant_query_finished_ab[Version.A].count() == relevant_queries_ab[Version.A] \
+        .filter(ProcessInstance.reward.is_not(None)).count() \
+           and all_relevant_query_finished_ab[Version.B].count() == relevant_queries_ab[Version.B] \
+               .filter(ProcessInstance.reward.is_not(None)).count(), \
         "Server Error: Reward was not calculated properly for all finished instances"
 
     a_number_finished = all_relevant_query_finished_ab[Version.A].count()
@@ -72,7 +72,7 @@ def count_a_b():
     a_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
                         for instance in all_relevant_query_finished_ab[Version.A]]
     b_list_durations = [(instance.finished_time - instance.instantiation_time).total_seconds()
-                         for instance in all_relevant_query_finished_ab[Version.B]]
+                        for instance in all_relevant_query_finished_ab[Version.B]]
     a_average_duration_sec = None if len(a_list_durations) == 0 else statistics.mean(a_list_durations)
     b_average_duration_sec = None if len(b_list_durations) == 0 else statistics.mean(b_list_durations)
 
@@ -137,7 +137,35 @@ def get_instantiation_data_outside_batch():
     validate_backend_process_id(process_id)
     return {
         "numberOfRequests": ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                              ProcessInstance.do_evaluate.is_(False))).count()
+                                                              ProcessInstance.do_evaluate.is_(False))).count()
+    }
+
+
+@instance_router_api.route('/aggregate-data/evaluation-progress', methods=['GET'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def get_evaluation_progress():
+    """ Get info on evaluation progress """
+    process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
+    total_to_be_evaluated_count = ProcessInstance.query.filter(and_(ProcessInstance.do_evaluate.is_(True),
+                                                                    ProcessInstance.process_id == process_id)).count()
+    already_evaluated_count = ProcessInstance.query.filter(and_(ProcessInstance.do_evaluate.is_(True),
+                                                                      ProcessInstance.process_id == process_id,
+                                                                      ProcessInstance.finished_time.is_not(None),
+                                                                      ProcessInstance.reward.is_not(None))).count()
+    not_yet_evaluated_count = ProcessInstance.query.filter(and_(ProcessInstance.do_evaluate.is_(True),
+                                                                      ProcessInstance.process_id == process_id,
+                                                                      ProcessInstance.finished_time.is_(None),
+                                                                      ProcessInstance.reward.is_(None))).count()
+    assert not_yet_evaluated_count + already_evaluated_count == total_to_be_evaluated_count
+    return {
+        "totalToBeEvaluatedCount": total_to_be_evaluated_count,
+        "alreadyEvaluatedCount": already_evaluated_count,
+        "notYetEvaluatedCount": not_yet_evaluated_count,
+        "alreadyEvaluatedPerc":
+            None if total_to_be_evaluated_count == 0 else already_evaluated_count / total_to_be_evaluated_count,
+        "notYetEvaluatedPerc":
+            None if total_to_be_evaluated_count == 0 else not_yet_evaluated_count / total_to_be_evaluated_count
     }
 
 
@@ -148,16 +176,16 @@ def get_instances_batch():
     process_id = int(request.args.get('process-id'))
     validate_backend_process_id(process_id)
     batch_number = int(request.args.get('batch-number'))
-    assert batch_number <= BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count(),\
+    assert batch_number <= BatchPolicy.query.filter(BatchPolicy.process_id == process_id).count(), \
         "Batch number too high"
     data = {
         "processId": process_id,
         "batchNumber": batch_number,
         "instances": []
     }
-    relevant_bapol_id = BatchPolicy.query.filter(BatchPolicy.process_id == process_id)\
+    relevant_bapol_id = BatchPolicy.query.filter(BatchPolicy.process_id == process_id) \
         .order_by(asc(BatchPolicy.id))[batch_number - 1].id
-    relevant_instances = ProcessInstance.query.filter(ProcessInstance.batch_policy_id == relevant_bapol_id)\
+    relevant_instances = ProcessInstance.query.filter(ProcessInstance.batch_policy_id == relevant_bapol_id) \
         .order_by(asc(ProcessInstance.id))
     for instance in relevant_instances:
         data.get('instances').append({
