@@ -7,9 +7,9 @@ Below, you can find an outline on the test processes we created and what behavio
 
 ## Simulation Properties
 
-| Name            | Description                                                                                                                                      | Avg. Duration A s | Avg. Duration B s | Ran simulation for data json with break of how many s in between instances |
-|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|-------------------|----------------------------------------------------------------------------|
-| helicopter      | Essentially the same as the process used as an example in a publication by Suhrid Satyal\*, but with a different timeframe: 1 week -> one second | 64.2              | 21                | 5                                                                          |
-| fast\_a\_better | A should only take about half the time of B                                                                                                      | 1.1               | 2.1               | 1                                                                          |
+| Name            | Description                                                                                                                                     | Avg. Duration A s | Avg. Duration B s | Ran simulation for data json with break of how many s in between instances |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|-------------------|----------------------------------------------------------------------------|
+| helicopter      | Essentially the same as the process used as an example in a publication by Suhrid Satyal\*, but with a different timeframe: 1 day -> one second | 64.2              | 21                | 5                                                                          |
+| fast\_a\_better | A should only take about half the time of B                                                                                                     | 1.1               | 2.1               | 1                                                                          |
 
 \* [Business process improvement with the AB-BPM methodology, p. 18](https://www.diciccio.net/claudio/preprints/Satyal-etal-IS2019-BusinessProcessImprovementwithABBPM.pdf)
