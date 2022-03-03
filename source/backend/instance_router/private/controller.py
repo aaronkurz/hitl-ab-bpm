@@ -89,11 +89,19 @@ def handle_decision_in_cool_off(process_id: int) -> Version:
     # relearn with a probability of 1/avg_batch_size;
     # this means that when the average batch size was 15, will learn about
     # at about every 15th incoming instantiation request
-    if round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id))) \
-            and unevaluated_instances_still_exist(process_id):
+    if _one_in_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
         camunda_collector.collect_finished_instances(process_id)
         rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=True)
     return decision
+
+
+def _one_in_avg_batch_size_prob(process_id: int) -> bool:
+    """Returns True with a probability of (one) in (average batch size) for a certain process
+
+    :param process_id: process
+    :return: True or False
+    """
+    return round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id)))
 
 
 def instantiate(process_id: int, customer_category: str) -> dict:
@@ -104,7 +112,6 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
     """
-    new_batch_policy_proposal_available = False
     process_entry = process.get_process_entry(process_id)
 
     # get decision from process bandit, if no decision has been made yet
@@ -112,17 +119,23 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     is_in_batch_marker = False
     if winning_version is None:
         if in_cool_off(process_id):
+            # in cool-off period
             decision = handle_decision_in_cool_off(process_id)
         elif not is_in_batch(process_id):
+            # in between batches
             decision = get_decision_outside_batch(process_id)
-            new_batch_policy_proposal_available = True
+            if _one_in_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
+                # while an open proposal is ready for user, periodically update it to provide more info as
+                # more instances finish and can be evaluated
+                camunda_collector.collect_finished_instances(process_id)
+                rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=False)
         else:
+            # is in batch
             is_in_batch_marker = True
             decision = get_decision_in_batch(process_id, customer_category)
             if end_of_batch_reached(process_id):
                 camunda_collector.collect_finished_instances(process_id)
                 rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=False)
-                new_batch_policy_proposal_available = True
     else:
         decision = winning_version
 
@@ -154,6 +167,5 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     db.session.commit()
 
     return {
-        'newBatchPolicyProposalReady': new_batch_policy_proposal_available,
         'camundaInstanceId': camunda_instance_id,
     }
