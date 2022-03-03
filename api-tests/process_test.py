@@ -23,34 +23,34 @@ def after_all():
 
 def test_set_process():
     """ Test if setting of new process with variants works """
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     assert utils.get_process_count() == 1
 
 
 def test_set_2_processes():
     """ Test if setting of new process with variants works """
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
-    utils.post_processes_a_b("helicopter_license_fast",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    utils.post_processes_a_b("fast",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='b',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     assert utils.get_process_count() == 2
 
 
 def test_get_active_process_metadata():
     """ Test if receiving of metadata about currently active process works """
     # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     # when
     response = requests.get(BASE_URL + "/process/active/meta")
     # then
@@ -60,7 +60,7 @@ def test_get_active_process_metadata():
     assert response_json.get('default_version') == 'a'
     assert response_json.get('id') is not None
     assert response_json.get('customer_categories') == "gov-public"  # should be alphabetical
-    assert response_json.get('default_interarrival_time_history') == 0.98
+    assert response_json.get('default_interarrival_time_history') == 64.18521
     assert response_json.get('experiment_state') == "Running"
     assert response_json.get('datetime_added') is not None
     assert response_json.get('datetime_decided') is None
@@ -79,7 +79,7 @@ def test_get_active_process_variants_files():
         response_given = requests.get(BASE_URL + "/process/active/meta")
         response_given_json = response_given.json()
         assert response_given.status_code == requests.codes.ok
-        assert response_given_json.get("name") == "helicopter_license_fast"
+        assert response_given_json.get("name") == "fast"
         # when
         param = {"id": response_given_json.get("id")}
         response = requests.get(BASE_URL + "/process/variant-file/" + version, params=param)
@@ -94,15 +94,15 @@ def test_files_are_overwritten():
     in the filesystem as well as in the db.
     """
     # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='b',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     # when
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter_license/helicopter_vB.bpmn",
+    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='b',
-                             path_history="./resources/bpmn/helicopter_license/2000a.json")
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     # then
     assert utils.get_process_count() == 1
 
@@ -114,10 +114,10 @@ def test_no_process_active_meta_():
 
 
 def test_experiment_state_manual_decision():
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy)
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5, 1)
@@ -128,10 +128,10 @@ def test_experiment_state_manual_decision():
 
 
 def test_experiment_state_cool_off():
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
@@ -142,10 +142,10 @@ def test_experiment_state_cool_off():
 
 
 def test_cool_off_only_after_batch_finished():
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     # not a batch yet
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.not_found
@@ -161,10 +161,10 @@ def test_cool_off_only_after_batch_finished():
 
 
 def test_cool_off_period():
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter_license_fast/helicopter_fast_vA.bpmn",
-                             "./resources/bpmn/helicopter_license_fast/helicopter_fast_vB.bpmn",
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter_license_fast/2000a.json")
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
