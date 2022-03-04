@@ -88,6 +88,7 @@ def _update_bapol_proposal(proposal: BatchPolicyProposal, customer_categories: l
                            final: bool):
     """ Update a certain batch policy proposal
 
+    :raises RuntimeError: Problem with parameter customer_categories
     :param proposal: Proposal to be updated
     :param customer_categories: Customer categories
     :param expl_probs_a: Exploration strategy for a for each customer category (in same order)
@@ -146,11 +147,11 @@ def set_or_update_bapol_proposal(process_id: int,
 def set_or_update_final_bapol_proposal(process_id: int,
                                        customer_categories: list[str],
                                        expl_probs_a: list[float],
-                                       expl_probs_b: list[float]) -> bool:
+                                       expl_probs_b: list[float]):
     """Create a final batch policy proposal or update an existing final batch policy proposal for a given process id.
 
-    In case there already is a final batch policy proposal, it is updated with the values passed to this funktion
-    :raises RuntimeError: Problem with parameter customer_categories or unexpected number of bapol proposals
+    In case there already is a final batch policy proposal, it is updated with the values passed to this function
+    :raises RuntimeError: Unexpected number of final bapol proposals
     :param process_id: process id in our backend
     :param customer_categories: relevant customer categories of process
     :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
@@ -165,12 +166,15 @@ def set_or_update_final_bapol_proposal(process_id: int,
                                expl_probs_a=expl_probs_a,
                                expl_probs_b=expl_probs_b,
                                final=True)
+        return
     if relevant_bapol_props.count() == 0:
         _set_bapol_proposal(process_id=process_id,
                             customer_categories=customer_categories,
                             expl_probs_a=expl_probs_a,
                             expl_probs_b=expl_probs_b,
                             final=True)
+        return
+    raise RuntimeError("Unexpected number of final bapol proposals")
 
 
 def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
