@@ -431,11 +431,11 @@ def test_a_better_right_decision():
                + execution_strategy.get('explorationProbabilityB') == 1
 
 
-def test_evaluation_progress():
-    """ Test the endpoint instance-router/aggregate-data/evaluation-progress
+def test_periodic_update_latest_bapol():
+    """ Test, if the periodic updating of a batch policy is happening
 
-    This will also test, if the periodic updating of a batch policy is happening.
-    It should happen at about every n-th incoming request between batches (n = average batch size)
+    Will also focus on test of the endpoint instance-router/aggregate-data/evaluation-progress.
+    Update should happen at about every n-th incoming request between batches (n = average batch size)
     """
     expected_keyset = ["totalToBeEvaluatedCount",
                        "alreadyEvaluatedCount",
@@ -467,7 +467,7 @@ def test_evaluation_progress():
 
     cs.start_client_simulation(9, 2)
     sleep(10)
-    # allow sime time for some of them to finish and only finish batch and trigger collection afterwards
+    # allow some time for some of them to finish and only finish batch and trigger collection afterwards
     cs.start_client_simulation(1, 2)
 
     # -----
@@ -478,8 +478,23 @@ def test_evaluation_progress():
     for key in expected_keyset:
         assert key in response_progress_1.json().keys()
     assert response_progress_1.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_1.json().get("alreadyEvaluatedCount") \
+           + response_progress_1.json().get("notYetEvaluatedCount") == \
+           response_progress_1.json().get("totalToBeEvaluatedCount")
     assert response_progress_1.json().get("alreadyEvaluatedPerc") is not None
     assert response_progress_1.json().get("notYetEvaluatedPerc") is not None
+
+    # get detailed process data
+    params_detailed_batch = {
+        "process-id": process_id_active,
+        "batch-number": 1
+    }
+    response_detailed_batch_1 = requests.get(BASE_URL + "/instance-router/detailed-data/batch",
+                                             params=params_detailed_batch)
+    assert response_detailed_batch_1.status_code == requests.codes.ok
+    count_unevaluated_1 = \
+        sum(1 for i in response_detailed_batch_1.json().get("instances") if i.get("endTime") is None)
+    assert count_unevaluated_1 == response_progress_1.json().get("notYetEvaluatedCount")
     # -----
 
     sleep(10)
@@ -494,7 +509,18 @@ def test_evaluation_progress():
     for key in expected_keyset:
         assert key in response_progress_2.json().keys()
     assert response_progress_2.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_2.json().get("alreadyEvaluatedCount") \
+           + response_progress_2.json().get("notYetEvaluatedCount") == \
+           response_progress_2.json().get("totalToBeEvaluatedCount")
     assert response_progress_2.json().get("alreadyEvaluatedPerc") > \
            response_progress_1.json().get("alreadyEvaluatedPerc")
     assert response_progress_2.json().get("notYetEvaluatedPerc") < response_progress_1.json().get("notYetEvaluatedPerc")
+
+    # test whether /instance-router/detailed-data/batch data also changed in accordance with .../evaluation-progress
+    response_detailed_batch_2 = requests.get(BASE_URL + "/instance-router/detailed-data/batch",
+                                             params=params_detailed_batch)
+    assert response_detailed_batch_2.status_code == requests.codes.ok
+    count_unevaluated_2 = \
+        sum(1 for i in response_detailed_batch_2.json().get("instances") if i.get("endTime") is None)
+    assert count_unevaluated_2 == response_progress_2.json().get("notYetEvaluatedCount")
     # -----
