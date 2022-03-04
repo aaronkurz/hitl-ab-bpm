@@ -425,7 +425,7 @@ def test_a_better_right_decision():
     proposal_json = bapol_proposal_response.json().get('proposal')
     for execution_strategy in proposal_json.get('executionStrategy'):
         # make sure that version a is preferred (since it is very clearly better)
-        assert execution_strategy.get('explorationProbabilityA') > 0.75
+        assert execution_strategy.get('explorationProbabilityA') > 0.7
         # make sure that the exploration probabilities are 1 in sum
         assert execution_strategy.get('explorationProbabilityA') \
                + execution_strategy.get('explorationProbabilityB') == 1
@@ -448,7 +448,7 @@ def test_periodic_update_latest_bapol():
                              customer_categories=["public", "gov"],
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(20))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
     process_id_active = utils.get_currently_active_process_id()
 
     # -----
@@ -463,6 +463,18 @@ def test_periodic_update_latest_bapol():
     assert response_progress_0.json().get("notYetEvaluatedCount") == 0
     assert response_progress_0.json().get("alreadyEvaluatedPerc") is None
     assert response_progress_0.json().get("notYetEvaluatedPerc") is None
+
+    # get bapol proposal
+    response_bapol_0 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_0.status_code == requests.codes.ok
+    assert response_bapol_0.json().get('newProposalExists') is False
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 1
     # -----
 
     cs.start_client_simulation(9, 2)
@@ -495,6 +507,18 @@ def test_periodic_update_latest_bapol():
     count_unevaluated_1 = \
         sum(1 for i in response_detailed_batch_1.json().get("instances") if i.get("endTime") is None)
     assert count_unevaluated_1 == response_progress_1.json().get("notYetEvaluatedCount")
+
+    # get bapol proposal
+    response_bapol_1 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                            params={'process-id': process_id_active})
+    assert response_bapol_1.status_code == requests.codes.ok
+    assert response_bapol_1.json().get('newProposalExists') is True
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                        params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 2
     # -----
 
     sleep(10)
@@ -523,4 +547,18 @@ def test_periodic_update_latest_bapol():
     count_unevaluated_2 = \
         sum(1 for i in response_detailed_batch_2.json().get("instances") if i.get("endTime") is None)
     assert count_unevaluated_2 == response_progress_2.json().get("notYetEvaluatedCount")
+
+    # get bapol proposal
+    response_bapol_2 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_2.status_code == requests.codes.ok
+    assert response_bapol_2.json().get('newProposalExists') is True
+    # proposal should have been updated and should (most likely) not be the same
+    assert response_bapol_2.json().get('proposal') != response_bapol_1.json().get('proposal')
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                        params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 2
     # -----

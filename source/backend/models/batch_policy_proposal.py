@@ -171,7 +171,6 @@ def set_or_update_final_bapol_proposal(process_id: int,
                             expl_probs_a=expl_probs_a,
                             expl_probs_b=expl_probs_b,
                             final=True)
-    raise RuntimeError("Unexpected number of final batch policy proposals")
 
 
 def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
