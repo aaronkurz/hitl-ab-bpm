@@ -1,6 +1,6 @@
 import pytest
 import requests
-
+from time import sleep
 import client_simulator_api_tests as cs
 import utils
 from config import BASE_URL
@@ -429,3 +429,72 @@ def test_a_better_right_decision():
         # make sure that the exploration probabilities are 1 in sum
         assert execution_strategy.get('explorationProbabilityA') \
                + execution_strategy.get('explorationProbabilityB') == 1
+
+
+def test_evaluation_progress():
+    """ Test the endpoint instance-router/aggregate-data/evaluation-progress
+
+    This will also test, if the periodic updating of a batch policy is happening.
+    It should happen at about every n-th incoming request between batches (n = average batch size)
+    """
+    expected_keyset = ["totalToBeEvaluatedCount",
+                       "alreadyEvaluatedCount",
+                       "notYetEvaluatedCount",
+                       "alreadyEvaluatedPerc",
+                       "notYetEvaluatedPerc"]
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"],
+                             default_version='a',
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(20))
+    process_id_active = utils.get_currently_active_process_id()
+
+    # -----
+    # before any instances have been started, the count values should be zero and the percentage values null
+    response_progress_0 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_0.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_0.json().keys()
+    assert response_progress_0.json().get("totalToBeEvaluatedCount") == 0
+    assert response_progress_0.json().get("alreadyEvaluatedCount") == 0
+    assert response_progress_0.json().get("notYetEvaluatedCount") == 0
+    assert response_progress_0.json().get("alreadyEvaluatedPerc") is None
+    assert response_progress_0.json().get("notYetEvaluatedPerc") is None
+    # -----
+
+    cs.start_client_simulation(9, 2)
+    sleep(10)
+    # allow sime time for some of them to finish and only finish batch and trigger collection afterwards
+    cs.start_client_simulation(1, 2)
+
+    # -----
+    # since the longer running (avg. 30 s) helicopter processes are used, not all should be finished, but some
+    response_progress_1 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_1.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_1.json().keys()
+    assert response_progress_1.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_1.json().get("alreadyEvaluatedPerc") is not None
+    assert response_progress_1.json().get("notYetEvaluatedPerc") is not None
+    # -----
+
+    sleep(10)
+    cs.start_client_simulation(25, 2)
+
+    # -----
+    # after some more instances (> avg batch size) have been started in between the batch and more time has
+    # passed, there should have been more instances that are finished and that have been evaluated
+    response_progress_2 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_2.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_2.json().keys()
+    assert response_progress_2.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_2.json().get("alreadyEvaluatedPerc") > \
+           response_progress_1.json().get("alreadyEvaluatedPerc")
+    assert response_progress_2.json().get("notYetEvaluatedPerc") < response_progress_1.json().get("notYetEvaluatedPerc")
+    # -----
