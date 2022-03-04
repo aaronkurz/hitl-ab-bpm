@@ -89,22 +89,23 @@ def handle_decision_in_cool_off(process_id: int) -> Version:
     # relearn with a probability of 1/avg_batch_size;
     # this means that when the average batch size was 15, will learn about
     # at about every 15th incoming instantiation request
-    if _one_in_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
+    if _one_in_half_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
         _fetch_and_learn(process_id, True)
     return decision
 
 
-def _one_in_avg_batch_size_prob(process_id: int) -> bool:
-    """Returns True with a probability of (one) in (average batch size) for a certain process
+def _one_in_half_avg_batch_size_prob(process_id: int) -> bool:
+    """Returns True with a probability of (one) in (half of average batch size) for a certain process
 
     :param process_id: process
     :return: True or False
     """
-    return round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id)))
+    half_batch_size = round(get_average_batch_size(process_id)/2)
+    return half_batch_size == randint(0, half_batch_size)
 
 
 def _fetch_and_learn(process_id: int, in_cool_off_bool: bool) -> None:
-    """Fetch newest data from camunda and do the learning and setting/updating of bapol proposal
+    """Fetch the newest data from camunda and do the learning and setting/updating of bapol proposal
 
     :param process_id: specify process
     :param in_cool_off_bool: specify whether we are in cool-off
@@ -133,7 +134,7 @@ def instantiate(process_id: int, customer_category: str) -> dict:
         elif not is_in_batch(process_id):
             # in between batches
             decision = get_decision_outside_batch(process_id)
-            if _one_in_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
+            if _one_in_half_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
                 # while an open proposal is ready for user, periodically update it to provide more info as
                 # more instances finish and can be evaluated
                 _fetch_and_learn(process_id, False)
