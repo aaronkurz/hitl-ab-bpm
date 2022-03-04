@@ -33,6 +33,33 @@ def controls():
             and st.session_state['post_cool_off_success'] is False:
         with st.expander("Batch Policy Proposal", expanded=True):
             if utils.currently_active_process_exists():
+
+                response_evaluation_progress = \
+                    requests.get(BACKEND_URI + "instance-router/aggregate-data/evaluation-progress",
+                                 params={"process-id": utils.get_currently_active_process_id()})
+                assert response_evaluation_progress.status_code == requests.codes.ok
+                if response_evaluation_progress.json().get("alreadyEvaluatedPerc") is not None:
+                    if response_evaluation_progress.json().get("alreadyEvaluatedPerc") < 0.5:
+                        st.warning("The current percentage of already evaluated experimental instances is very low, with an evaluation rate of only " +
+                                   str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) +
+                                   "%. Consider waiting before setting the next batch policy. The batch policy proposal "
+                                   "below will be updated periodically once more instances finish and are evaluated.")
+                    elif response_evaluation_progress.json().get("alreadyEvaluatedPerc") < 0.8:
+                        st.info("The current percentage of already evaluated experimental instances is at " +
+                                   str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) +
+                                   "%. The batch policy proposal "
+                                   "below will be updated periodically once more instances finish and are evaluated.")
+                    elif response_evaluation_progress.json().get("alreadyEvaluatedPerc") < 1.0:
+                        st.success("The current percentage of already evaluated experimental instances is high, with an " +
+                                   str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) +
+                                   "% evaluation rate. The batch policy proposal "
+                                   "below will be updated periodically once more instances finish and are evaluated.")
+                    else:
+                        st.success("All prior experimental instances are finished and have been evaluated and taken into " +
+                                   "account for the batch policy below (" +
+                                   str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) +
+                                   "% evaluation rate).")
+
                 interarrival_time_sec = utils.get_currently_active_process_meta().get('default_interarrival_time_history')
                 params = {
                     'process-id': utils.get_currently_active_process_id()
