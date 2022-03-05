@@ -66,5 +66,11 @@ since only the instances that have been started as part of a batch are evaluated
 MANUAL_TRIGGER_FETCH_LEARN = """
 Trigger polling of process engine
  for instance data and learning with that data
- (this will also happen automatically periodically)
+ (this will also happen automatically periodically, at about every n-th incoming instantiation request - with n being
+ half of the average batch size)
+"""
+
+SUBMIT_CHOICE_BUTTON = """
+After submitting the choice/final decision, all incoming instantiation requests for the process will be 
+routed in accordance with this decision
 """

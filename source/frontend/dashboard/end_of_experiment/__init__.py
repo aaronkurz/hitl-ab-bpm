@@ -23,7 +23,7 @@ def end_of_experiment():
                 'customer_category': cust_cat,
                 'winning_version': winning_version
             })
-        if st.button("Submit Choice"):
+        if st.button("Submit Choice", help=help.SUBMIT_CHOICE_BUTTON):
             response_set_winner = requests.post(BACKEND_URI + "process/active/winning", json={
                 'decision': decision
             })
