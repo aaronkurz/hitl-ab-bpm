@@ -1,5 +1,7 @@
 """ This module presents rest endpoints to interact with the instance router and its results from the outside """
 import statistics
+
+import requests
 from flask import Blueprint, request, abort
 from instance_router import instance_router_interface
 from models.batch_policy import BatchPolicy
@@ -199,14 +201,28 @@ def get_instances_batch():
     return data
 
 
-@instance_router_api.route('finished-instance-count', methods=['GET'])
+@instance_router_api.route('/finished-instance-count', methods=['GET'])
 # pylint: disable=missing-return-doc, missing-return-type-doc
 def count_finished_instances():
     """ Get number of finished instances for a certain process, both in and outside of batches """
     process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
     count = ProcessInstance.query.filter(and_(ProcessInstance.finished_time.is_not(None),
                                               ProcessInstance.process_id == process_id)).count()
 
     return {
         'finishedInstanceCount': count
     }
+
+
+@instance_router_api.route('/trigger-fetch-learn', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def trigger_fetch_learn():
+    """ Manually trigger fetching info about instances from camunda and training rl agent with this additional info """
+    process_id = int(request.args.get('process-id'))
+    validate_backend_process_id(process_id)
+    try:
+        instance_router_interface.manual_fetch_and_learn(process_id)
+    except RuntimeWarning as r_w:
+        abort(requests.codes.conflict, str(r_w))  # pylint: disable=no-member
+    return "Success", requests.codes.ok  # pylint: disable=no-member

@@ -12,7 +12,7 @@ from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols, BatchPolicy
 from models import db, process
 from models.process import Process, cool_off_over, set_winning, CustomerCategory, get_sorted_customer_category_list, \
-    get_experiment_state, get_process_entry, is_decision_made, get_winning, get_active_process_id
+    get_experiment_state_str, get_process_entry, is_decision_made, get_winning, get_active_process_id
 from models.process_instance import ProcessInstance
 from models.utils import WinningReasonEnum, Version, parse_version_str
 from rest import utils
@@ -36,7 +36,7 @@ def get_process_metadata(process_id: int) -> dict:
         'customer_categories': customer_category_string,
         'datetime_added': relevant_process_entry.datetime_added,
         'default_interarrival_time_history': relevant_process_entry.interarrival_default_history,
-        'experiment_state': process.get_experiment_state(process_id),
+        'experiment_state': process.get_experiment_state_str(process_id),
         'default_version':
             None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
         'winning_versions': None if not is_decision_made(process_id) else
@@ -257,7 +257,7 @@ def start_cool_off_active():
         active_process_entry.in_cool_off = True
         db.session.commit()
         return {
-            'experimentState': get_experiment_state(active_process_entry.id)
+            'experimentState': get_experiment_state_str(active_process_entry.id)
         }
     elif number_finished_bapols < 0:
         abort(500, "Unexpected finished bapol count < 0")
@@ -290,7 +290,7 @@ def set_winning_version():
             abort(400, "winning_version must be a or b")
     set_winning(active_process_entry.id, decision_parsed, WinningReasonEnum.EXPERIMENT_ENDED)
     return {
-        'experiment_state': get_experiment_state(active_process_entry.id)
+        'experiment_state': get_experiment_state_str(active_process_entry.id)
     }
 
 

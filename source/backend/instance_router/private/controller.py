@@ -1,7 +1,7 @@
 """ Main "organizer" of instance routing """
 from random import randint
 from typing import Optional
-
+from threading import Lock
 from sqlalchemy import and_
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector, rl_agent
@@ -10,9 +10,11 @@ from models import process, db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import append_process_instance_to_bapol
 from models.batch_policy import get_average_batch_size
-from models.process import Process, in_cool_off
+from models.process import Process, in_cool_off, is_in_batch
 from models import batch_policy
 from models.utils import Version
+
+lock = Lock()
 
 
 def get_winning_version(process_id: int, customer_category: str) -> Optional[Version] or None:
@@ -57,17 +59,6 @@ def get_decision_outside_batch(process_id: int) -> Version:
     return relevant_process.default_version
 
 
-def is_in_batch(process_id: int) -> bool:
-    """Check whether certain process experiment currently is in experimental batch.
-
-    :param process_id: process id
-    :return: True or False
-    """
-    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                             ProcessInstance.do_evaluate.is_(True))).count() < \
-           batch_policy.get_batch_size_sum(process_id)
-
-
 def end_of_batch_reached(process_id: int) -> bool:
     """Check whether we are at the end of the batch for a certain process (last instantiation request of batch).
 
@@ -107,11 +98,17 @@ def _one_in_half_avg_batch_size_prob(process_id: int) -> bool:
 def _fetch_and_learn(process_id: int, in_cool_off_bool: bool) -> None:
     """Fetch the newest data from camunda and do the learning and setting/updating of bapol proposal
 
+    Thread-safe: only one thread can execute this method at the same time!
+    Thread-safety necessary in case user triggers manual collection and learning while periodic collection and learning
+    is underway.
+    According to Python docs, in case it us currently locked, the next thread will wait:
+    https://docs.python.org/3/library/asyncio-sync.html#asyncio.Lock.acquire
     :param process_id: specify process
     :param in_cool_off_bool: specify whether we are in cool-off
     """
-    camunda_collector.collect_finished_instances(process_id)
-    rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=in_cool_off_bool)
+    with lock:
+        camunda_collector.collect_finished_instances(process_id)
+        rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=in_cool_off_bool)
 
 
 def instantiate(process_id: int, customer_category: str) -> dict:

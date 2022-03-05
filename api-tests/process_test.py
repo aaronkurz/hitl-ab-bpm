@@ -61,7 +61,7 @@ def test_get_active_process_metadata():
     assert response_json.get('id') is not None
     assert response_json.get('customer_categories') == "gov-public"  # should be alphabetical
     assert response_json.get('default_interarrival_time_history') == 64.18521
-    assert response_json.get('experiment_state') == "Running"
+    assert response_json.get('experiment_state') == "Running, before first batch policy has been set"
     assert response_json.get('datetime_added') is not None
     assert response_json.get('datetime_decided') is None
     assert response_json.get('number_batch_policies') == 0

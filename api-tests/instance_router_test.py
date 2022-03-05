@@ -425,7 +425,7 @@ def test_a_better_right_decision():
     proposal_json = bapol_proposal_response.json().get('proposal')
     for execution_strategy in proposal_json.get('executionStrategy'):
         # make sure that version a is preferred (since it is very clearly better)
-        assert execution_strategy.get('explorationProbabilityA') > 0.7
+        assert execution_strategy.get('explorationProbabilityA') > 0.65
         # make sure that the exploration probabilities are 1 in sum
         assert execution_strategy.get('explorationProbabilityA') \
                + execution_strategy.get('explorationProbabilityB') == 1
@@ -435,8 +435,135 @@ def test_periodic_update_latest_bapol():
     """ Test, if the periodic updating of a batch policy is happening
 
     Will also focus on test of the endpoint instance-router/aggregate-data/evaluation-progress.
-    Update should happen at about every n-th incoming request between batches (n = average batch size)
+    Update should happen at about every n-th incoming request between batches (n = half of average batch size)
     """
+    expected_keyset = ["totalToBeEvaluatedCount",
+                       "alreadyEvaluatedCount",
+                       "notYetEvaluatedCount",
+                       "alreadyEvaluatedPerc",
+                       "notYetEvaluatedPerc"]
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"],
+                             default_version='a',
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
+    process_id_active = utils.get_currently_active_process_id()
+
+    # -----
+    # before any instances have been started, the count values should be zero and the percentage values null
+    response_progress_0 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_0.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_0.json().keys()
+    assert response_progress_0.json().get("totalToBeEvaluatedCount") == 0
+    assert response_progress_0.json().get("alreadyEvaluatedCount") == 0
+    assert response_progress_0.json().get("notYetEvaluatedCount") == 0
+    assert response_progress_0.json().get("alreadyEvaluatedPerc") is None
+    assert response_progress_0.json().get("notYetEvaluatedPerc") is None
+
+    # get bapol proposal
+    response_bapol_0 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_0.status_code == requests.codes.ok
+    assert response_bapol_0.json().get('newProposalExists') is False
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 1
+    # -----
+
+    cs.start_client_simulation(10, 2)
+
+    # -----
+    # since the longer running (avg. 30 s) helicopter processes are used, not all should be finished, but some
+    response_progress_1 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_1.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_1.json().keys()
+    assert response_progress_1.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_1.json().get("alreadyEvaluatedCount") \
+           + response_progress_1.json().get("notYetEvaluatedCount") == \
+           response_progress_1.json().get("totalToBeEvaluatedCount")
+    assert response_progress_1.json().get("alreadyEvaluatedPerc") is not None
+    assert response_progress_1.json().get("notYetEvaluatedPerc") is not None
+
+    # get detailed process data
+    params_detailed_batch = {
+        "process-id": process_id_active,
+        "batch-number": 1
+    }
+    response_detailed_batch_1 = requests.get(BASE_URL + "/instance-router/detailed-data/batch",
+                                             params=params_detailed_batch)
+    assert response_detailed_batch_1.status_code == requests.codes.ok
+    count_unevaluated_1 = \
+        sum(1 for i in response_detailed_batch_1.json().get("instances") if i.get("endTime") is None)
+    assert count_unevaluated_1 == response_progress_1.json().get("notYetEvaluatedCount")
+
+    # get bapol proposal
+    response_bapol_1 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                            params={'process-id': process_id_active})
+    assert response_bapol_1.status_code == requests.codes.ok
+    assert response_bapol_1.json().get('newProposalExists') is True
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                        params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 2
+    # -----
+
+    sleep(10)
+    # start more instances outside batch to trigger periodic fetch and learn
+    cs.start_client_simulation(25, 2)
+
+    # -----
+    # after some more instances (> avg batch size) have been started in between the batch and more time has
+    # passed, there should have been more instances that are finished and that have been evaluated
+    response_progress_2 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress_2.status_code == requests.codes.ok
+    for key in expected_keyset:
+        assert key in response_progress_2.json().keys()
+    assert response_progress_2.json().get("totalToBeEvaluatedCount") != 0
+    assert response_progress_2.json().get("alreadyEvaluatedCount") \
+           + response_progress_2.json().get("notYetEvaluatedCount") == \
+           response_progress_2.json().get("totalToBeEvaluatedCount")
+    assert response_progress_2.json().get("alreadyEvaluatedPerc") > \
+           response_progress_1.json().get("alreadyEvaluatedPerc")
+    assert response_progress_2.json().get("notYetEvaluatedPerc") < response_progress_1.json().get("notYetEvaluatedPerc")
+
+    # test whether /instance-router/detailed-data/batch data also changed in accordance with .../evaluation-progress
+    response_detailed_batch_2 = requests.get(BASE_URL + "/instance-router/detailed-data/batch",
+                                             params=params_detailed_batch)
+    assert response_detailed_batch_2.status_code == requests.codes.ok
+    count_unevaluated_2 = \
+        sum(1 for i in response_detailed_batch_2.json().get("instances") if i.get("endTime") is None)
+    assert count_unevaluated_2 == response_progress_2.json().get("notYetEvaluatedCount")
+
+    # get bapol proposal
+    response_bapol_2 = requests.get(BASE_URL + "/batch-policy-proposal/open",
+                                    params={'process-id': process_id_active})
+    assert response_bapol_2.status_code == requests.codes.ok
+    assert response_bapol_2.json().get('newProposalExists') is True
+    # proposal should have been updated and should (most likely) not be the same
+    assert response_bapol_2.json().get('proposal') != response_bapol_1.json().get('proposal')
+
+    # test bapol proposal count
+    response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
+                                        params={'process-id': process_id_active})
+    assert response_bapol_count.status_code == requests.codes.ok
+    assert response_bapol_count.json().get("baPolProposalCount") == 2
+    # -----
+
+
+def test_manual_trigger_fetch_learn_outside_batch():
+    """ Test, if the endpoint for manually triggering fetch and learn outside of batch works """
     expected_keyset = ["totalToBeEvaluatedCount",
                        "alreadyEvaluatedCount",
                        "notYetEvaluatedCount",
@@ -521,12 +648,14 @@ def test_periodic_update_latest_bapol():
     assert response_bapol_count.json().get("baPolProposalCount") == 2
     # -----
 
-    sleep(10)
-    cs.start_client_simulation(25, 2)
+    sleep(60)
+    # trigger periodic fetch and learn
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                           params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.ok
 
     # -----
-    # after some more instances (> avg batch size) have been started in between the batch and more time has
-    # passed, there should have been more instances that are finished and that have been evaluated
+    # after manual trigger there should have been more instances that are finished and that have been evaluated
     response_progress_2 = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
                                        params={"process-id": process_id_active})
     assert response_progress_2.status_code == requests.codes.ok
@@ -562,3 +691,88 @@ def test_periodic_update_latest_bapol():
     assert response_bapol_count.status_code == requests.codes.ok
     assert response_bapol_count.json().get("baPolProposalCount") == 2
     # -----
+
+
+def test_manual_trigger_fetch_learn_before_first_batch_policy():
+    """ Before first batch policy, manually triggering fetch and learn should fail """
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"],
+                             default_version='a',
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    process_id_active = utils.get_currently_active_process_id()
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                           params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.conflict
+
+
+def test_manual_trigger_fetch_learn_in_batch():
+    """ When inside batch, manually triggering fetch and learn should fail """
+    utils.post_processes_a_b("helicopter_license",
+                             "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
+                             customer_categories=["public", "gov"],
+                             default_version='a',
+                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
+    process_id_active = utils.get_currently_active_process_id()
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                           params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.conflict
+
+
+def test_manual_trigger_cool_off_period():
+    """ Test whether triggering of manual fetch and learn acts as expected in cool off and afterwards
+
+    In Cool-Off: --> should work
+    Cool-Off over, waiting for final decision --> should NOT work
+    Done --> should NOT work
+    """
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    process_id_active = utils.get_currently_active_process_id()
+    cs.start_client_simulation(5, 1)
+    response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
+    assert response_post_cool_off.status_code == requests.codes.ok
+    # make sure that meta is in cool-off
+    meta = utils.get_currently_active_process_meta()
+    assert "In Cool-Off" == meta.get('experiment_state')
+    # let instances finish
+    sleep(15)
+    # trigger periodic fetch and learn
+    # should work since last instance of the first batch is not evaluated -> in cool off
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                            params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.ok
+    # cool off should be done now, check for final bapol proposal
+    meta = utils.get_currently_active_process_meta()
+    assert meta.get('experiment_state') == "Cool-Off over, waiting for final decision"
+    # triggering manual fetch and learn should not work in this experiment state of waiting for final dec
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                            params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.conflict
+    # winning version should be able to be set
+    decision_json = {
+        "decision": [
+            {
+                "customer_category": "public",
+                "winning_version": "a"
+            },
+            {
+                "customer_category": "gov",
+                "winning_version": "b"
+            }
+        ]
+    }
+    set_winning_response = requests.post(BASE_URL + "/process/active/winning", json=decision_json)
+    assert set_winning_response.status_code == requests.codes.ok
+    assert "Done" in set_winning_response.json().get('experiment_state') \
+           and "ended normally" in set_winning_response.json().get('experiment_state')
+    # triggering manual fetch and learn should not work in this experiment state of finished
+    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
+                                            params={"process-id": process_id_active})
+    assert response_manual_trigger.status_code == requests.codes.conflict
