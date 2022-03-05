@@ -1,6 +1,7 @@
 import streamlit as st
 import uploader
 import dashboard
+import sidebar
 
 
 def setup():
@@ -26,11 +27,11 @@ def setup():
         st.session_state['cool_off'] = False
 
 def main():
-    st.set_page_config(page_title="HITL-AB-BPM", page_icon="🔁")
+    st.set_page_config(page_title="HITL-AB-BPM", page_icon="resources/images/favicon.png")
     setup()
-    st.title("HITL-AB-BPM Experiment-Cockpit")
     uploader.upload_files()
     dashboard.dashboard()
+    sidebar.build_bar()
 
 
 if __name__ == '__main__':
