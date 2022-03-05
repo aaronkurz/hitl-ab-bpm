@@ -2,19 +2,22 @@
 import json
 import os
 import shutil
+import requests
 from flask import Blueprint
 from flask import abort, request, send_from_directory
 from flask import jsonify
 from scipy.stats.mstats import mquantiles
 from werkzeug.datastructures import FileStorage
 from camunda.client import CamundaClient
+from instance_router import instance_router_interface
+from instance_router.instance_router_interface import manual_fetch_and_learn
 from models.batch_policy_proposal import set_naive_bapol_proposal
 from models.batch_policy import get_number_finished_bapols, BatchPolicy
 from models import db, process
 from models.process import Process, cool_off_over, set_winning, CustomerCategory, get_sorted_customer_category_list, \
     get_experiment_state_str, get_process_entry, is_decision_made, get_winning, get_active_process_id
 from models.process_instance import ProcessInstance
-from models.utils import WinningReasonEnum, Version, parse_version_str
+from models.utils import WinningReasonEnum, Version, parse_version_str, ExperimentState
 from rest import utils
 from config import K_QUANTILES_REWARD_FUNC
 
@@ -256,6 +259,7 @@ def start_cool_off_active():
     elif number_finished_bapols > 0:
         active_process_entry.in_cool_off = True
         db.session.commit()
+        manual_fetch_and_learn(active_process_entry.id)
         return {
             'experimentState': get_experiment_state_str(active_process_entry.id)
         }
@@ -314,6 +318,20 @@ def manual_decision():
         decision_list.append(dict(customer_category=customer_category, winning_version=winning_version))
     set_winning(active_process_entry.id, decision_list, WinningReasonEnum.MANUAL_CHOICE)
     return "Success"
+
+
+@process_api.route('active/trigger-fetch-learn', methods=['POST'])
+# pylint: disable=missing-return-doc, missing-return-type-doc
+def trigger_fetch_learn():
+    """ Manually trigger fetching info about instances from camunda and training rl agent with this additional info """
+    active_process_entry = get_active_process_entry()
+    if process.get_experiment_state_enum(active_process_entry.id) == ExperimentState.COOL_OFF_FIN_DEC_OUTSTANDING:
+        abort(requests.codes.conflict, "Not possible in current experiment state")  # pylint: disable=no-member
+    try:
+        instance_router_interface.manual_fetch_and_learn(active_process_entry.id)
+    except RuntimeWarning as r_w:
+        abort(requests.codes.conflict, str(r_w))  # pylint: disable=no-member
+    return "Success", requests.codes.ok  # pylint: disable=no-member
 
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])

@@ -1,3 +1,4 @@
+from time import sleep
 import pytest
 import requests
 import utils
@@ -217,3 +218,45 @@ def test_cool_off_period():
             "winning_version": "b"
         }
     ]
+
+
+def test_cool_off_period_already_all_evaluated():
+    """ Test whether entering cool-off after exp inst have already been evaluated works """
+    utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
+                             "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
+                             customer_categories=["public", "gov"], default_version='a',
+                             path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    process_id_active = utils.get_currently_active_process_id()
+    cs.start_client_simulation(5, 1)
+    sleep(20)
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
+    assert response_manual_trigger.status_code == requests.codes.ok
+    response_progress = requests.get(BASE_URL + "/instance-router/aggregate-data/evaluation-progress",
+                                       params={"process-id": process_id_active})
+    assert response_progress.status_code == requests.codes.ok
+    assert response_progress.json().get("alreadyEvaluatedPerc") == 1.0
+    response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
+    assert response_post_cool_off.status_code == requests.codes.ok
+    meta = utils.get_currently_active_process_meta()
+    assert "Cool-Off over, waiting for final decision" == meta.get('experiment_state')
+    final_prop_response = requests.get(BASE_URL + "/batch-policy-proposal/final",
+                                       params={'process-id': utils.get_currently_active_process_id()})
+    assert final_prop_response.status_code == requests.codes.ok
+    # winning version should be able to be set
+    decision_json = {
+        "decision": [
+            {
+                "customer_category": "public",
+                "winning_version": "a"
+            },
+            {
+                "customer_category": "gov",
+                "winning_version": "b"
+            }
+        ]
+    }
+    set_winning_response = requests.post(BASE_URL + "/process/active/winning", json=decision_json)
+    assert set_winning_response.status_code == requests.codes.ok
+    assert "Done" in set_winning_response.json().get('experiment_state') \
+           and "ended normally" in set_winning_response.json().get('experiment_state')

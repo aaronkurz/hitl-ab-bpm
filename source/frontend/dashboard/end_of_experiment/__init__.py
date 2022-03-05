@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from resources import help
 from config import BACKEND_URI
 import utils
 
@@ -32,6 +33,15 @@ def end_of_experiment():
             else:
                 st.exception("Setting winning version failed.")
     elif response_final_prop.status_code == 404:
-        st.warning("No final proposal available at the moment.")
+        response_evaluation_progress = \
+            requests.get(BACKEND_URI + "instance-router/aggregate-data/evaluation-progress",
+                         params={"process-id": utils.get_currently_active_process_id()})
+        st.warning("No final proposal available at the moment. Only available at when all of the experimental "
+                   "instances have been finished and evaluated. Current evaluation progress: " +
+                   str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) + "%.")
+        if st.button("Refresh", help=help.MANUAL_TRIGGER_FETCH_LEARN, key="refresh-end-of-exp-retrigger"):
+            response_manual_trigger = requests.post(BACKEND_URI + "process/active/trigger-fetch-learn")
+            assert response_manual_trigger.status_code == requests.codes.ok
+            st.experimental_rerun()
     else:
         st.exception("Fetching of final proposal failed.")

@@ -62,3 +62,9 @@ EXPERIMENTAL_INSTANCE = """
 'Experimental instance' refers to an instance that has been started as part of a batch. It is called like that, 
 since only the instances that have been started as part of a batch are evaluated and part of the experiment.
 """
+
+MANUAL_TRIGGER_FETCH_LEARN = """
+Trigger polling of process engine
+ for instance data and learning with that data
+ (this will also happen automatically periodically)
+"""

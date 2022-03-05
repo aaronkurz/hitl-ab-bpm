@@ -650,8 +650,7 @@ def test_manual_trigger_fetch_learn_outside_batch():
 
     sleep(60)
     # trigger periodic fetch and learn
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                           params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.ok
 
     # -----
@@ -701,9 +700,7 @@ def test_manual_trigger_fetch_learn_before_first_batch_policy():
                              customer_categories=["public", "gov"],
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    process_id_active = utils.get_currently_active_process_id()
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                           params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.conflict
 
 
@@ -716,9 +713,7 @@ def test_manual_trigger_fetch_learn_in_batch():
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
-    process_id_active = utils.get_currently_active_process_id()
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                           params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.conflict
 
 
@@ -734,7 +729,6 @@ def test_manual_trigger_cool_off_period():
                              customer_categories=["public", "gov"], default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
-    process_id_active = utils.get_currently_active_process_id()
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
@@ -745,15 +739,13 @@ def test_manual_trigger_cool_off_period():
     sleep(15)
     # trigger periodic fetch and learn
     # should work since last instance of the first batch is not evaluated -> in cool off
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                            params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.ok
     # cool off should be done now, check for final bapol proposal
     meta = utils.get_currently_active_process_meta()
     assert meta.get('experiment_state') == "Cool-Off over, waiting for final decision"
     # triggering manual fetch and learn should not work in this experiment state of waiting for final dec
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                            params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.conflict
     # winning version should be able to be set
     decision_json = {
@@ -773,6 +765,5 @@ def test_manual_trigger_cool_off_period():
     assert "Done" in set_winning_response.json().get('experiment_state') \
            and "ended normally" in set_winning_response.json().get('experiment_state')
     # triggering manual fetch and learn should not work in this experiment state of finished
-    response_manual_trigger = requests.post(BASE_URL + "/instance-router/trigger-fetch-learn",
-                                            params={"process-id": process_id_active})
+    response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.conflict

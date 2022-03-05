@@ -34,7 +34,7 @@ def manual_fetch_and_learn(process_id: int):
     :param process_id: specify process
     """
     exp_state = get_experiment_state_enum(process_id)
-    if exp_state == ExperimentState.IN_COOL_OFF:
+    if exp_state in [ExperimentState.IN_COOL_OFF, ExperimentState.COOL_OFF_FIN_DEC_OUTSTANDING]:
         _fetch_and_learn(process_id, in_cool_off_bool=True)
     elif exp_state == ExperimentState.RUNNING_OUTSIDE_BATCH:
         _fetch_and_learn(process_id, in_cool_off_bool=False)
