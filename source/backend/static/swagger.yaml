@@ -42,13 +42,6 @@ paths:
       responses:
         '200':
           description: Success
-    delete:
-      summary: Delete all batch policies.
-      tags:
-        - Batch Policy
-      responses:
-        '200':
-          description: Success
   /batch-policy/latest:
     get:
       summary: Get the latest batch policy
@@ -154,16 +147,6 @@ paths:
         400:
           # TODO improve these with more details and the options?
           description: Client error
-        500:
-          description: Server error
-  /process:
-    delete:
-      summary: Delete all processes from db and files from filesystem of backend.
-      tags:
-        - Process
-      responses:
-        200:
-          description: Success
         500:
           description: Server error
   /process/count:
@@ -342,7 +325,47 @@ paths:
                     description:
                       Array of how many requests have been routed to B. Index of array is number of total requests at
                       that point and value at index is how many instances have been routed to B at that point.
-
+        500:
+          description: server error
+        400:
+          description: client error
+  /instance-router/aggregate-data/evaluation-progress:
+    get:
+      summary:
+        Get overview over how many of the experimental instances have already ben evaluated (experimental instance = 
+        instance that has been started as part of a batch)
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalToBeEvaluatedCount:
+                    type: integer
+                    example: 10
+                  alreadyEvaluatedCount:
+                    type: integer
+                    example: 6
+                  notYetEvaluatedCount:
+                    type: integer
+                    example: 4
+                  alreadyEvaluatedPerc:
+                    type: number
+                    example: 0.6
+                  notYetEvaluatedPerc:
+                    type: number
+                    example: 0.4
         500:
           description: server error
         400:
@@ -366,8 +389,22 @@ paths:
           description: server error
         400:
           description: client error
-  /instance-router/finished-instance-count:
+  /process/active/trigger-fetch-learn:
     post:
+      summary: Manually trigger fetching of process instance data from process engine and learning with that data
+      tags:
+        - Process
+      responses:
+        200:
+          description: OK
+        409:
+          description:
+            conflict; Not possible in current process state (only possible when "running outside batch" or 
+            "in cool-off, waiting for experimental instances to finish")
+        500:
+          description: server error
+  /instance-router/finished-instance-count:
+    get:
       summary: Get count of instances that have been registered as finished in our system
       tags:
         - Instance Router
@@ -498,38 +535,11 @@ paths:
           description: server error
         400:
           description: client error
-  /batch-policy-proposal:
+  /meta/all:
     delete:
-      summary: Delete all batch policy proposals
+      summary: Empty database and delete stored state on filesystem
       tags:
-        - Batch Policy Proposal
-      parameters:
-        - name: process-id
-          in: query
-          description: Specify which process you mean by the process id of our backend.
-          required: true
-          schema:
-            type: integer
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  baPolProposalCount:
-                    type: integer
-                    example: 4
-        500:
-          description: server error
-        400:
-          description: client error
-  /batch-policy-proposal/count:
-    delete:
-      summary: Get the amount of batch policy proposals for a certain process
-      tags:
-        - Batch Policy Proposal
+        - Meta
       responses:
         200:
           description: OK
