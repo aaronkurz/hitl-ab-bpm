@@ -1,5 +1,5 @@
 requests==2.27.1
-streamlit==1.6.0
+streamlit==1.7.0
 python-dotenv==0.19.2
 matplotlib==3.5.1
 numpy==1.22.2
