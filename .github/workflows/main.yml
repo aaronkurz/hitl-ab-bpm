@@ -51,7 +51,6 @@ jobs:
           title: Backend Unit Test Coverage Report
           badge-title: Backend Unit Test Coverage
 
-
       - name: Pylint
         run: |
           pip install pylint
