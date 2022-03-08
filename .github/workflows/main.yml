@@ -43,6 +43,7 @@ jobs:
           
       - name: Comment unit test coverage
         if: ${{ github.event_name == 'pull_request'}}
+        id: coverageComment
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
@@ -50,6 +51,17 @@ jobs:
           junitxml-title: Backend Unit Test Summary
           title: Backend Unit Test Coverage Report
           badge-title: Backend Unit Test Coverage
+
+      - name: Create the Badge
+        uses: schneegans/dynamic-badges-action@v1.0.0
+        with:
+          auth: ${{ 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 }}
+          gistID: 1580622162fdac5e5c2571a4bf3cf13b
+          filename: pytest-coverage-comment__main.json
+          label: Backend Unit Test Coverage
+          message: ${{ steps.coverageComment.outputs.coverage }}
+          color: ${{ steps.coverageComment.outputs.color }}
+          namedLogo: python
 
       - name: Pylint
         run: |
