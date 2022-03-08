@@ -43,9 +43,9 @@ jobs:
           
       - name: Comment unit test coverage
         if: ${{ github.event_name == 'pull_request'}}
-        uses: coroo/pytest-coverage-commentator@v1.0.2
+        uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-coverage: ./source/backend/pytest-coverage.txt
+          pytest-coverage-path: ./source/backend/pytest-coverage.txt
 
       - name: Pylint
         run: |
