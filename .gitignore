@@ -46,4 +46,6 @@ celerybeat-schedule.db
 
 # pytest
 **.pytest_cache**
+**pytest-coverage.txt**
+*.coverage
 
