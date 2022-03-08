@@ -39,13 +39,18 @@ jobs:
         run: |
           cd source/backend
           export PYTHONPATH=. pytest
-          pytest --cache-clear --cov-config=unit-tests/.coveragerc --cov=. > pytest-coverage.txt
+          pytest --cache-clear --junitxml=pytest.xml --cov-config=unit-tests/.coveragerc --cov=. > pytest-coverage.txt
           
       - name: Comment unit test coverage
         if: ${{ github.event_name == 'pull_request'}}
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
+          junitxml-path: ./source/backend/pytest.xml
+          junitxml-title: Backend Unit Test Summary
+          title: Backend Unit Test Coverage Report
+          badge-title: Backend Unit Test Coverage
+
 
       - name: Pylint
         run: |
