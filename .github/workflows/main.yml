@@ -39,7 +39,13 @@ jobs:
         run: |
           cd source/backend
           export PYTHONPATH=. pytest
-          pytest -v
+          pytest --cache-clear --cov=app test/ > pytest-coverage.txt
+          
+      - name: Comment unit test coverage
+        if: ${{ github.event_name == 'pull_request'}}
+        uses: coroo/pytest-coverage-commentator@v1.0.2
+        with:
+          pytest-coverage: ./source/backend/pytest-coverage.txt
 
       - name: Pylint
         run: |
