@@ -55,7 +55,7 @@ jobs:
       - name: Create the Badge
         uses: schneegans/dynamic-badges-action@v1.0.0
         with:
-          auth: ${{ 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 }}
+          auth: ${{ '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' }}
           gistID: 1580622162fdac5e5c2571a4bf3cf13b
           filename: pytest-coverage-comment__main.json
           label: Backend Unit Test Coverage
