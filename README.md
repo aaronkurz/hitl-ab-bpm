@@ -16,7 +16,7 @@ Whenever you encounter a :beetle: **bug** or have :tada: **feature request**,
 report this via Github issues.
 
 We are happy to receive contributions in the form of **pull requests** via Github.
-Feel free to fork the repository, implement your changes and create a merge request to the `master` branch.
+Feel free to fork the repository, implement your changes and create a merge request to the `main` branch.
 
 ### Git Commit Messages
 
