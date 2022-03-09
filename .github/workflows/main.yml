@@ -49,7 +49,7 @@ jobs:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
           junitxml-path: ./source/backend/pytest.xml
           junitxml-title: Backend Unit Test Summary
-          title: Backend Unit Test Coverage Report (files with 100% coverage not shown)
+          title: Backend Unit Test Coverage Report (files with 100% coverage not shown; links do not work currently)
           badge-title: Backend Unit Test Coverage
 
       - name: Post unit test badge data
