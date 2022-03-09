@@ -56,7 +56,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: schneegans/dynamic-badges-action@v1.0.0
         with:
-          auth: ${{ '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' }}
+          auth: ${{ secrets.B_UNIT_COV_GIST_TOKEN }}
           gistID: 1580622162fdac5e5c2571a4bf3cf13b
           filename: pytest-coverage-comment__main.json
           label: Backend Unit Test Coverage
