@@ -44,7 +44,7 @@ jobs:
       - name: Comment unit test coverage
         if: ${{ github.event_name == 'pull_request'}}
         id: coverageComment
-        uses: MishaKav/pytest-coverage-comment@links-in-comment
+        uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
           coverage-path-prefix: source/backend/
