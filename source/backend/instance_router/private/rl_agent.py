@@ -5,7 +5,7 @@ import vowpalwabbit
 from models import db
 from models.process_instance import ProcessInstance
 from models.process import Process, get_sorted_customer_category_list
-from models.batch_policy_proposal import set_bapol_proposal, set_or_update_final_bapol_proposal
+from models.batch_policy_proposal import set_or_update_bapol_proposal, set_or_update_final_bapol_proposal
 from sqlalchemy import and_
 from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTOFF_REWARD_FUNC
 
@@ -35,7 +35,7 @@ def get_reward(duration: float) -> float:
             return UPPER_CUTOFF_REWARD_FUNC - (i * step_height)
 
 
-def to_vw_example_format(context: str, actions: list, cb_label: tuple=None) -> str:
+def to_vw_example_format(context: str, actions: list, cb_label: tuple = None) -> str:
     """Modify (context, action, cost, probability) to a VW friendly format.
 
     :param context: The context of the cb
@@ -114,7 +114,7 @@ def run_iteration(orgas: list[str], duration: float, hist_action: str, customer_
     logging.info('Cost: %f', cost)
     # 4. Inform VW of what happened so we can learn from it
     vw_format = rl_agent_globals['vw'].parse(to_vw_example_format(context, ACTIONS, (action, cost, prob)),
-                         vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
+                                             vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
     # 5. Learn
     rl_agent_globals['vw'].learn(vw_format)
     # 6. Let VW know you're done with these objects
@@ -156,15 +156,15 @@ def learn_and_set_new_batch_policy_proposal(process_id: int, in_cool_off: bool):
     logging.info(agent_stats_list)
     if in_cool_off:
         set_or_update_final_bapol_proposal(process_id,
-                                            orgas,
-                                            [round(agent_stats_list[0]['A'], 2),
-                                             round(agent_stats_list[-1]['A'], 2)],
-                                            [round(agent_stats_list[0]['B'], 2),
-                                             round(agent_stats_list[-1]['B'], 2)])
+                                           orgas,
+                                           [round(agent_stats_list[0]['A'], 2),
+                                            round(agent_stats_list[-1]['A'], 2)],
+                                           [round(agent_stats_list[0]['B'], 2),
+                                            round(agent_stats_list[-1]['B'], 2)])
     else:
-        set_bapol_proposal(process_id,
-                           orgas,
-                           [round(agent_stats_list[0]['A'], 2),
-                            round(agent_stats_list[-1]['A'], 2)],
-                           [round(agent_stats_list[0]['B'], 2),
-                            round(agent_stats_list[-1]['B'], 2)])
+        set_or_update_bapol_proposal(process_id,
+                                     orgas,
+                                     [round(agent_stats_list[0]['A'], 2),
+                                      round(agent_stats_list[-1]['A'], 2)],
+                                     [round(agent_stats_list[0]['B'], 2),
+                                      round(agent_stats_list[-1]['B'], 2)])

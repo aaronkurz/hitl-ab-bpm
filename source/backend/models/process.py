@@ -3,12 +3,12 @@ A process row is a certain experiment with multiple versions of that process and
 """
 from datetime import datetime
 from typing import Optional
-
-from models import db
-from models.process_instance import unevaluated_instances_still_exist
-from models.utils import CASCADING_DELETE, Version, WinningReasonEnum
+from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY
+from models import db, batch_policy
+from models.process_instance import unevaluated_instances_still_exist, ProcessInstance
+from models.utils import CASCADING_DELETE, Version, WinningReasonEnum, ExperimentState
 
 
 class Process(db.Model):
@@ -188,7 +188,33 @@ def cool_off_over(process_id: int) -> bool:
     return in_cool_off(process_id) and not unevaluated_instances_still_exist(process_id)
 
 
-def get_experiment_state(process_id: int) -> str:
+def is_in_batch(process_id: int) -> bool:
+    """Check whether certain process experiment currently is in experimental batch.
+
+    :param process_id: process id
+    :return: True or False
+    """
+    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
+                                             ProcessInstance.do_evaluate.is_(True))).count() < \
+           batch_policy.get_batch_size_sum(process_id)
+
+
+def get_experiment_state_str(process_id: int) -> str:
+    """Get the current state of the experiment for a certain process.
+
+    :raises RuntimeError: Illegal internal state: Decision made without winning reason
+    :param process_id: Process id
+    :return: State of process experiment
+    """
+    process = get_process_entry(process_id)
+    exp_state_enum = get_experiment_state_enum(process_id)
+    if process.winning_reason is not None:
+        assert exp_state_enum == ExperimentState.FINISHED
+        return exp_state_enum.value + ", " + process.winning_reason.value
+    return exp_state_enum.value
+
+
+def get_experiment_state_enum(process_id: int) -> ExperimentState:
     """Get the current state of the experiment for a certain process.
 
     :raises RuntimeError: Illegal internal state: Decision made without winning reason
@@ -198,10 +224,14 @@ def get_experiment_state(process_id: int) -> str:
     process = get_process_entry(process_id)
     if is_decision_made(process_id) is False:
         if cool_off_over(process.id):
-            return 'Cool-Off over, waiting for final decision'
+            return ExperimentState.COOL_OFF_FIN_DEC_OUTSTANDING
         if process.in_cool_off:
-            return 'In Cool-Off'
-        return 'Running'
+            return ExperimentState.IN_COOL_OFF
+        if is_in_batch(process_id):
+            return ExperimentState.RUNNING_IN_BATCH
+        if batch_policy.get_latest_bapol_entry(process_id) is None:
+            return ExperimentState.RUNNING_BEFORE_FIRST_BATCH_POL
+        return ExperimentState.RUNNING_OUTSIDE_BATCH
     if process.winning_reason is None:
         raise RuntimeError("Decision made without winning reason.")
-    return "Done, " + process.winning_reason.value
+    return ExperimentState.FINISHED

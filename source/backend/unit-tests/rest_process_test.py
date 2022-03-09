@@ -51,7 +51,7 @@ def before_all():
     ProcessInstance.query.filter.return_value.count.return_value = 157
     BatchPolicy.query.filter.return_value.count.return_value = 2
     process.get_sorted_customer_category_list = MagicMock(return_value=['gov', 'public'])
-    process.get_experiment_state = MagicMock(return_value='running')
+    process.get_experiment_state_str = MagicMock(return_value='running')
     # ^ Will be executed before the first test
     yield
     # v Will be executed after the last test

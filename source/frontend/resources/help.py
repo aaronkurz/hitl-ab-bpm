@@ -57,3 +57,20 @@ final decision, we have implemented the cool off period. This makes sure, that a
 instances that were part of any experimental batch are finished and have been evaluated and taken \
 into account before we present the final proposal and you make the final decision.
 """
+
+EXPERIMENTAL_INSTANCE = """
+'Experimental instance' refers to an instance that has been started as part of a batch. It is called like that, 
+since only the instances that have been started as part of a batch are evaluated and part of the experiment.
+"""
+
+MANUAL_TRIGGER_FETCH_LEARN = """
+Trigger polling of process engine
+ for instance data and learning with that data
+ (this will also happen automatically periodically, at about every n-th incoming instantiation request - with n being
+ half of the average batch size)
+"""
+
+SUBMIT_CHOICE_BUTTON = """
+After submitting the choice/final decision, all incoming instantiation requests for the process will be 
+routed in accordance with this decision
+"""

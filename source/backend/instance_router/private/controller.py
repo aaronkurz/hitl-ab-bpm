@@ -1,7 +1,7 @@
 """ Main "organizer" of instance routing """
 from random import randint
 from typing import Optional
-
+from threading import Lock
 from sqlalchemy import and_
 from camunda.client import CamundaClient
 from instance_router.private import camunda_collector, rl_agent
@@ -10,9 +10,11 @@ from models import process, db
 from models.process_instance import ProcessInstance, unevaluated_instances_still_exist
 from models.batch_policy import append_process_instance_to_bapol
 from models.batch_policy import get_average_batch_size
-from models.process import Process, in_cool_off
+from models.process import Process, in_cool_off, is_in_batch
 from models import batch_policy
 from models.utils import Version
+
+lock = Lock()
 
 
 def get_winning_version(process_id: int, customer_category: str) -> Optional[Version] or None:
@@ -57,17 +59,6 @@ def get_decision_outside_batch(process_id: int) -> Version:
     return relevant_process.default_version
 
 
-def is_in_batch(process_id: int) -> bool:
-    """Check whether certain process experiment currently is in experimental batch.
-
-    :param process_id: process id
-    :return: True or False
-    """
-    return ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
-                                             ProcessInstance.do_evaluate.is_(True))).count() < \
-           batch_policy.get_batch_size_sum(process_id)
-
-
 def end_of_batch_reached(process_id: int) -> bool:
     """Check whether we are at the end of the batch for a certain process (last instantiation request of batch).
 
@@ -89,11 +80,35 @@ def handle_decision_in_cool_off(process_id: int) -> Version:
     # relearn with a probability of 1/avg_batch_size;
     # this means that when the average batch size was 15, will learn about
     # at about every 15th incoming instantiation request
-    if round(get_average_batch_size(process_id)) == randint(0, round(get_average_batch_size(process_id))) \
-            and unevaluated_instances_still_exist(process_id):
-        camunda_collector.collect_finished_instances(process_id)
-        rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=True)
+    if _one_in_half_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
+        _fetch_and_learn(process_id, True)
     return decision
+
+
+def _one_in_half_avg_batch_size_prob(process_id: int) -> bool:
+    """Returns True with a probability of (one) in (half of average batch size) for a certain process
+
+    :param process_id: process
+    :return: True or False
+    """
+    half_batch_size = round(get_average_batch_size(process_id)/2)
+    return half_batch_size == randint(0, half_batch_size)
+
+
+def _fetch_and_learn(process_id: int, in_cool_off_bool: bool) -> None:
+    """Fetch the newest data from camunda and do the learning and setting/updating of bapol proposal
+
+    Thread-safe: only one thread can execute this method at the same time!
+    Thread-safety necessary in case user triggers manual collection and learning while periodic collection and learning
+    is underway.
+    According to Python docs, in case it us currently locked, the next thread will wait:
+    https://docs.python.org/3/library/asyncio-sync.html#asyncio.Lock.acquire
+    :param process_id: specify process
+    :param in_cool_off_bool: specify whether we are in cool-off
+    """
+    with lock:
+        camunda_collector.collect_finished_instances(process_id)
+        rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=in_cool_off_bool)
 
 
 def instantiate(process_id: int, customer_category: str) -> dict:
@@ -104,7 +119,6 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     :param customer_category: customer category of client
     :return: camunda instance id of started instance
     """
-    new_batch_policy_proposal_available = False
     process_entry = process.get_process_entry(process_id)
 
     # get decision from process bandit, if no decision has been made yet
@@ -112,17 +126,21 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     is_in_batch_marker = False
     if winning_version is None:
         if in_cool_off(process_id):
+            # in cool-off period
             decision = handle_decision_in_cool_off(process_id)
         elif not is_in_batch(process_id):
+            # in between batches
             decision = get_decision_outside_batch(process_id)
-            new_batch_policy_proposal_available = True
+            if _one_in_half_avg_batch_size_prob(process_id) and unevaluated_instances_still_exist(process_id):
+                # while an open proposal is ready for user, periodically update it to provide more info as
+                # more instances finish and can be evaluated
+                _fetch_and_learn(process_id, False)
         else:
+            # is in batch
             is_in_batch_marker = True
             decision = get_decision_in_batch(process_id, customer_category)
             if end_of_batch_reached(process_id):
-                camunda_collector.collect_finished_instances(process_id)
-                rl_agent.learn_and_set_new_batch_policy_proposal(process_id, in_cool_off=False)
-                new_batch_policy_proposal_available = True
+                _fetch_and_learn(process_id, False)
     else:
         decision = winning_version
 
@@ -154,6 +172,5 @@ def instantiate(process_id: int, customer_category: str) -> dict:
     db.session.commit()
 
     return {
-        'newBatchPolicyProposalReady': new_batch_policy_proposal_available,
         'camundaInstanceId': camunda_instance_id,
     }

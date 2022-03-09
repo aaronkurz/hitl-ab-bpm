@@ -16,6 +16,16 @@ class Version(enum.Enum):
     B = 'b'
 
 
+class ExperimentState(enum.Enum):
+    """ Possible process/experiment states """
+    RUNNING_BEFORE_FIRST_BATCH_POL = "Running, before first batch policy has been set"
+    RUNNING_IN_BATCH = "Running, in batch"
+    RUNNING_OUTSIDE_BATCH = "Running, outside batch"
+    IN_COOL_OFF = "In Cool-Off"
+    COOL_OFF_FIN_DEC_OUTSTANDING = "Cool-Off over, waiting for final decision"
+    FINISHED = "Done"
+
+
 def parse_version_str(version_str: str) -> Version:
     """Transform string 'a' or 'b' to internal enum representation
 

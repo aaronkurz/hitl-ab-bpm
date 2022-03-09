@@ -1,10 +1,12 @@
 import streamlit as st
 import requests
-import help
+from resources import help
 from config import BACKEND_URI
 
 
 def upload_files():
+    st.title("Upload Metadata")
+    st.write("... and start experiment!")
     with st.expander("Upload Process Versions", expanded=True):
         with st.form(key="Upload Files"):
             process_name = st.text_input("Process name")

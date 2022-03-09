@@ -38,27 +38,33 @@ def set_naive_bapol_proposal(process_id: int, customer_categories: list[str]):
     for _ in customer_categories:
         expl_probs_a.append(0.5)
         expl_probs_b.append(0.5)
-    set_bapol_proposal(process_id, customer_categories, expl_probs_a, expl_probs_b)
+    _set_bapol_proposal(process_id=process_id,
+                        customer_categories=customer_categories,
+                        expl_probs_a=expl_probs_a,
+                        expl_probs_b=expl_probs_b,
+                        final=False)
 
 
-def set_bapol_proposal(process_id: int,
-                       customer_categories: list[str],
-                       expl_probs_a: list[float],
-                       expl_probs_b: list[float]) -> bool:
-    """Create a new batch policy proposal for a certain process.
+def _set_bapol_proposal(process_id: int,
+                        customer_categories: list[str],
+                        expl_probs_a: list[float],
+                        expl_probs_b: list[float],
+                        final: bool):
+    """ Set a new batch policy proposal for a certain process.
 
-    :param process_id: process id in backend
-    :param customer_categories: relevant customer categories of process
-    :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
-    :param expl_probs_b: exploration probabilities for b, the first one is for the first customer category and so on
-    :return: True
+    :param process_id: Specify for which process
+    :param customer_categories: Customer categories
+    :param expl_probs_a: Exploration strategy for a for each customer category (in same order)
+    :param expl_probs_b: Exploration strategy for b for each customer category (in same order)
+    :param final: Whether it is a final batch policy proposal
     """
-    assert _new_proposal_can_be_set(process_id)
+    assert not is_decision_made(process_id)
     assert len(customer_categories) == len(expl_probs_a) \
            and len(expl_probs_a) == len(expl_probs_b), "Length of input lists must be the same"
     exec_strat_props = []
     for index, _ in enumerate(customer_categories):
-        assert expl_probs_a[index] + expl_probs_b[index] == 1.0, "Probabilities do not add up to 1.0 for each category"
+        assert expl_probs_a[index] + expl_probs_b[
+            index] == 1.0, "Probabilities do not add up to 1.0 for each category"
         exec_strat_props.append(
             ExecutionStrategyBaPolProp(
                 customer_category=customer_categories[index],
@@ -69,63 +75,106 @@ def set_bapol_proposal(process_id: int,
     new_proposal = BatchPolicyProposal(
         execution_strategies=exec_strat_props
     )
+    if final:
+        new_proposal.final_proposal = True
     process = Process.query.filter(Process.id == process_id).first()
     process.batch_policy_proposals.append(new_proposal)
     db.session.commit()
-    return True
+
+
+def _update_bapol_proposal(proposal: BatchPolicyProposal, customer_categories: list[str],
+                           expl_probs_a: list[float],
+                           expl_probs_b: list[float],
+                           final: bool):
+    """ Update a certain batch policy proposal
+
+    :raises RuntimeError: Problem with parameter customer_categories
+    :param proposal: Proposal to be updated
+    :param customer_categories: Customer categories
+    :param expl_probs_a: Exploration strategy for a for each customer category (in same order)
+    :param expl_probs_b: Exploration strategy for b for each customer category (in same order)
+    :param final: Whether it is a final batch policy proposal
+    """
+    assert not is_decision_made(proposal.process_id)
+    assert len(customer_categories) == len(expl_probs_a) \
+           and len(expl_probs_a) == len(expl_probs_b), "Length of input lists must be the same"
+    exec_strats = ExecutionStrategyBaPolProp.query \
+        .filter(ExecutionStrategyBaPolProp.batch_policy_proposal_id == proposal.id)
+    for exec_strat in exec_strats:
+        try:
+            relevant_index = customer_categories.index(exec_strat.customer_category)
+        except ValueError as value_error:
+            raise RuntimeError(
+                "Missing customer category to update final batch policy proposal in cool off period"
+            ) from value_error
+        exec_strat.exploration_probability_a = expl_probs_a[relevant_index]
+        exec_strat.exploration_probability_b = expl_probs_b[relevant_index]
+
+    if final:
+        proposal.final_proposal = True
+    db.session.commit()
+
+
+def set_or_update_bapol_proposal(process_id: int,
+                                 customer_categories: list[str],
+                                 expl_probs_a: list[float],
+                                 expl_probs_b: list[float]):
+    """Create a new batch policy proposal for a certain process, or if a currently open bapol proposal exists: update.
+
+    :param process_id: process id in backend
+    :param customer_categories: relevant customer categories of process
+    :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
+    :param expl_probs_b: exploration probabilities for b, the first one is for the first customer category and so on
+    """
+    if not exists_bapol_proposal_without_bapol(process_id):
+        # set a new batch policy proposal
+        _set_bapol_proposal(process_id=process_id,
+                            customer_categories=customer_categories,
+                            expl_probs_a=expl_probs_a,
+                            expl_probs_b=expl_probs_b,
+                            final=False)
+    else:
+        # update latest batch policy proposal
+        relevant_bapol_prop = BatchPolicyProposal.query.filter(BatchPolicyProposal.process_id == process_id) \
+            .order_by(desc(BatchPolicyProposal.id)).first()
+        _update_bapol_proposal(proposal=relevant_bapol_prop,
+                               customer_categories=customer_categories,
+                               expl_probs_a=expl_probs_a,
+                               expl_probs_b=expl_probs_b,
+                               final=False)
 
 
 def set_or_update_final_bapol_proposal(process_id: int,
-                       customer_categories: list[str],
-                       expl_probs_a: list[float],
-                       expl_probs_b: list[float]) -> bool:
+                                       customer_categories: list[str],
+                                       expl_probs_a: list[float],
+                                       expl_probs_b: list[float]):
     """Create a final batch policy proposal or update an existing final batch policy proposal for a given process id.
 
-    In case there already is a final batch policy proposal, it is updated with the values passed to this funktion
-    :raises RuntimeError: Problem with parameter customer_categories or unexpected number of bapol proposals
+    In case there already is a final batch policy proposal, it is updated with the values passed to this function
+    :raises RuntimeError: Unexpected number of final bapol proposals
     :param process_id: process id in our backend
     :param customer_categories: relevant customer categories of process
     :param expl_probs_a: exploration probabilities for a, the first one is for the first customer category and so on
     :param expl_probs_b: exploration probabilities for b, the first one is for the first customer category and so on
-    :return: True
     """
     relevant_bapol_props = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
                                                                  BatchPolicyProposal.final_proposal.is_(True)))
     if relevant_bapol_props.count() == 1:
         prop = relevant_bapol_props.first()
-        exec_strats = ExecutionStrategyBaPolProp.query\
-            .filter(ExecutionStrategyBaPolProp.batch_policy_proposal_id == prop.id)
-        for exec_strat in exec_strats:
-            try:
-                relevant_index = customer_categories.index(exec_strat.customer_category)
-            except ValueError as value_error:
-                raise RuntimeError(
-                    "Missing customer category to update final batch policy proposal in cool off period"
-                ) from value_error
-            exec_strat.exploration_probability_a = expl_probs_a[relevant_index]
-            exec_strat.exploration_probability_b = expl_probs_b[relevant_index]
-        db.session.commit()
-        return True
+        _update_bapol_proposal(proposal=prop,
+                               customer_categories=customer_categories,
+                               expl_probs_a=expl_probs_a,
+                               expl_probs_b=expl_probs_b,
+                               final=True)
+        return
     if relevant_bapol_props.count() == 0:
-        set_bapol_proposal(process_id, customer_categories, expl_probs_a, expl_probs_b)
-        final_bapol_prop = BatchPolicyProposal.query.filter(BatchPolicyProposal.process_id == process_id)\
-            .order_by(desc(BatchPolicyProposal.id)).first()
-        final_bapol_prop.final_proposal = True
-        db.session.commit()
-        return True
-    raise RuntimeError("Unexpected number of final batch policy proposals")
-
-
-def _new_proposal_can_be_set(process_id: int) -> bool:
-    """ Check if a new batch policy proposal can be set for a certain process
-
-    :param process_id: specifies which process
-    :return: True or False
-    """
-    relevant_process = Process.query.filter(Process.id == process_id).first()
-    if is_decision_made(relevant_process.id) is True or exists_bapol_proposal_without_bapol(process_id):
-        return False
-    return True
+        _set_bapol_proposal(process_id=process_id,
+                            customer_categories=customer_categories,
+                            expl_probs_a=expl_probs_a,
+                            expl_probs_b=expl_probs_b,
+                            final=True)
+        return
+    raise RuntimeError("Unexpected number of final bapol proposals")
 
 
 def exists_bapol_proposal_without_bapol(process_id: int) -> bool:
@@ -170,10 +219,10 @@ def get_current_open_proposal_data(process_id: int) -> dict:
                                 explorationProbabilityB=exec_strat.exploration_probability_b))
 
     return {
-            'processId': process_id,
-            'baPolId': relevant_bapol_prop.batch_policy_id,
-            'executionStrategy': exec_strats
-        }
+        'processId': process_id,
+        'baPolId': relevant_bapol_prop.batch_policy_id,
+        'executionStrategy': exec_strats
+    }
 
 
 def get_current_open_proposal(process_id: int) -> BatchPolicyProposal:
@@ -202,7 +251,7 @@ def get_final_proposal_data(process_id: int) -> dict:
     if not cool_off_over(process_id):
         raise RuntimeError("Final proposal not ready")
     relevant_bapol_prop_query = BatchPolicyProposal.query.filter(and_(BatchPolicyProposal.process_id == process_id,
-                                                                BatchPolicyProposal.final_proposal.is_(True)))
+                                                                      BatchPolicyProposal.final_proposal.is_(True)))
     assert relevant_bapol_prop_query.count() == 1
 
     relevant_bapol_prop = relevant_bapol_prop_query.first()
@@ -214,7 +263,7 @@ def get_final_proposal_data(process_id: int) -> dict:
                                 explorationProbabilityB=exec_strat.exploration_probability_b))
 
     return {
-            'processId': process_id,
-            'baPolId': relevant_bapol_prop.batch_policy_id,
-            'executionStrategy': exec_strats
-        }
+        'processId': process_id,
+        'baPolId': relevant_bapol_prop.batch_policy_id,
+        'executionStrategy': exec_strats
+    }

@@ -4,6 +4,11 @@
 
 You can run the API-Tests both locally and "on the pipeline" via Github Actions.
 
+One **thing to note** is, that there is a _slim_ chance of false negatives. 
+This is because the process simulations we use for the tests as well as the reinforcement learning agent
+are non-deterministic. The tests are written in a way that minimizes this chance, but the possibility still exists.
+So sometimes, if a test it not passing, try re-running it!
+
 ### Locally
 
 To run the pipeline locally, make sure that you build and run the docker containers of the backend, frontend, camunda
@@ -27,7 +32,7 @@ also [run them manually](https://docs.github.com/en/actions/managing-workflow-ru
 The tests are written using the Python test framework `pytest`. For guidance and quick-start guides, check out
 the [pytest website](https://docs.pytest.org/en/6.2.x/).
 
-To make requests to our backend, you can use the `requests` package. The base url of the backend is stored on the
+To make requests to our backend, you can use the `requests` package. The base url of the backend is stored in the
 config.py module. Please use that module to store anything relevant for all the API-tests.
 
 `utils.py` contains useful methods for multiple test modules. If you need to use similar/the same logic in multiple test
