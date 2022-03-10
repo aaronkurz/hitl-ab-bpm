@@ -46,9 +46,10 @@ jobs:
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
+          coverage-path-prefix: source/backend/
           junitxml-path: ./source/backend/pytest.xml
           junitxml-title: Backend Unit Test Summary
-          title: Backend Unit Test Coverage Report (files with 100% coverage not shown; links do not work currently)
+          title: Backend Unit Test Coverage Report (files with 100% coverage not shown)
           badge-title: Backend Unit Test Coverage
 
       - name: Extract unit test coverage for badge
