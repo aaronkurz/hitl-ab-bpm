@@ -43,7 +43,6 @@ jobs:
           
       - name: Comment unit test coverage
         if: ${{ github.event_name == 'pull_request'}}
-        id: coverageComment
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./source/backend/pytest-coverage.txt
@@ -52,6 +51,15 @@ jobs:
           junitxml-title: Backend Unit Test Summary
           title: Backend Unit Test Coverage Report (files with 100% coverage not shown)
           badge-title: Backend Unit Test Coverage
+
+      - name: Extract unit test coverage for badge
+        if: ${{ github.ref == 'refs/heads/main' }}
+        id: coverageComment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: ./source/backend/pytest-coverage.txt
+          junitxml-path: ./source/backend/pytest.xml
+          hide-comment: true
 
       - name: Post unit test badge data
         if: ${{ github.ref == 'refs/heads/main' }}
