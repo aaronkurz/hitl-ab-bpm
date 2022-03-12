@@ -1,4 +1,5 @@
-from resources import help
+""" User interface parts displaying data about experiment """
+from resources import user_assistance
 import streamlit as st
 import requests
 from matplotlib import pyplot as plt
@@ -8,9 +9,10 @@ import utils
 
 
 def plot_instances():
+    """ Plot an overview of instantiation requests coming on over time and how they have been routed (A/B) """
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests", params=params)
-    if response.status_code != requests.codes.ok:
+    if response.status_code != requests.codes.ok:  # pylint: disable=no-member
         st.exception("🚨 Can't fetch data right now")
     response_json = response.json()
     if response_json.get('noTotalRequests') > 0:
@@ -27,6 +29,7 @@ def plot_instances():
 
 
 def data():
+    """ Data-area, calling methods to create UI for sub-parts (depending on choice in drop-down) """
     st.write("### Data")
     data_view = st.selectbox("Choose Data View",
                  ("Experiment Metadata", "Aggregate Data", "Detailed Data"))
@@ -39,12 +42,13 @@ def data():
 
 
 def experiment_metadata():
+    """ Area containing metadata about experiment """
     st.write("#### Experiment Metadata")
     with st.expander("What is shown here?", expanded=False):
-        st.write(help.EXPERIMENT_METADATA)
+        st.write(user_assistance.EXPERIMENT_METADATA)
     if st.button("Refresh", key="refresh_exp_meta"):
         response_meta = requests.get(BACKEND_URI + "process/active/meta")
-        if response_meta.status_code == requests.codes.ok:
+        if response_meta.status_code == requests.codes.ok:  # pylint: disable=no-member
             process_meta_json = response_meta.json()
             col1, col2 = st.columns(2)
             with col1:
@@ -61,21 +65,22 @@ def experiment_metadata():
 
 
 def detailed_data():
+    """ Display detailed data for a certain batch of choice and allow for download of data as CSV """
     st.write('#### Detailed Data')
     with st.expander('What is shown here?', expanded=False):
-        st.write(help.DETAILED_DATA)
+        st.write(user_assistance.DETAILED_DATA)
     if st.button("Refresh", key="10") or st.session_state['data_detailed_open'] is True:
         st.session_state['data_detailed_open'] = True
         params = {"process-id": utils.get_currently_active_process_id()}
 
         response_bapol_count = requests.get(BACKEND_URI + "batch-policy/count", params=params)
-        if response_bapol_count.status_code != requests.codes.ok:
+        if response_bapol_count.status_code != requests.codes.ok:  # pylint: disable=no-member
             st.exception("🚨 Can't fetch data right now")
         else:
             batch_choice = st.selectbox(
                 'Which batch would you like to see details about?',
                 tuple(range(1, response_bapol_count.json().get('batchPolicyCount') + 1)),
-                help=help.BATCH_NUMBER_CHOICE)
+                help=user_assistance.BATCH_NUMBER_CHOICE)
 
             if batch_choice is not None:
                 params = {
@@ -84,7 +89,7 @@ def detailed_data():
                 }
                 response_batch_instances = requests.get(BACKEND_URI + "instance-router/detailed-data/batch",
                                                         params=params)
-                if response_batch_instances.status_code != requests.codes.ok:
+                if response_batch_instances.status_code != requests.codes.ok:  # pylint: disable=no-member
                     st.exception("🚨 Can't fetch data right now")
                 else:
                     batch_instances_df = DataFrame(
@@ -112,9 +117,10 @@ def detailed_data():
 
 
 def aggregate_data():
+    """ Display aggregate data about current experiment """
     st.write('#### Aggregate Data')
     with st.expander('What is shown here?', expanded=False):
-        st.write(help.AGGREGATE_DATA)
+        st.write(user_assistance.AGGREGATE_DATA)
     if st.button("Refresh") or st.session_state['data_open'] is True:
         st.session_state['data_open'] = True
         params = {"process-id": utils.get_currently_active_process_id()}
@@ -122,7 +128,7 @@ def aggregate_data():
         response = requests.get(
             BACKEND_URI + "instance-router/aggregate-data", params=params
         )
-        if response.status_code != requests.codes.ok:
+        if response.status_code != requests.codes.ok:  # pylint: disable=no-member
             st.exception("🚨 Can't fetch data right now")
         else:
             aggregate_data_df = DataFrame(
@@ -145,9 +151,6 @@ def aggregate_data():
                             </style>
                             """
             # Inject CSS with Markdown
-
             st.markdown(hide_table_row_index, unsafe_allow_html=True)
-
             st.table(aggregate_data_df.astype(str))
-
         plot_instances()

@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from resources import help
+from resources import user_assistance
 from config import BACKEND_URI
 
 
