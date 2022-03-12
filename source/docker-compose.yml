@@ -34,12 +34,11 @@ services:
 
     volumes:
       - ./backend:/source
+volumes:
+  postgres_data:
     
 
 
 
 
 
-
-volumes:
-  postgres_data:
