@@ -32,26 +32,13 @@ services:
     ports:
       - 8080:8080
 
-  redis:
-    image: redis:6.2-alpine
-    ports:
-      - 6379:6379
-
-  celery_worker:
-    build:
-      context : ./backend
-      target : celery
-    
-    depends_on :
-      - redis
     volumes:
       - ./backend:/source
+volumes:
+  postgres_data:
     
 
 
 
 
 
-
-volumes:
-  postgres_data:
