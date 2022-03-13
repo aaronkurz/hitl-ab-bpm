@@ -43,20 +43,3 @@ Visit `localhost:5001`
 To run it bundled with all other services please refer to readme in the `../source` folder
 #### After setup
 Visit `localhost:5001`
-## Linting
-To ensure a certain level of code quality as well as consistent docstrings for automatic documentation, we use *pylint*
-as a linter. You can check you local code changes using pylint with the `../../.pylintrc` configuration file.
-In the CI pipeline, pylint will check compliance of the backend code. Only if there are no issues can a PR then
-be merged onto the main branch.
-To run the checks locally, either use an extension for your IDE or run the following commands (while being in the root 
-directory of the repo):
-
-`pip install pylint`
-
-`pylint --rcfile ./.pylintrc ./source/backend`
-
-Note that the rules regarding docstrings and type annotations are probably a bit too strong for 
-flask endpoint functions, you can disable the too strict rules there by pasting this comment above those 
-functions:
-
-`# pylint: disable=missing-return-doc, missing-return-type-doc`
