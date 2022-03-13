@@ -101,17 +101,16 @@ def display_bapol_proposal(proposal_json: any):
                 st.session_state['bapol_upload_success'] = False
                 st.session_state['bapol_upload_failed'] = True
     with col2:
-        if utils.get_bapol_count() > 0:
-            if st.button("End Experiment/Start Cool-Off",
-                         help="For more info on Cool-Off, see dashboard help expander"):
-                post_cool_off_response = requests.post(BACKEND_URI + "process/active/cool-off")
-                if post_cool_off_response.status_code == requests.codes.ok:  # pylint: disable=no-member
-                    st.session_state['post_cool_off_success'] = True
-                    st.session_state['cool_off'] = True
-                    st.session_state['post_cool_off_failed'] = False
-                else:
-                    st.session_state['post_cool_off_failed'] = True
-                    st.session_state['post_cool_off_success'] = False
+        if utils.get_bapol_count() > 0 and st.button("End Experiment/Start Cool-Off",
+                                                     help="For more info on Cool-Off, see dashboard help expander"):
+            post_cool_off_response = requests.post(BACKEND_URI + "process/active/cool-off")
+            if post_cool_off_response.status_code == requests.codes.ok:  # pylint: disable=no-member
+                st.session_state['post_cool_off_success'] = True
+                st.session_state['cool_off'] = True
+                st.session_state['post_cool_off_failed'] = False
+            else:
+                st.session_state['post_cool_off_failed'] = True
+                st.session_state['post_cool_off_success'] = False
 
 
 def proposal_expander():

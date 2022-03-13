@@ -1,5 +1,5 @@
 """ User interface parts displaying data about experiment """
-from resources import user_assistance
+from resources import user_assistance, general_texts
 import streamlit as st
 import requests
 from matplotlib import pyplot as plt
@@ -13,7 +13,7 @@ def plot_instances():
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests", params=params)
     if response.status_code != requests.codes.ok:  # pylint: disable=no-member
-        st.exception("🚨 Can't fetch data right now")
+        st.exception(general_texts.CANT_FETCH)
     response_json = response.json()
     if response_json.get('noTotalRequests') > 0:
         plt.plot(range(response_json.get('noTotalRequests')), response_json.get('requestsA'), label='Version A')
@@ -75,7 +75,7 @@ def detailed_data():
 
         response_bapol_count = requests.get(BACKEND_URI + "batch-policy/count", params=params)
         if response_bapol_count.status_code != requests.codes.ok:  # pylint: disable=no-member
-            st.exception("🚨 Can't fetch data right now")
+            st.exception(general_texts.CANT_FETCH)
         else:
             batch_choice = st.selectbox(
                 'Which batch would you like to see details about?',
@@ -90,7 +90,7 @@ def detailed_data():
                 response_batch_instances = requests.get(BACKEND_URI + "instance-router/detailed-data/batch",
                                                         params=params)
                 if response_batch_instances.status_code != requests.codes.ok:  # pylint: disable=no-member
-                    st.exception("🚨 Can't fetch data right now")
+                    st.exception(general_texts.CANT_FETCH)
                 else:
                     batch_instances_df = DataFrame(
                         columns=["Version", "Customer Category", "Start Time", "End Time", "Reward"])
@@ -129,7 +129,7 @@ def aggregate_data():
             BACKEND_URI + "instance-router/aggregate-data", params=params
         )
         if response.status_code != requests.codes.ok:  # pylint: disable=no-member
-            st.exception("🚨 Can't fetch data right now")
+            st.exception(general_texts.CANT_FETCH)
         else:
             aggregate_data_df = DataFrame(
                 columns=['Version', 'Number Started', 'Number Finished', 'Mean Duration (sec)', 'Mean Reward'])

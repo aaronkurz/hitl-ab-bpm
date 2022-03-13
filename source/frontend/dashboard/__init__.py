@@ -1,9 +1,10 @@
+""" Dashboard to manage experiment, make decisions and view state/data """
 import streamlit as st
-import dashboard.controls
-import dashboard.data
-import dashboard.end_of_experiment
+from dashboard import controls, data, end_of_experiment
+
 
 def dashboard():
+    """ Dashboard to manage experiment, make decisions and view state/data """
     st.title('Dashboard')
     controls.control_area()
     data.data()

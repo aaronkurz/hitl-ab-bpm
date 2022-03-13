@@ -1,10 +1,9 @@
+""" Config stuff """
 import os
 
 from dotenv import load_dotenv
 
-inside_docker = os.getenv('INSIDE_DOCKER', False)
-
-if (inside_docker):
+if inside_docker := os.getenv('INSIDE_DOCKER', 'False'):
     load_dotenv('docker.env')
 else:
     load_dotenv()
