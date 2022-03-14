@@ -1,3 +1,5 @@
+""" User assistance/help texts """
+
 AGGREGATE_DATA = """
 Here you can see an overview and aggregated data over all batches. Please note that only \
 the data from instances that are part of experimental batches is considered here, not data from instances that \

@@ -1,6 +1,8 @@
+""" Sidebar of app, displaying info, logo, links """
 import streamlit as st
 
 def build_bar():
+    """ Sidebar of app, displaying info, logo, links """
     st.sidebar.image("resources/images/favicon.png")
     st.sidebar.title("HITL-AB-BPM")
     st.sidebar.write("### Continuous, rapid and controllable process improvement")

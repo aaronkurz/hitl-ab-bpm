@@ -77,6 +77,7 @@ jobs:
         run: |
           pip install pylint
           pylint --rcfile ./.pylintrc ./source/backend
+          pylint --rcfile ./.pylintrc ./source/frontend
 
       - name: Build and run docker
         run: |
