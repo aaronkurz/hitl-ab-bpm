@@ -1,7 +1,8 @@
 """ Unit tests regarding rl agent """
 from unittest.mock import patch
 import pytest
-from instance_router.private.rl_agent import get_reward
+from datetime import datetime
+from instance_router.private.rl_agent import get_reward, to_vw_format, get_action_prob_per_context_dict, calculate_duration
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -63,3 +64,26 @@ def test_reward_func():
     assert get_rounded_reward_2(0.32) == 0.2
     assert get_rounded_reward_2(3.681) == 0.0
     assert get_rounded_reward_2(5.3) == 0.0
+
+def test_vw_format_transformation():
+    """ Check if the strings are correctly transformed into the required vw format"""
+    string_1 = to_vw_format({'orga': 'public'}, ['A', 'B'], ('A', 0.5, 0.5))
+    assert string_1 == 'shared |Orga orga=public\n0:0.5:0.5 |Action variant=A \n|Action variant=B '
+    string_2 = to_vw_format({'orga': 'ngo'}, ['A', 'B'], ('B', 0.5, 0.8))
+    assert string_2 == 'shared |Orga orga=ngo\n|Action variant=A \n0:0.5:0.8 |Action variant=B '
+
+def test_retrieval_of_agent_information():
+    """ Check if the probabilities for any given action under given context are correctly retrieved"""
+
+def test_duration_func():
+    """ Test if the duration is properly calculated"""
+    start_time = datetime.strptime('01/01/2019 01:21:00', '%d/%m/%Y %I:%M:%S')
+    end_time = datetime.strptime('01/01/2019 01:21:01', '%d/%m/%Y %I:%M:%S')
+    assert calculate_duration(start_time, end_time) == 1.0
+
+    start_time = datetime.strptime('02/01/2019 01:21:00', '%d/%m/%Y %I:%M:%S')
+    end_time = datetime.strptime('01/01/2019 01:21:01', '%d/%m/%Y %I:%M:%S')
+    assert calculate_duration(start_time, end_time) == -86399.0
+
+
+
