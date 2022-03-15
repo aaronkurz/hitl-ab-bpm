@@ -184,7 +184,7 @@ def test_learn_and_set_new_batch_policy_proposal_same_ab_perf_cc(patch_set_or_up
                                                                 duration_seconds=20,
                                                                 customer_category="gov"))
     mock_instance_list.extend(create_mock_process_instance_list(times=15,
-                                                                version=Version.A,  # for public, b is better
+                                                                version=Version.A,  # for public, a is better
                                                                 duration_seconds=2,
                                                                 customer_category="public"))
     mock_instance_list.extend(create_mock_process_instance_list(times=15,
