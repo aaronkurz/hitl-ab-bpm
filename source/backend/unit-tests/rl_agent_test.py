@@ -1,8 +1,8 @@
 """ Unit tests regarding rl agent """
 from unittest.mock import patch, MagicMock
+from datetime import datetime, timedelta
 import pytest
 import vowpalwabbit
-from datetime import datetime, timedelta
 from instance_router.private.rl_agent import get_reward, to_vw_format, learn_and_set_new_batch_policy_proposal, \
     calculate_duration
 from models import db
@@ -26,14 +26,17 @@ def before_all():
     # v Will be executed after the last test
 
 
-def create_mock_process_instance_list(times: int, version: Version, duration_seconds: float, customer_category: str):
+def create_mock_process_instance_list(times: int,
+                                      version: Version,
+                                      duration_seconds: float,
+                                      customer_category: str) -> list:
     """Create a list of mocked process instances for mocking of database
 
-    :param times:
-    :param version:
-    :param duration_seconds:
-    :param customer_category:
-    :return:
+    :param times: how many mocked process instances should be created
+    :param version: Version.A or Version.B
+    :param duration_seconds: How long the instances should take
+    :param customer_category: Which customer category
+    :return: List containing all the mocked instances
     """
     start_time = datetime.strptime('01/01/2019 01:21:00', '%d/%m/%Y %I:%M:%S')
     end_time = start_time + timedelta(seconds=duration_seconds)
@@ -112,15 +115,15 @@ def test_vw_format_transformation():
                                                                             0.14, 0.16057, 0.208, 0.314, 3.681]))
 @patch('instance_router.private.rl_agent.get_sorted_customer_category_list')
 @patch('instance_router.private.rl_agent.set_or_update_bapol_proposal')
-def test_learn_and_set_new_batch_policy_proposal_different_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,
-                                                                      patch_get_sorted_customer_category_list):
+def test_learn_and_set_new_bpp_different_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,
+                                                    patch_get_sorted_customer_category_list: MagicMock):
     """  Check if the probabilities for any given action under given context are correctly retrieved
 
-    A should be better than B for category gov
-    B should be better than A for category public
+    Test with different performance of versions for customer categories:
+    test a is more likely to be called for government than for public
+    test b is more likely to be called for public than for government
     :param patch_set_or_update_bapol_proposal:
     :param patch_get_sorted_customer_category_list:
-    :return:
     """
     mock_instance_list = []
     mock_instance_list.extend(create_mock_process_instance_list(times=15,
@@ -146,12 +149,10 @@ def test_learn_and_set_new_batch_policy_proposal_different_ab_perf_cc(patch_set_
     call_args = patch_set_or_update_bapol_proposal.call_args[0]
     assert call_args[0] == 76
     assert call_args[1] == ["gov", "public"]
-    # test a
-    assert call_args[2][0] > 0.6
-    assert call_args[3][0] < 0.4
-    # test b
-    assert call_args[2][1] < 0.6
-    assert call_args[3][1] > 0.4
+    # test a is more likely to be called for government than for public
+    assert call_args[2][0] < call_args[2][1]
+    # test b is more likely to be called for public than for government
+    assert call_args[3][0] > call_args[3][1]
 
 
 @patch('instance_router.private.rl_agent.rl_agent_globals', dict(latest_process_id=76,
@@ -165,14 +166,13 @@ def test_learn_and_set_new_batch_policy_proposal_different_ab_perf_cc(patch_set_
                                                                             0.14, 0.16057, 0.208, 0.314, 3.681]))
 @patch('instance_router.private.rl_agent.get_sorted_customer_category_list')
 @patch('instance_router.private.rl_agent.set_or_update_bapol_proposal')
-def test_learn_and_set_new_batch_policy_proposal_same_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,
-                                                                 patch_get_sorted_customer_category_list):
+def test_learn_and_set_new_bpp_same_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,
+                                                                 patch_get_sorted_customer_category_list: MagicMock):
     """  Check if the probabilities for any given action under given context are correctly retrieved
 
     A should be better than B for both customer categories
     :param patch_set_or_update_bapol_proposal:
     :param patch_get_sorted_customer_category_list:
-    :return:
     """
     mock_instance_list = []
     mock_instance_list.extend(create_mock_process_instance_list(times=15,
