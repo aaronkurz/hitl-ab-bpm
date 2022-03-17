@@ -35,7 +35,7 @@ def get_reward(duration: float) -> float:
             return UPPER_CUTOFF_REWARD_FUNC - (i * step_height)
 
 
-def to_vw_example_format(context: str, actions: list, cb_label: tuple = None) -> str:
+def to_vw_format(context: str, actions: list, cb_label: tuple = None) -> str:
     """Modify (context, action, cost, probability) to a VW friendly format.
 
     :param context: The context of the cb
@@ -66,7 +66,7 @@ def get_action_prob_per_context_dict(orgas: list, actions: list) -> dict:
     dict_list = []
     for elem in orgas:
         tmp = {'orga': elem}
-        vw_text_example = to_vw_example_format(tmp, actions)
+        vw_text_example = to_vw_format(tmp, actions)
         pmf = rl_agent_globals['vw'].predict(vw_text_example)
         prob_dict = {}
         prob_dict.update(tmp)
@@ -101,7 +101,7 @@ def run_iteration(orgas: list[str], duration: float, hist_action: str, customer_
     context = {'orga': customer_category}
     # 2. Set the chosen action
     action = hist_action.value.upper()
-    # Retrieve probabilty for the given context and action
+    # Retrieve probability for the given context and action
     agent_stats_list = get_action_prob_per_context_dict(orgas, ACTIONS)
     for elem in agent_stats_list:
         if elem['orga'] == customer_category:
@@ -113,7 +113,7 @@ def run_iteration(orgas: list[str], duration: float, hist_action: str, customer_
     cost = 1 - reward
     logging.info('Cost: %f', cost)
     # 4. Inform VW of what happened so we can learn from it
-    vw_format = rl_agent_globals['vw'].parse(to_vw_example_format(context, ACTIONS, (action, cost, prob)),
+    vw_format = rl_agent_globals['vw'].parse(to_vw_format(context, ACTIONS, (action, cost, prob)),
                                              vowpalwabbit.LabelType.CONTEXTUAL_BANDIT)
     # 5. Learn
     rl_agent_globals['vw'].learn(vw_format)
