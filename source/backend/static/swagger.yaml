@@ -28,6 +28,7 @@ paths:
               properties:
                 batchSize:
                   type: integer
+                  required: true
                 executionStrategy:
                   type: array
                   items:
@@ -35,10 +36,13 @@ paths:
                     properties:
                       customerCategory:
                         type: string
+                        required: true
                       explorationProbabilityA:
                         type: number
+                        required: true
                       explorationProbabilityB:
                         type: number
+                        required: true
       responses:
         '200':
           description: Success
@@ -50,7 +54,7 @@ paths:
       tags:
         - Batch Policy
       responses:
-        '200':
+        200:
           description: OK
           content:
             application/json:
@@ -76,6 +80,10 @@ paths:
                           type: number
                         explorationProbabilityB:
                           type: number
+        404:
+          description: No currently active process.
+        500:
+          description: Internal server error
   /batch-policy/count:
     get:
       summary: Get the amount of Batch Policies in the db for a certain process.
@@ -99,9 +107,11 @@ paths:
                   processId:
                     type: integer
                     example: 23
+                    required: true
                   batchPolicyCount:
                     type: integer
                     example: 3
+                    required: true
   /process/{process_name}:
     post:
       summary: Add a new process with two variants.
@@ -133,25 +143,30 @@ paths:
               type: object
               properties:
                 variantA:
+                  description: BPMN file of variant a
                   type: string
                   format: binary
+                  required: true
                 variantB:
+                  description: BPMN file of variant b
                   type: string
                   format: binary
+                  required: true
                 defaultHistory:
+                  description: JSON file of historic performance of default version; Format must be like this { "durations" [1.068, 1.036, ...], "interarrivalTime" 1.10287 }
                   type: string
                   format: binary
+                  required: true
       responses:
         200:
           description: Success
         400:
-          # TODO improve these with more details and the options?
-          description: Client error
+          description: Missing files; wrong file type; ...
         500:
           description: Server error
   /process/count:
     get:
-      summary: Get amount of processes deployed via our backend.
+      summary: Get amount of processes deployed via our backend
       tags:
         - Process
       responses:
@@ -166,11 +181,10 @@ paths:
                     type: integer
   /process/active/meta:
     get:
-      summary: Get metadata about currently active process.
+      summary: Get metadata about currently active process
       tags:
         - Process
-      description: >
-        id is the id in our backend, not in the camunda engine.
+      description: id is the id in our backend, not in the camunda engine.
       responses:
         200:
           description: OK
@@ -182,8 +196,6 @@ paths:
                   id:
                     type: integer
                   name:
-                    type: string
-                  addedTime:
                     type: string
                   customer_categories:
                     type: string
@@ -237,10 +249,9 @@ paths:
             type: integer
       responses:
         200:
-          # TODO improve this so file can be downloaded from swagger UI
           description: OK, bpmn file is downloaded
         400:
-          description: Client error
+          description: id query parameter not specified
         404:
           description: No process with that id
         500:
@@ -266,6 +277,21 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instantiated:
+                    type: boolean
+                    required: true
+                  message:
+                    type: string
+                  camundaInstanceId:
+                    type: string
+                    description: id of process instance in camunda engine, not our system
+        400:
+          description: Not a valid customer category
         500:
           description: server error
   /instance-router/aggregate-data:
@@ -283,6 +309,43 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    required: true
+                    properties:
+                      numberStarted:
+                        type: integer
+                        required: true
+                      numberFinished:
+                        type: integer
+                        required: true
+                      averageDurationSec:
+                        type: number
+                        required: true
+                      averageReward:
+                        type: number
+                        required: true
+                  b:
+                    type: object
+                    required: true
+                    properties:
+                      numberStarted:
+                        type: integer
+                        required: true
+                      numberFinished:
+                        type: integer
+                        required: true
+                      averageDurationSec:
+                        type: number
+                        required: true
+                      averageReward:
+                        type: number
+                        required: true
         500:
           description: server error
   /instance-router/aggregate-data/client-requests:
@@ -327,8 +390,29 @@ paths:
                       that point and value at index is how many instances have been routed to B at that point.
         500:
           description: server error
-        400:
-          description: client error
+  /instance-router/aggregate-data/client-requests/outside-batch:
+    get:
+      summary: Get number of client requests that have been routed outside of batches for a certain process
+      tags:
+        - Instance Router
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  numberOfRequests:
+                    type: integer
+                    example: 331
   /instance-router/aggregate-data/evaluation-progress:
     get:
       summary:
@@ -368,8 +452,6 @@ paths:
                     example: 0.4
         500:
           description: server error
-        400:
-          description: client error
   /process/active/manual-decision:
     post:
       summary: Allows human expert to manually make a decision (whether to use version A or B from now on, for ALL customer categories!)
@@ -388,7 +470,7 @@ paths:
         500:
           description: server error
         400:
-          description: client error
+          description: version-decision query param not a or b
   /process/active/trigger-fetch-learn:
     post:
       summary: Manually trigger fetching of process instance data from process engine and learning with that data
@@ -405,7 +487,7 @@ paths:
           description: server error
   /instance-router/finished-instance-count:
     get:
-      summary: Get count of instances that have been registered as finished in our system
+      summary: Get number of finished instances for a certain process, both in and outside of batches
       tags:
         - Instance Router
       parameters:
@@ -428,8 +510,6 @@ paths:
                     example: 23
         500:
           description: server error
-        400:
-          description: client error
   /instance-router/detailed-data/batch:
     get:
       summary: Get a more detailed list of all the instances that have been created as part of a batch.
@@ -486,11 +566,9 @@ paths:
                           description: Probability with which the agent would have chosen the action (decision) given customer_category
         500:
           description: server error
-        400:
-          description: client error
   /batch-policy-proposal/open:
     get:
-      summary: check if there is an open batch policy proposal from the RL agent and if yes, retrieve it
+      summary: Check if there is an open batch policy proposal from the RL agent and if yes, retrieve it
       tags:
         - Batch Policy Proposal
       parameters:
@@ -535,18 +613,39 @@ paths:
           description: server error
         400:
           description: client error
+  /batch-policy-proposal/count:
+    get:
+      summary: Get amount of batch policy proposals for a certain process
+      tags:
+        - Batch Policy Proposal
+      parameters:
+        - name: process-id
+          in: query
+          description: Specify which process you mean by the process id of our backend.
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  baPolProposalCount:
+                    type: integer
+                    required: true
   /meta/all:
     delete:
-      summary: Empty database and delete stored state on filesystem
+      summary: Empty database and delete stored files on filesystem of server
       tags:
         - Meta
       responses:
         200:
-          description: OK
+          description: Successfully deleted files
         500:
-          description: server error
-        400:
-          description: client error
+          description: Error while deleting files
   /batch-policy-proposal/final:
     get:
       summary: check if the final batch batch policy proposal from the RL agent is ready and if yes, retrieve it
@@ -584,8 +683,6 @@ paths:
                           type: number
         500:
           description: server error
-        400:
-          description: client error
         404:
           description: no final proposal available
   /process/active/cool-off:
@@ -595,7 +692,7 @@ paths:
         - Process
       responses:
         200:
-          description: success
+          description: Success
           content:
             application/json:
               schema:
@@ -609,7 +706,7 @@ paths:
           description: e.g. Unexpected finished bapol count < 0
   /process/active/winning:
     post:
-      summary: Set a winning version; only available if in cool-off and all instances have been evaluates ('cool-off-over')
+      summary: Set a winning version; only available if in cool-off and all instances have been evaluated ('cool-off-over')
       tags:
         - Process
       requestBody:
