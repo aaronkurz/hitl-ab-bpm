@@ -24,15 +24,15 @@ report this via Github issues.
 Commits should start with a Capital letter and should be written in present tense (e.g. __:tada: Add cool new feature__ instead of __:tada: Added cool new feature__).
 You should also start your commit message with **one** applicable emoji. This does not only look great but also makes you rethink what to add to a commit. Make many but small commits!
 
-| Emoji                                                     | Description                                   |
-|-----------------------------------------------------------|-----------------------------------------------|
-| :tada: `:tada:`                                           | When you added a cool new feature.            |
-| :wrench: `:wrench:`                                       | When you refactored / improved a some code.   |
-| :sparkles: `:sparkles:`                                   | When you improved style.                      |
-| :art: `:art:`                                             | When you improved / added assets like themes. |
-| :rocket: `:rocket:`                                       | When you improved performance.                |
-| :memo: `:memo:`                                           | When you wrote documentation.                 |
-| :beetle: `:beetle:`                                       | When you fixed a bug.                         |
-| :twisted_rightwards_arrows: `:twisted_rightwards_arrows:` | When you merged a branch.                     |
-| :fire: `:fire:`                                           | When you removed something.                   |
-| :truck: `:truck:`                                         | When you moved / renamed something.           |
+| Emoji                                                     | Description                                             |
+|-----------------------------------------------------------|---------------------------------------------------------|
+| :tada: `:tada:`                                           | When you added a cool new feature.                      |
+| :wrench: `:wrench:`                                       | When you refactored / improved some code / added tests. |
+| :sparkles: `:sparkles:`                                   | When you improved style.                                |
+| :art: `:art:`                                             | When you improved / added assets like themes.           |
+| :rocket: `:rocket:`                                       | When you improved performance.                          |
+| :memo: `:memo:`                                           | When you wrote documentation.                           |
+| :beetle: `:beetle:`                                       | When you fixed a bug.                                   |
+| :twisted_rightwards_arrows: `:twisted_rightwards_arrows:` | When you merged a branch.                               |
+| :fire: `:fire:`                                           | When you removed something.                             |
+| :truck: `:truck:`                                         | When you moved / renamed something.                     |
