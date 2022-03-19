@@ -43,3 +43,8 @@ Visit `localhost:5001`
 To run it bundled with all other services please refer to readme in the `../source` folder
 #### After setup
 Visit `localhost:5001`
+
+### Documentation of REST API
+Please refer to the SwaggerUI for a visual documentation of the REST API provided by the backend.
+It also offers the functionality to play around with the API by sending HTTP requests.
+It is reachable when the backend (container) is running under `localhost:5001/swagger`

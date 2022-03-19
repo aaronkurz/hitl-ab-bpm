@@ -312,7 +312,7 @@ def manual_decision():
     elif winning_version_str == 'b':
         winning_version = Version.B
     else:
-        abort(400, "version.decision query param must be a or b")
+        abort(400, "version-decision query param must be a or b")
     decision_list = []
     for customer_category in get_sorted_customer_category_list(active_process_entry.id):
         decision_list.append(dict(customer_category=customer_category, winning_version=winning_version))
