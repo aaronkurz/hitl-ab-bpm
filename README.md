@@ -1,6 +1,5 @@
 # HITL AB-BPM Prototype
 ![Auto Updating Bagde](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aaronkurz/1580622162fdac5e5c2571a4bf3cf13b/raw/pytest-coverage-comment__main.json)
-![License](https://img.shields.io/badge/LICENSE-tbd-blue)
 
 > Continuous, rapid and controllable business process improvement
 
