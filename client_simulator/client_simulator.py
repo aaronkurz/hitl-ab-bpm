@@ -1,11 +1,10 @@
 import random
 from time import sleep
-
 import requests
 from numpy.random import normal
 
 BASE_URL = "http://localhost:5001"
-CUSTOMER_CATEGORIES = ["public", "gov"]
+CUSTOMER_CATEGORIES = None  # TODO: set these before starting
 AMOUNT_OF_REQUESTS_TO_SEND = 10
 NORMAL_DIST_MEAN = 1
 NORMAL_DIST_STD_DEV = 0.5

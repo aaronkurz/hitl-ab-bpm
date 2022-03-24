@@ -1,6 +1,5 @@
 import pytest
 import requests
-
 import utils
 from config import BASE_URL
 
@@ -83,12 +82,13 @@ def test_set_bapol_failing_json():
     assert response.status_code == 400
 
 
-def test_set_bapol_failing_customer_category():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_set_bapol_failing_customer_category(customer_categories):
     # given
     utils.post_processes_a_b("fast",
                              "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     bapol = {
         "batchSize": 200,
@@ -99,7 +99,7 @@ def test_set_bapol_failing_customer_category():
                 "explorationProbabilityB": 0.7
             },
             {
-                "customer_Category": "enterprise",
+                "customer_Category": "corporate",
                 "explorationProbabilityA": 0.7,
                 "explorationProbabilityB": 0.3
             }
@@ -113,23 +113,25 @@ def test_set_bapol_failing_customer_category():
     assert response.status_code == 400
 
 
-def test_get_latest():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_get_latest(customer_categories):
     """ Test if retrieval of the latest batch policy works """
     # given
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    utils.post_bapol_currently_active_process({
+    utils.post_bapol_currently_active_process(
+        {
         "batchSize": 200,
         "executionStrategy": [
             {
-                "customerCategory": "public",
+                "customerCategory": customer_categories[0],
                 "explorationProbabilityA": 0.3,
                 "explorationProbabilityB": 0.7
             },
             {
-                "customerCategory": "gov",
+                "customerCategory": customer_categories[1],
                 "explorationProbabilityA": 0.7,
                 "explorationProbabilityB": 0.3
             }
@@ -145,9 +147,10 @@ def test_get_latest():
     assert response_json.get("processId") == utils.get_currently_active_process_id()
     for i in range(2):
         exec_strat = response_json.get("executionStrategy")[i]
-        if exec_strat.get("customerCategory") == "public":
+        assert exec_strat.get("customerCategory") in customer_categories
+        if exec_strat.get("customerCategory") == customer_categories[0]:
             assert exec_strat.get("explorationProbabilityA") == 0.3
             assert exec_strat.get("explorationProbabilityB") == 0.7
-        if exec_strat.get("customerCategory") == "gov":
+        if exec_strat.get("customerCategory") == customer_categories[1]:
             assert exec_strat.get("explorationProbabilityA") == 0.7
             assert exec_strat.get("explorationProbabilityB") == 0.3

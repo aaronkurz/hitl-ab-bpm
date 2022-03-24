@@ -6,8 +6,6 @@ import utils
 from config import BASE_URL
 from utils import post_manual_decision
 
-CUSTOMER_CATEGORIES = ["public", "gov"]
-
 
 @pytest.fixture(autouse=True)
 def run_before_each_test():
@@ -25,14 +23,18 @@ def after_all():
     utils.remove_everything_from_db()
 
 
-def meta_run_manual_choice(version: str):
-    """ Helps check whether manual decision of version a or b work """
+def meta_run_manual_choice(version: str, customer_categories: list):
+    """ Helps check whether manual decision of version a or b work
+    :param version:
+    :param customer_categories:
+    """
     assert version in ['a', 'b']
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories,
+                             default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(200, customer_categories))
     currently_active_p_id = utils.get_currently_active_process_id()
     cs.start_client_simulation(5, 1)
     assert utils.get_sum_of_started_instances_in_batch(currently_active_p_id) == 5
@@ -73,17 +75,18 @@ def test_instantiation_failing_customer_category():
     assert response.status_code == 400
 
 
-def test_aggregate_data():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_aggregate_data(customer_categories):
     bapol_5_size = {
-        "batchSize": 10,
+        "batchSize": 15,
         "executionStrategy": [
             {
-                "customerCategory": "public",
+                "customerCategory": customer_categories[0],
                 "explorationProbabilityA": 0.3,
                 "explorationProbabilityB": 0.7
             },
             {
-                "customerCategory": "gov",
+                "customerCategory": customer_categories[1],
                 "explorationProbabilityA": 0.7,
                 "explorationProbabilityB": 0.3
             }
@@ -91,12 +94,12 @@ def test_aggregate_data():
     }
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     assert utils.get_bapol_proposal_count_active_process() == 1
     utils.post_bapol_currently_active_process(bapol_5_size)
     assert utils.get_bapol_count() == 1
-    cs.start_client_simulation(10, 1)
+    cs.start_client_simulation(15, 1)
     assert utils.get_bapol_proposal_count_active_process() == 2
     assert utils.new_open_proposal_exists_active_process() is True
     currently_active_process_id = utils.get_currently_active_process_id()
@@ -111,7 +114,7 @@ def test_aggregate_data():
     for version in ['a', 'b']:
         for key in keys:
             assert key in response_json.get(version).keys()
-    assert response_json.get('a').get('numberStarted') + response_json.get('b').get('numberStarted') == 10
+    assert response_json.get('a').get('numberStarted') + response_json.get('b').get('numberStarted') == 15
     # check if the data has been populated successfully
     for key in keys:
         assert response_json.get('a').get(key) + response_json.get('b').get(key) != 0
@@ -138,23 +141,26 @@ def test_aggregate_data_before_instantiation():
         assert response_json.get(version).get('averageReward') is None
 
 
-def test_manual_choice_a():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_manual_choice_a(customer_categories):
     """ Test if manual choice of a leads to only instantiating version a afterwards"""
-    meta_run_manual_choice('a')
+    meta_run_manual_choice('a', customer_categories)
 
 
-def test_manual_choice_b():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_manual_choice_b(customer_categories):
     """ Test if manual choice of b leads to only instantiating version b afterwards"""
-    meta_run_manual_choice('b')
+    meta_run_manual_choice('b', customer_categories)
 
 
-def test_two_manual_choices_not_possible():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_two_manual_choices_not_possible(customer_categories):
     """ We want to check that setting a second (manual) decision is not possible """
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy)
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10, customer_categories))
     post_manual_decision('a')
     try:
         post_manual_decision('b')
@@ -177,9 +183,10 @@ def test_client_requests_data_empty():
     assert response.json().get("requestsB") == []
 
 
-def test_client_requests_data():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_client_requests_data(customer_categories):
     """ Tests whether the client requests data is reasonable """
-    meta_run_manual_choice('b')
+    meta_run_manual_choice('b', customer_categories)
     params = {"process-id": utils.get_currently_active_process_id()}
     response = requests.get(BASE_URL + "/instance-router/aggregate-data/client-requests", params=params)
     assert response.status_code == requests.codes.ok
@@ -222,17 +229,18 @@ def test_finished_instances_are_collected():
     assert response.json().get('finishedInstanceCount') > 0
 
 
-def test_detailed_batch_instance_info():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_detailed_batch_instance_info(customer_categories):
     bapol_size_5 = {
         "batchSize": 5,
         "executionStrategy": [
             {
-                "customerCategory": "public",
+                "customerCategory": customer_categories[0],
                 "explorationProbabilityA": 0.3,
                 "explorationProbabilityB": 0.7
             },
             {
-                "customerCategory": "gov",
+                "customerCategory": customer_categories[1],
                 "explorationProbabilityA": 0.7,
                 "explorationProbabilityB": 0.3
             }
@@ -240,7 +248,7 @@ def test_detailed_batch_instance_info():
     }
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     active_process_id = utils.get_currently_active_process_id()
     # finish three batches
@@ -275,7 +283,7 @@ def test_detailed_batch_instance_info():
             assert "reward" in instance.keys()
             assert "rlProb" in instance.keys()
             assert instance.get("decision") is not None
-            assert instance.get("customerCategory") is not None
+            assert instance.get("customerCategory") in customer_categories
             assert instance.get("startTime") is not None
             if instance.get("endTime") is None or instance.get("reward") is None or instance.get("rlProb") is None:
                 assert instance.get("reward") is None
@@ -355,22 +363,23 @@ def test_routing_follows_bapol_a():
         assert instance.get('decision') == 'a'
 
 
-def test_routing_follows_bapol_both():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_routing_follows_bapol_both(customer_categories):
     utils.post_processes_a_b("fast",
                              "resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
     utils.post_bapol_currently_active_process({
         "batchSize": 10,
         "executionStrategy": [
             {
-                "customerCategory": "public",
+                "customerCategory": customer_categories[0],
                 "explorationProbabilityA": 0.5,
                 "explorationProbabilityB": 0.5
             },
             {
-                "customerCategory": "gov",
+                "customerCategory": customer_categories[1],
                 "explorationProbabilityA": 0.5,
                 "explorationProbabilityB": 0.5
             }
@@ -431,7 +440,8 @@ def test_a_better_right_decision():
                + execution_strategy.get('explorationProbabilityB') == 1
 
 
-def test_periodic_update_latest_bapol():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_periodic_update_latest_bapol(customer_categories):
     """ Test, if the periodic updating of a batch policy is happening
 
     Will also focus on test of the endpoint instance-router/aggregate-data/evaluation-progress.
@@ -445,10 +455,10 @@ def test_periodic_update_latest_bapol():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
+                             customer_categories=customer_categories,
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10, customer_categories))
     process_id_active = utils.get_currently_active_process_id()
 
     # -----
@@ -511,6 +521,14 @@ def test_periodic_update_latest_bapol():
     assert response_bapol_1.status_code == requests.codes.ok
     assert response_bapol_1.json().get('newProposalExists') is True
 
+    # make sure that customer categories are correct
+    response_cust_cats = []
+    for exec_strat in response_bapol_1.json().get('proposal').get('executionStrategy'):
+        response_cust_cats.append(exec_strat.get('customerCategory'))
+    customer_categories.sort()
+    response_cust_cats.sort()
+    assert response_cust_cats == customer_categories
+
     # test bapol proposal count
     response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
                                         params={'process-id': process_id_active})
@@ -554,6 +572,14 @@ def test_periodic_update_latest_bapol():
     # proposal should have been updated and should (most likely) not be the same
     assert response_bapol_2.json().get('proposal') != response_bapol_1.json().get('proposal')
 
+    # make sure that customer categories are correct
+    response_cust_cats = []
+    for exec_strat in response_bapol_2.json().get('proposal').get('executionStrategy'):
+        response_cust_cats.append(exec_strat.get('customerCategory'))
+    customer_categories.sort()
+    response_cust_cats.sort()
+    assert response_cust_cats == customer_categories
+
     # test bapol proposal count
     response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
                                         params={'process-id': process_id_active})
@@ -562,7 +588,8 @@ def test_periodic_update_latest_bapol():
     # -----
 
 
-def test_manual_trigger_fetch_learn_outside_batch():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_manual_trigger_fetch_learn_outside_batch(customer_categories):
     """ Test, if the endpoint for manually triggering fetch and learn outside of batch works """
     expected_keyset = ["totalToBeEvaluatedCount",
                        "alreadyEvaluatedCount",
@@ -572,10 +599,10 @@ def test_manual_trigger_fetch_learn_outside_batch():
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
+                             customer_categories=customer_categories,
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10, customer_categories))
     process_id_active = utils.get_currently_active_process_id()
 
     # -----
@@ -641,6 +668,14 @@ def test_manual_trigger_fetch_learn_outside_batch():
     assert response_bapol_1.status_code == requests.codes.ok
     assert response_bapol_1.json().get('newProposalExists') is True
 
+    # make sure that customer categories are correct
+    response_cust_cats = []
+    for exec_strat in response_bapol_1.json().get('proposal').get('executionStrategy'):
+        response_cust_cats.append(exec_strat.get('customerCategory'))
+    customer_categories.sort()
+    response_cust_cats.sort()
+    assert response_cust_cats == customer_categories
+
     # test bapol proposal count
     response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
                                         params={'process-id': process_id_active})
@@ -684,6 +719,14 @@ def test_manual_trigger_fetch_learn_outside_batch():
     # proposal should have been updated and should (most likely) not be the same
     assert response_bapol_2.json().get('proposal') != response_bapol_1.json().get('proposal')
 
+    # make sure that customer categories are correct
+    response_cust_cats = []
+    for exec_strat in response_bapol_2.json().get('proposal').get('executionStrategy'):
+        response_cust_cats.append(exec_strat.get('customerCategory'))
+    customer_categories.sort()
+    response_cust_cats.sort()
+    assert response_cust_cats == customer_categories
+
     # test bapol proposal count
     response_bapol_count = requests.get(BASE_URL + "/batch-policy-proposal/count",
                                         params={'process-id': process_id_active})
@@ -704,20 +747,22 @@ def test_manual_trigger_fetch_learn_before_first_batch_policy():
     assert response_manual_trigger.status_code == requests.codes.conflict
 
 
-def test_manual_trigger_fetch_learn_in_batch():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_manual_trigger_fetch_learn_in_batch(customer_categories):
     """ When inside batch, manually triggering fetch and learn should fail """
     utils.post_processes_a_b("helicopter_license",
                              "./resources/bpmn/helicopter/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"],
+                             customer_categories=customer_categories,
                              default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(10, customer_categories))
     response_manual_trigger = requests.post(BASE_URL + "/process/active/trigger-fetch-learn")
     assert response_manual_trigger.status_code == requests.codes.conflict
 
 
-def test_manual_trigger_cool_off_period():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_manual_trigger_cool_off_period(customer_categories):
     """ Test whether triggering of manual fetch and learn acts as expected in cool off and afterwards
 
     In Cool-Off: --> should work
@@ -726,9 +771,10 @@ def test_manual_trigger_cool_off_period():
     """
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories,
+                             default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5, customer_categories))
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
@@ -751,11 +797,11 @@ def test_manual_trigger_cool_off_period():
     decision_json = {
         "decision": [
             {
-                "customer_category": "public",
+                "customer_category": customer_categories[0],
                 "winning_version": "a"
             },
             {
-                "customer_category": "gov",
+                "customer_category": customer_categories[1],
                 "winning_version": "b"
             }
         ]
