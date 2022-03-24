@@ -22,11 +22,12 @@ def after_all():
     utils.remove_everything_from_db()
 
 
-def test_set_process():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_set_process(customer_categories):
     """ Test if setting of new process with variants works """
     utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
                              "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
     assert utils.get_process_count() == 1
 
@@ -47,28 +48,31 @@ def test_set_2_processes():
 
 def test_get_active_process_metadata():
     """ Test if receiving of metadata about currently active process works """
-    # given
-    utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
-                             "./resources/bpmn/helicopter/helicopter_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
-                             path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
-    # when
-    response = requests.get(BASE_URL + "/process/active/meta")
-    # then
-    response_json = response.json()
-    assert response.status_code == requests.codes.ok
-    assert response_json.get("name") == "helicopter_license"
-    assert response_json.get('default_version') == 'a'
-    assert response_json.get('id') is not None
-    assert response_json.get('customer_categories') == "gov-public"  # should be alphabetical
-    assert response_json.get('default_interarrival_time_history') == 64.18521
-    assert response_json.get('experiment_state') == "Running, before first batch policy has been set"
-    assert response_json.get('datetime_added') is not None
-    assert response_json.get('datetime_decided') is None
-    assert response_json.get('number_batch_policies') == 0
-    assert response_json.get('number_instances') == 0
-    assert response_json.get("winning_versions") is None
-    assert response_json.get("winning_reason") is None
+    customer_category_groups = ["gov-public", "corporate-sme"]
+    for customer_categories in customer_category_groups:
+        # given
+        utils.post_processes_a_b("helicopter_license", "./resources/bpmn/helicopter/helicopter_vA.bpmn",
+                                 "./resources/bpmn/helicopter/helicopter_vB.bpmn",
+                                 customer_categories=customer_categories.split('-'),
+                                 default_version='a',
+                                 path_history="./resources/bpmn/helicopter/helicopter_vA_100.json")
+        # when
+        response = requests.get(BASE_URL + "/process/active/meta")
+        # then
+        response_json = response.json()
+        assert response.status_code == requests.codes.ok
+        assert response_json.get("name") == "helicopter_license"
+        assert response_json.get('default_version') == 'a'
+        assert response_json.get('id') is not None
+        assert response_json.get('customer_categories') == customer_categories  # should be alphabetical
+        assert response_json.get('default_interarrival_time_history') == 64.18521
+        assert response_json.get('experiment_state') == "Running, before first batch policy has been set"
+        assert response_json.get('datetime_added') is not None
+        assert response_json.get('datetime_decided') is None
+        assert response_json.get('number_batch_policies') == 0
+        assert response_json.get('number_instances') == 0
+        assert response_json.get("winning_versions") is None
+        assert response_json.get("winning_reason") is None
 
 
 def test_get_active_process_variants_files():
@@ -128,12 +132,13 @@ def test_experiment_state_manual_decision():
     assert 'Manual' in exp_state and 'Done' in exp_state
 
 
-def test_experiment_state_cool_off():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_experiment_state_cool_off(customer_categories):
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5, customer_categories))
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
@@ -151,7 +156,7 @@ def test_cool_off_only_after_batch_finished():
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.not_found
     # not yet finish a batch
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5, ["gov", "public"]))
     cs.start_client_simulation(3, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.not_found
@@ -161,12 +166,13 @@ def test_cool_off_only_after_batch_finished():
     assert response_post_cool_off.status_code == requests.codes.ok
 
 
-def test_cool_off_period():
+@pytest.mark.parametrize("customer_categories", [["gov", "public"], ["corporate", "sme"]])
+def test_cool_off_period(customer_categories):
     utils.post_processes_a_b("fast", "./resources/bpmn/fast_a_better/fast_a_better_vA.bpmn",
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
-                             customer_categories=["public", "gov"], default_version='a',
+                             customer_categories=customer_categories, default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5, customer_categories))
     cs.start_client_simulation(5, 1)
     response_post_cool_off = requests.post(BASE_URL + "/process/active/cool-off")
     assert response_post_cool_off.status_code == requests.codes.ok
@@ -178,12 +184,12 @@ def test_cool_off_period():
     decision_json = {
         "decision": [
             {
-                "customer_category": "public",
-                "winning_version": "a"
+                "customer_category": customer_categories[0],
+                "winning_version": "b"
             },
             {
-                "customer_category": "gov",
-                "winning_version": "b"
+                "customer_category": customer_categories[1],
+                "winning_version": "a"
             }
         ]
     }
@@ -210,12 +216,12 @@ def test_cool_off_period():
     assert "Done" in meta.get('experiment_state') and "ended normally" in meta.get('experiment_state')
     assert meta.get('winning_versions') == [
         {
-            "customer_category": "public",
-            "winning_version": "a"
+            "customer_category": customer_categories[0],
+            "winning_version": "b"
         },
         {
-            "customer_category": "gov",
-            "winning_version": "b"
+            "customer_category": customer_categories[1],
+            "winning_version": "a"
         }
     ]
 
@@ -226,7 +232,7 @@ def test_cool_off_period_already_all_evaluated():
                              "./resources/bpmn/fast_a_better/fast_a_better_vB.bpmn",
                              customer_categories=["public", "gov"], default_version='a',
                              path_history="./resources/bpmn/fast_a_better/fast_a_better_vA_100.json")
-    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5))
+    utils.post_bapol_currently_active_process(utils.example_batch_policy_size(5, ["gov", "public"]))
     process_id_active = utils.get_currently_active_process_id()
     cs.start_client_simulation(5, 1)
     sleep(20)

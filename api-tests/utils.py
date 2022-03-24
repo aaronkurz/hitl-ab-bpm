@@ -67,19 +67,19 @@ example_batch_policy = {
     }
 
 
-def example_batch_policy_size(size: int) -> dict:
+def example_batch_policy_size(size: int, customer_categories: list) -> dict:
     return {
         "batchSize": size,
         "executionStrategy": [
             {
-                "customerCategory": "public",
-                "explorationProbabilityA": 0.3,
-                "explorationProbabilityB": 0.7
-            },
-            {
-                "customerCategory": "gov",
+                "customerCategory": customer_categories[0],
                 "explorationProbabilityA": 0.7,
                 "explorationProbabilityB": 0.3
+            },
+            {
+                "customerCategory": customer_categories[1],
+                "explorationProbabilityA": 0.3,
+                "explorationProbabilityB": 0.7
             }
         ]
     }

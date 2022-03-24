@@ -12,5 +12,5 @@ def build_bar():
     - Controllable: Expert oversight (Human-in-the-Loop)
     
     For reporting bugs, feedback and more info, please refer
-     to the [Github repository](https://github.com/Ultimate-Storm/sbe_prototyping).
+     to the [Github repository](https://github.com/aaronkurz/hitl-ab-bpm).
     """)
