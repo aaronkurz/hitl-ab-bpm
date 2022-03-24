@@ -5,13 +5,20 @@
 
 ![Screenshot](.github/hitl-ab-bpm-screenshot.png)
 
+## Getting Started
+### Setup
+Instructions on how to run the app locally can be found in `source/README.md`.
+### Usage
+Learn more about how the app works in this [demo video](https://drive.google.com/file/d/1ikrVXHdGTwnV2HxRZLSaPFy9ZaTuM7pZ/view?usp=sharing).
+### Development
+To understand the code base better and get started with development, you can refer to the documentation.
+For the backend, we have docstrings in the code and OpenAPI specs. More info on how to access the OpenAPI/SwaggerUI documentation can be found in `source/backend/README.md`.
+The frontend is also documented using docstrings. All the docstrings follow the Python conventions for docstrings, so you could generate HTML documentation using tools like pdoc if needed.
 ## Structure
-This repository contains the three main parts of the prototype: The backend, the frontend and the camunda engine.
+This repository contains the three main parts of the prototype: The backend, the frontend and the camunda engine with the [camunda-bpm-simulator](https://github.com/camunda-consulting/camunda-bpm-simulator).
 
 For more info on the parts of the app, please refer to the READMEs in the sub-folders (`source/backend`, `source/frontend`, `api-tests`...).
 We try to incorporate the READMEs at the spots where they are most relevant, in order to not add too much information here.
-
-Instructions on how to run the app locally can be found in `source/README.md`.
 
 ## Contributing
 
