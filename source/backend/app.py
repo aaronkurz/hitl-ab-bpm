@@ -1,4 +1,5 @@
 """ Meta tasks to set up and coordinate flask app"""
+# pylint: disable=missing-return-doc, missing-return-type-doc
 from flask_swagger_ui import get_swaggerui_blueprint
 import config
 import create_app
@@ -29,13 +30,9 @@ client = CamundaClient(config.CAMUNDA_ENGINE_URI)
 
 
 @app.route("/")
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def index():
     """ Just used to manually test whether app is live """
     return "Hello World!"
-
-
-
 
 
 if __name__ == "__main__":

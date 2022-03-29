@@ -1,4 +1,5 @@
 """ REST endpoints regarding processes/experiments """
+# pylint: disable=missing-return-doc, missing-return-type-doc
 import json
 import os
 import shutil
@@ -155,7 +156,6 @@ def store_files_on_filesystem(process_name: str,
 
 
 @process_api.route('/<process_name>', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def set_process(process_name: str):
     """ Add a new process with two variants
 
@@ -225,7 +225,6 @@ def set_process(process_name: str):
 
 
 @process_api.route('/count', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_processes_count():
     """ Get amount of processes that have been set / entries in processes db table """
     data = {
@@ -236,7 +235,6 @@ def get_processes_count():
 
 
 @process_api.route('/active/meta', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_active_process_variants_metadata():
     """ Get metadata about running experiment/process """
     active_process_entry = get_active_process_entry()
@@ -244,7 +242,6 @@ def get_active_process_variants_metadata():
 
 
 @process_api.route('/active/cool-off', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def start_cool_off_active():
     """ Start cool-off period
 
@@ -268,7 +265,6 @@ def start_cool_off_active():
 
 
 @process_api.route('/active/winning', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def set_winning_version():
     """ Set a decision/winning versions
 
@@ -299,7 +295,6 @@ def set_winning_version():
 
 
 @process_api.route('active/manual-decision', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def manual_decision():
     """API endpoint to allow human expert to manually make a decision
 
@@ -321,7 +316,6 @@ def manual_decision():
 
 
 @process_api.route('active/trigger-fetch-learn', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def trigger_fetch_learn():
     """ Manually trigger fetching info about instances from camunda and training rl agent with this additional info """
     active_process_entry = get_active_process_entry()
@@ -335,7 +329,6 @@ def trigger_fetch_learn():
 
 
 @process_api.route('variant-file/<a_or_b>', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_process_variant_files(a_or_b: str):
     """ Retrieve the bpmn file of a certain process and version via the API
 

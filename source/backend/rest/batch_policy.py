@@ -1,4 +1,5 @@
 """ Rest endpoints regarding batch policies """
+# pylint: disable=missing-return-doc, missing-return-type-doc
 from flask import Blueprint, abort, request
 from rest import utils
 from models import db
@@ -10,7 +11,6 @@ batch_policy_api = Blueprint('batch_policy_api', __name__)
 
 
 @batch_policy_api.route('', methods=['POST'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def set_batch_policy():
     """ Set new batch policy for currently active process
 
@@ -59,7 +59,6 @@ def set_batch_policy():
 
 
 @batch_policy_api.route('/latest', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_batch_policy():
     """ Get latest batch policy of currently active process """
     active_pv_query = db.session.query(Process).filter(Process.active.is_(True))
@@ -75,7 +74,6 @@ def get_batch_policy():
 
 
 @batch_policy_api.route('/count', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_batch_policy_count():
     """ Get amount of batch policies that have been set / entries in batch_policy db table for a certain process """
     process_id = int(request.args.get('process-id'))
