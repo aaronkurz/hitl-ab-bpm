@@ -1,4 +1,5 @@
 """ This module presents rest endpoints to interact with the instance router and its results from the outside """
+# pylint: disable=missing-return-doc, missing-return-type-doc
 import statistics
 from flask import Blueprint, request, abort
 from instance_router import instance_router_interface
@@ -13,7 +14,6 @@ instance_router_api = Blueprint('instance_router_api', __name__)
 
 
 @instance_router_api.route('/start-instance', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def start_process():
     """ Endpoint for process consumers (clients) to request/start instances """
     process_id = int(request.args.get('process-id'))
@@ -38,7 +38,6 @@ def start_process():
 
 
 @instance_router_api.route('/aggregate-data', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def count_a_b():
     """Get some metadata about process: all data concerns only the instances that were part of an experimental batch!"""
     process_id = request.args.get('process-id')
@@ -98,7 +97,6 @@ def count_a_b():
 
 
 @instance_router_api.route('/aggregate-data/client-requests', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_instantiation_data():
     """ Get a time overview of client requests and where they have been routed to (in batch) """
     process_id = int(request.args.get('process-id'))
@@ -130,7 +128,6 @@ def get_instantiation_data():
 
 
 @instance_router_api.route('/aggregate-data/client-requests/outside-batch', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_instantiation_data_outside_batch():
     """ Get number of client requests that have been routed outside of batches for a certain process """
     process_id = int(request.args.get('process-id'))
@@ -142,7 +139,6 @@ def get_instantiation_data_outside_batch():
 
 
 @instance_router_api.route('/aggregate-data/evaluation-progress', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_evaluation_progress():
     """ Get info on evaluation progress """
     process_id = int(request.args.get('process-id'))
@@ -170,7 +166,6 @@ def get_evaluation_progress():
 
 
 @instance_router_api.route('/detailed-data/batch', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_instances_batch():
     """ Get detailed data about every instance that has been routed for a certain process and batch """
     process_id = int(request.args.get('process-id'))
@@ -200,7 +195,6 @@ def get_instances_batch():
 
 
 @instance_router_api.route('/finished-instance-count', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def count_finished_instances():
     """ Get number of finished instances for a certain process, both in and outside of batches """
     process_id = int(request.args.get('process-id'))

@@ -1,4 +1,5 @@
 """ Rest endpoints regarding batch policy proposals """
+# pylint: disable=missing-return-doc, missing-return-type-doc
 from flask import Blueprint, request, abort
 from models.batch_policy_proposal import exists_bapol_proposal_without_bapol, get_current_open_proposal_data, \
     BatchPolicyProposal, get_final_proposal_data
@@ -9,7 +10,6 @@ batch_policy_proposal_api = Blueprint('batch_policy_proposal_api', __name__)
 
 
 @batch_policy_proposal_api.route('/open', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def check_get_open_proposal():
     """ Check whether there is an open batch policy proposal for a certain process and if yes, return it """
     process_id = int(request.args.get('process-id'))
@@ -25,7 +25,6 @@ def check_get_open_proposal():
 
 
 @batch_policy_proposal_api.route('/count', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_count():
     """ Get amount of batch policy proposals for a certain process """
     process_id = int(request.args.get('process-id'))
@@ -36,7 +35,6 @@ def get_count():
 
 
 @batch_policy_proposal_api.route('/final', methods=['GET'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def get_final_winning_proposal_ready():
     """ For cool-off period: tries to find final proposal (available in cool-off when all instances have been
     evaluated), if none can be found returns 404 """

@@ -1,4 +1,5 @@
 """ REST endpoints that do not concern any singular other endpoint but are more general """
+# pylint: disable=missing-return-doc, missing-return-type-doc
 import os
 import shutil
 from flask import Blueprint, abort
@@ -8,7 +9,6 @@ meta_api = Blueprint('meta_api', __name__)
 
 
 @meta_api.route('/all', methods=['DELETE'])
-# pylint: disable=missing-return-doc, missing-return-type-doc
 def empty_database():
     """ Empty database and delete stored state on filesystem """
     # delete process versions from filesystem
