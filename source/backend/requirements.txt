@@ -3,7 +3,7 @@ requests==2.27.1
 Flask-SQLAlchemy==2.5.1
 psycopg2-binary==2.9.3
 python-dotenv==0.20.0
-flask-swagger-ui==3.36.0
+flask-swagger-ui==4.11.1
 vowpalwabbit==9.1.0
 pandas==1.4.2
 matplotlib==3.5.1
