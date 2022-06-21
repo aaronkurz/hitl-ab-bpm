@@ -62,7 +62,7 @@ def _set_bapol_proposal(process_id: int,
     assert len(customer_categories) == len(expl_probs_a) \
            and len(expl_probs_a) == len(expl_probs_b), "Length of input lists must be the same"
     exec_strat_props = []
-    for index, element in customer_categories:
+    for index, element in enumerate(customer_categories):
         assert expl_probs_a[index] + expl_probs_b[
             index] == 1.0, "Probabilities do not add up to 1.0 for each category"
         exec_strat_props.append(
