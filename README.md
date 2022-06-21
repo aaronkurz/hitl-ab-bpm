@@ -1,7 +1,7 @@
-# HITL AB-BPM Prototype
+# HITL AB-BPM - Continuous, Rapid and Controllable Business Process Improvement
 ![Auto Updating Bagde](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aaronkurz/1580622162fdac5e5c2571a4bf3cf13b/raw/pytest-coverage-comment__main.json)
 
-> Continuous, rapid and controllable business process improvement
+HITL AB-BPM is a tool that allows for the structural A/B testing of business process models a business process management system with reinforcement learning techniques. As a machine might not have all information about the business process available to make the right choices, HITL AB-BPM allows human experts to be actively involved in the dynamic routing of instances to different process versions. Researchers can use the tool to explore new possibilities of joint human-machine decision-making for business process improvement and perspectively, practitioners can apply it to structure their process improvement.
 
 ![Screenshot](.github/hitl-ab-bpm-screenshot.png)
 
