@@ -9,7 +9,7 @@ HITL AB-BPM is a tool that allows for the structural A/B testing of business pro
 ### Setup
 Instructions on how to run the app locally can be found in `source/README.md`.
 ### Usage
-Learn more about how the app works in this [demo video](https://drive.google.com/file/d/1ikrVXHdGTwnV2HxRZLSaPFy9ZaTuM7pZ/view?usp=sharing).
+Learn more about how the app works in this [demo video](https://youtu.be/S34IjCM-wKI) or in the tutorial document that can be found in this repository (`./HITL-AB-BPM Tutorial.pdf`).
 ### Development
 To understand the code base better and get started with development, you can refer to the documentation.
 For the backend, we have docstrings in the code and OpenAPI specs. More info on how to access the OpenAPI/SwaggerUI documentation can be found in `source/backend/README.md`.
