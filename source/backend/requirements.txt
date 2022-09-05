@@ -7,7 +7,7 @@ flask-swagger-ui==3.36.0
 vowpalwabbit==9.1.0
 pandas==1.4.2
 matplotlib==3.5.1
-pytest==7.1.1
+pytest==7.1.3
 pytest-cov==3.0.0
 pycamunda==0.6.1
 scipy==1.8.0
