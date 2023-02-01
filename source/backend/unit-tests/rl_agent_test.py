@@ -61,13 +61,13 @@ def get_rounded_reward_2(duration: float) -> float:
 @patch('config.K_QUANTILES_REWARD_FUNC', 20)
 @patch('config.LOWER_CUTOFF_REWARD_FUNC', 0.2)
 @patch('config.UPPER_CUTOFF_REWARD_FUNC', 0.8)
-@patch('instance_router.private.rl_agent.rl_agent_globals', dict(latest_process_id=1,
-                                                                 vw=None,
-                                                                 quantiles=[0.021, 0.053, 0.06, 0.064,
-                                                                            0.068, 0.072, 0.075, 0.079,
-                                                                            0.082, 0.085, 0.09, 0.095,
-                                                                            0.102, 0.108, 0.117, 0.126,
-                                                                            0.14, 0.16057, 0.208, 0.314, 3.681]))
+@patch('instance_router.private.rl_agent.rl_agent_globals', {"latest_process_id": 1,
+                                                             "vw": None,
+                                                             "quantiles": [0.021, 0.053, 0.06, 0.064,
+                                                                           0.068, 0.072, 0.075, 0.079,
+                                                                           0.082, 0.085, 0.09, 0.095,
+                                                                           0.102, 0.108, 0.117, 0.126,
+                                                                           0.14, 0.16057, 0.208, 0.314, 3.681]})
 def test_reward_func():
     """ Check if reward function behaves as expected """
     assert get_rounded_reward_2(0.020) == 1.0
@@ -104,15 +104,15 @@ def test_vw_format_transformation():
     assert string_2 == 'shared |Orga orga=ngo\n|Action variant=A \n0:0.5:0.8 |Action variant=B '
 
 
-@patch('instance_router.private.rl_agent.rl_agent_globals', dict(latest_process_id=76,
-                                                                 vw=vowpalwabbit.Workspace('--cb_explore_adf -q UA '
+@patch('instance_router.private.rl_agent.rl_agent_globals', {"latest_process_id": 76,
+                                                             "vw": vowpalwabbit.Workspace('--cb_explore_adf -q UA '
                                                                                            '--rnd 3 --epsilon 0.025',
                                                                                            quiet=True),
-                                                                 quantiles=[0.021, 0.053, 0.06, 0.064,
-                                                                            0.068, 0.072, 0.075, 0.079,
-                                                                            0.082, 0.085, 0.09, 0.095,
-                                                                            0.102, 0.108, 0.117, 0.126,
-                                                                            0.14, 0.16057, 0.208, 0.314, 3.681]))
+                                                             "quantiles": [0.021, 0.053, 0.06, 0.064,
+                                                                           0.068, 0.072, 0.075, 0.079,
+                                                                           0.082, 0.085, 0.09, 0.095,
+                                                                           0.102, 0.108, 0.117, 0.126,
+                                                                           0.14, 0.16057, 0.208, 0.314, 3.681]})
 @patch('instance_router.private.rl_agent.get_sorted_customer_category_list')
 @patch('instance_router.private.rl_agent.set_or_update_bapol_proposal')
 def test_learn_and_set_new_bpp_different_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,
@@ -155,15 +155,15 @@ def test_learn_and_set_new_bpp_different_ab_perf_cc(patch_set_or_update_bapol_pr
     assert call_args[3][0] > call_args[3][1]
 
 
-@patch('instance_router.private.rl_agent.rl_agent_globals', dict(latest_process_id=76,
-                                                                 vw=vowpalwabbit.Workspace('--cb_explore_adf -q UA '
+@patch('instance_router.private.rl_agent.rl_agent_globals', {"latest_process_id": 76,
+                                                             "vw": vowpalwabbit.Workspace('--cb_explore_adf -q UA '
                                                                                            '--rnd 3 --epsilon 0.025',
                                                                                            quiet=True),
-                                                                 quantiles=[0.021, 0.053, 0.06, 0.064,
-                                                                            0.068, 0.072, 0.075, 0.079,
-                                                                            0.082, 0.085, 0.09, 0.095,
-                                                                            0.102, 0.108, 0.117, 0.126,
-                                                                            0.14, 0.16057, 0.208, 0.314, 3.681]))
+                                                             "quantiles": [0.021, 0.053, 0.06, 0.064,
+                                                                           0.068, 0.072, 0.075, 0.079,
+                                                                           0.082, 0.085, 0.09, 0.095,
+                                                                           0.102, 0.108, 0.117, 0.126,
+                                                                           0.14, 0.16057, 0.208, 0.314, 3.681]})
 @patch('instance_router.private.rl_agent.get_sorted_customer_category_list')
 @patch('instance_router.private.rl_agent.set_or_update_bapol_proposal')
 def test_learn_and_set_new_bpp_same_ab_perf_cc(patch_set_or_update_bapol_proposal: MagicMock,

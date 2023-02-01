@@ -12,7 +12,7 @@ from config import K_QUANTILES_REWARD_FUNC, LOWER_CUTOFF_REWARD_FUNC, UPPER_CUTO
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Store global mutable fields
-rl_agent_globals = dict(latest_process_id=None, vw=None, quantiles=[])
+rl_agent_globals = {"latest_process_id": None, "vw": None, "quantiles": []}
 # Actions
 ACTIONS = ["A", "B"]
 

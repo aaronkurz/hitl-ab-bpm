@@ -5,6 +5,7 @@ import config
 
 class CamundaClient:
     """ Class used for communication with camunda engine """
+
     def __init__(self, url=config.CAMUNDA_ENGINE_URI):
         self.url = url
 
@@ -32,7 +33,7 @@ class CamundaClient:
                 'deployment-name': (None, 'store'),
                 'data': (path_bpmn_file.split("/")[len(path_bpmn_file.split("/")) - 1], bpmn_file),
             }
-            response = requests.post(self.url + "/deployment/create", files=multipart_form_data)
+            response = requests.post(self.url + "/deployment/create", files=multipart_form_data, timeout=5)
             assert self.status_code_successful(response.status_code)
 
             assert len(response.json().get('deployedProcessDefinitions')) == 1
@@ -50,6 +51,8 @@ class CamundaClient:
         :return: instance id in camunda engine
         """
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(self.url + "/process-definition/" + str(process_id) + "/start", headers=headers)
+        response = requests.post(self.url + "/process-definition/" + str(process_id) + "/start",
+                                 headers=headers,
+                                 timeout=5)
         assert self.status_code_successful(response.status_code)
         return response.json().get('id')

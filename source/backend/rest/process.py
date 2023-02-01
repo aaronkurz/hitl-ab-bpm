@@ -44,8 +44,8 @@ def get_process_metadata(process_id: int) -> dict:
         'default_version':
             None if relevant_process_entry.default_version is None else relevant_process_entry.default_version.value,
         'winning_versions': None if not is_decision_made(process_id) else
-        [dict(customer_category=part_win['customer_category'],
-              winning_version=part_win['winning_version'].value)
+        [{"customer_category": part_win['customer_category'],
+          "winning_version": part_win['winning_version'].value}
          for part_win in get_winning(process_id)],
         'winning_reason':
             None if relevant_process_entry.winning_reason is None else relevant_process_entry.winning_reason.value,
@@ -214,7 +214,7 @@ def set_process(process_name: str):
                                                    for customer_category in all_customer_categories])
 
     # change old active process to inactive
-    db.session.query(Process).filter(Process.active.is_(True)).update(dict(active=False))
+    db.session.query(Process).filter(Process.active.is_(True)).update({"active": False})
     db.session.add(process_variant)
     db.session.commit()
     # add naive bp proposal
@@ -281,11 +281,11 @@ def set_winning_version():
         assert "winning_version" in part_decision.keys()
         assert "customer_category" in part_decision.keys()
         if part_decision.get('winning_version') == 'a':
-            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'),
-                                        winning_version=Version.A))
+            decision_parsed.append({"customer_category": part_decision.get('customer_category'),
+                                    "winning_version": Version.A})
         elif part_decision.get('winning_version') == 'b':
-            decision_parsed.append(dict(customer_category=part_decision.get('customer_category'),
-                                        winning_version=Version.B))
+            decision_parsed.append({"customer_category": part_decision.get('customer_category'),
+                                    "winning_version": Version.B})
         else:
             abort(400, "winning_version must be a or b")
     set_winning(active_process_entry.id, decision_parsed, WinningReasonEnum.EXPERIMENT_ENDED)
@@ -310,7 +310,7 @@ def manual_decision():
         abort(400, "version-decision query param must be a or b")
     decision_list = []
     for customer_category in get_sorted_customer_category_list(active_process_entry.id):
-        decision_list.append(dict(customer_category=customer_category, winning_version=winning_version))
+        decision_list.append({"customer_category": customer_category, "winning_version": winning_version})
     set_winning(active_process_entry.id, decision_list, WinningReasonEnum.MANUAL_CHOICE)
     return "Success"
 

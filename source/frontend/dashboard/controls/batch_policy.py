@@ -39,7 +39,7 @@ def display_evaluation_progress(evaluation_progress_json: any):
                    str(round(evaluation_progress_json.get("alreadyEvaluatedPerc") * 100, 2)) +
                    "% evaluation rate).")
     if st.button("Refresh", help=user_assistance.MANUAL_TRIGGER_FETCH_LEARN):
-        response_manual_trigger = requests.post(BACKEND_URI + "process/active/trigger-fetch-learn")
+        response_manual_trigger = requests.post(BACKEND_URI + "process/active/trigger-fetch-learn", timeout=5)
         assert response_manual_trigger.status_code == requests.codes.ok  # pylint: disable=no-member
         st.experimental_rerun()
 
@@ -91,7 +91,8 @@ def display_bapol_proposal(proposal_json: any):
             response = requests.post(BACKEND_URI + "batch-policy",
                                      json=bapol_json,
                                      headers={"Content-Type": "application/json"},
-                                     params={'process-id': utils.get_currently_active_process_id()})
+                                     params={'process-id': utils.get_currently_active_process_id()},
+                                     timeout=5)
             if response.status_code == requests.codes.ok:  # pylint: disable=no-member
                 st.session_state['new_proposal'] = False
                 st.session_state['bapol_upload_success'] = True
@@ -103,7 +104,7 @@ def display_bapol_proposal(proposal_json: any):
     with col2:
         if utils.get_bapol_count() > 0 and st.button("End Experiment/Start Cool-Off",
                                                      help="For more info on Cool-Off, see dashboard help expander"):
-            post_cool_off_response = requests.post(BACKEND_URI + "process/active/cool-off")
+            post_cool_off_response = requests.post(BACKEND_URI + "process/active/cool-off", timeout=5)
             if post_cool_off_response.status_code == requests.codes.ok:  # pylint: disable=no-member
                 st.session_state['post_cool_off_success'] = True
                 st.session_state['cool_off'] = True
@@ -120,7 +121,8 @@ def proposal_expander():
 
             response_evaluation_progress = \
                 requests.get(BACKEND_URI + "instance-router/aggregate-data/evaluation-progress",
-                             params={"process-id": utils.get_currently_active_process_id()})
+                             params={"process-id": utils.get_currently_active_process_id()},
+                             timeout=5)
             assert response_evaluation_progress.status_code == requests.codes.ok  # pylint: disable=no-member
             # is None for first, naive batch policy / when no experimental instances have been started
             if response_evaluation_progress.json().get("alreadyEvaluatedPerc") is not None:
@@ -128,7 +130,7 @@ def proposal_expander():
             params = {
                 'process-id': utils.get_currently_active_process_id()
             }
-            bapol_proposal_response = requests.get(BACKEND_URI + "batch-policy-proposal/open", params=params)
+            bapol_proposal_response = requests.get(BACKEND_URI + "batch-policy-proposal/open", params=params, timeout=5)
             if bapol_proposal_response.status_code != requests.codes.ok:  # pylint: disable=no-member
                 st.write("Something went wrong while polling for a new batch policy proposal")
             elif bapol_proposal_response.json().get('newProposalExists') is False:

@@ -14,10 +14,10 @@ def collect_finished_instances(process_id: int):
     """
     relevant_instances = ProcessInstance.query.filter(and_(ProcessInstance.process_id == process_id,
                                                            ProcessInstance.finished_time.is_(None)))
-    query_param = dict(finished='true')
+    query_param = {"finished": 'true'}
     history_url = '/history/process-instance?'
     query_url = CAMUNDA_ENGINE_URI + history_url
-    result = requests.get(query_url, params=query_param)
+    result = requests.get(query_url, params=query_param, timeout=5)
     for backend_instance in relevant_instances:
         for camunda_instance in result.json():
             if camunda_instance.get('id') == backend_instance.camunda_instance_id:

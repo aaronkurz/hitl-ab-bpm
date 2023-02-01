@@ -10,7 +10,7 @@ def currently_active_process_exists() -> bool:
     :raises RuntimeError: Unexpected response from backend
     :return: True or false
     """
-    response = requests.get(BACKEND_URI + "process/active/meta")
+    response = requests.get(BACKEND_URI + "process/active/meta", timeout=5)
     if response.status_code == 404:
         return False
     if response.status_code == requests.codes.ok:  # pylint: disable=no-member
@@ -23,7 +23,7 @@ def get_currently_active_process_id() -> int:
 
     :return: Id of currently active process/experiment
     """
-    response = requests.get(BACKEND_URI + "process/active/meta")
+    response = requests.get(BACKEND_URI + "process/active/meta", timeout=5)
     assert response.status_code == requests.codes.ok  # pylint: disable=no-member
     return response.json().get("id")
 
@@ -33,7 +33,7 @@ def get_currently_active_process_meta() -> any:
 
     :return: JSON of metadata
     """
-    response = requests.get(BACKEND_URI + "process/active/meta")
+    response = requests.get(BACKEND_URI + "process/active/meta", timeout=5)
     assert response.status_code == requests.codes.ok  # pylint: disable=no-member
     return response.json()
 
@@ -49,7 +49,7 @@ def post_manual_decision(manual_decision: str) -> bool:
         "process-id": get_currently_active_process_id(),
         "version-decision": manual_decision
     }
-    response = requests.post(BACKEND_URI + "process/active/manual-decision", params=params)
+    response = requests.post(BACKEND_URI + "process/active/manual-decision", params=params, timeout=5)
     return response.status_code == requests.codes.ok  # pylint: disable=no-member
 
 
@@ -59,4 +59,5 @@ def get_bapol_count() -> int:
     :return: Amount of batch policies for currently active process
     """
     return requests.get(BACKEND_URI + "batch-policy/count",
-                        params={"process-id": get_currently_active_process_id()}).json().get("batchPolicyCount")
+                        params={"process-id": get_currently_active_process_id()},
+                        timeout=5).json().get("batchPolicyCount")

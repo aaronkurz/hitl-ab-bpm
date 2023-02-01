@@ -26,7 +26,7 @@ def display_final_bapol_prop(response_final_prop_json: any):
     if st.button("Submit Choice", help=user_assistance.SUBMIT_CHOICE_BUTTON):
         response_set_winner = requests.post(BACKEND_URI + "process/active/winning", json={
             'decision': decision
-        })
+        }, timeout=5)
         if response_set_winner.status_code == requests.codes.ok:  # pylint: disable=no-member
             st.success("Winning version set successfully")
             st.session_state['cool_off'] = False
@@ -38,12 +38,13 @@ def end_exp_show_evaluation_progress():
     """ Show the evaluation progress and possibility to trigger fetch and learn """
     response_evaluation_progress = \
         requests.get(BACKEND_URI + "instance-router/aggregate-data/evaluation-progress",
-                     params={"process-id": utils.get_currently_active_process_id()})
+                     params={"process-id": utils.get_currently_active_process_id()},
+                     timeout=5)
     st.warning("No final proposal available at the moment. Only available at when all of the experimental "
                "instances have been finished and evaluated. Current evaluation progress: " +
                str(round(response_evaluation_progress.json().get("alreadyEvaluatedPerc") * 100, 2)) + "%.")
     if st.button("Refresh", help=user_assistance.MANUAL_TRIGGER_FETCH_LEARN, key="refresh-end-of-exp-retrigger"):
-        response_manual_trigger = requests.post(BACKEND_URI + "process/active/trigger-fetch-learn")
+        response_manual_trigger = requests.post(BACKEND_URI + "process/active/trigger-fetch-learn", timeout=5)
         assert response_manual_trigger.status_code == requests.codes.ok  # pylint: disable=no-member
         st.experimental_rerun()
 
@@ -54,7 +55,7 @@ def end_of_experiment():
     st.write('#### Final Proposal')
     response_final_prop = requests.get(BACKEND_URI + "batch-policy-proposal/final", params={
         "process-id": utils.get_currently_active_process_id()
-    })
+    }, timeout=5)
     if response_final_prop.status_code == requests.codes.ok:  # pylint: disable=no-member
         display_final_bapol_prop(response_final_prop.json())
     elif response_final_prop.status_code == 404:

@@ -11,7 +11,9 @@ import utils
 def plot_instances():
     """ Plot an overview of instantiation requests coming on over time and how they have been routed (A/B) """
     params = {"process-id": utils.get_currently_active_process_id()}
-    response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests", params=params)
+    response = requests.get(BACKEND_URI + "instance-router/aggregate-data/client-requests",
+                            params=params,
+                            timeout=5)
     if response.status_code != requests.codes.ok:  # pylint: disable=no-member
         st.exception(general_texts.CANT_FETCH)
     response_json = response.json()
@@ -47,7 +49,7 @@ def experiment_metadata():
     with st.expander("What is shown here?", expanded=False):
         st.write(user_assistance.EXPERIMENT_METADATA)
     if st.button("Refresh", key="refresh_exp_meta"):
-        response_meta = requests.get(BACKEND_URI + "process/active/meta")
+        response_meta = requests.get(BACKEND_URI + "process/active/meta", timeout=5)
         if response_meta.status_code == requests.codes.ok:  # pylint: disable=no-member
             process_meta_json = response_meta.json()
             col1, col2 = st.columns(2)
@@ -73,7 +75,7 @@ def detailed_data():
         st.session_state['data_detailed_open'] = True
         params = {"process-id": utils.get_currently_active_process_id()}
 
-        response_bapol_count = requests.get(BACKEND_URI + "batch-policy/count", params=params)
+        response_bapol_count = requests.get(BACKEND_URI + "batch-policy/count", params=params, timeout=5)
         if response_bapol_count.status_code != requests.codes.ok:  # pylint: disable=no-member
             st.exception(general_texts.CANT_FETCH)
         else:
@@ -88,7 +90,8 @@ def detailed_data():
                     "batch-number": batch_choice
                 }
                 response_batch_instances = requests.get(BACKEND_URI + "instance-router/detailed-data/batch",
-                                                        params=params)
+                                                        params=params,
+                                                        timeout=5)
                 if response_batch_instances.status_code != requests.codes.ok:  # pylint: disable=no-member
                     st.exception(general_texts.CANT_FETCH)
                 else:
@@ -126,7 +129,7 @@ def aggregate_data():
         params = {"process-id": utils.get_currently_active_process_id()}
 
         response = requests.get(
-            BACKEND_URI + "instance-router/aggregate-data", params=params
+            BACKEND_URI + "instance-router/aggregate-data", params=params, timeout=5
         )
         if response.status_code != requests.codes.ok:  # pylint: disable=no-member
             st.exception(general_texts.CANT_FETCH)
