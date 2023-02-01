@@ -51,6 +51,7 @@ jobs:
           junitxml-title: Backend Unit Test Summary
           title: Backend Unit Test Coverage Report (files with 100% coverage not shown)
           badge-title: Backend Unit Test Coverage
+          github-token: ${{ secrets.B_COMMENT_COV_TOKEN }}
 
       - name: Extract unit test coverage for badge
         if: ${{ github.ref == 'refs/heads/main' }}
