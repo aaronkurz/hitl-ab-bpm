@@ -35,7 +35,10 @@ def upload_files():
                         'customer-categories': customer_categories,
                         'default-version': default,
                     }
-                    response = requests.post(BACKEND_URI + "process/" + process_name, files=files_in, params=params)
+                    response = requests.post(BACKEND_URI + "process/" + process_name,
+                                             files=files_in,
+                                             params=params,
+                                             timeout=5)
                     if response.status_code == requests.codes.ok:  # pylint: disable=no-member
                         st.success("Files uploaded, continue below.")
                     else:

@@ -19,7 +19,7 @@ def _send_request_for_new_processes_instance(process_id:int, customer_categories
         "process-id": process_id,
         "customer-category": customer_categories[random.randint(0, len(customer_categories) - 1)]
     }
-    response = requests.get(BACKEND_URI + "/instance-router/start-instance", params=params)
+    response = requests.get(BACKEND_URI + "/instance-router/start-instance", params=params, timeout=5)
     assert response.status_code == requests.codes.ok  # pylint: disable=no-member
     return response.json().get("camunda_instance_id")
 
