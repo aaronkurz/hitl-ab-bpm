@@ -214,9 +214,9 @@ def get_current_open_proposal_data(process_id: int) -> dict:
     relevant_bapol_prop = get_current_open_proposal(process_id)
     exec_strats = []
     for exec_strat in relevant_bapol_prop.execution_strategies:
-        exec_strats.append(dict(customerCategory=exec_strat.customer_category,
-                                explorationProbabilityA=exec_strat.exploration_probability_a,
-                                explorationProbabilityB=exec_strat.exploration_probability_b))
+        exec_strats.append({"customerCategory": exec_strat.customer_category,
+                            "explorationProbabilityA": exec_strat.exploration_probability_a,
+                            "explorationProbabilityB": exec_strat.exploration_probability_b})
 
     return {
         'processId': process_id,
@@ -258,9 +258,9 @@ def get_final_proposal_data(process_id: int) -> dict:
 
     exec_strats = []
     for exec_strat in relevant_bapol_prop.execution_strategies:
-        exec_strats.append(dict(customerCategory=exec_strat.customer_category,
-                                explorationProbabilityA=exec_strat.exploration_probability_a,
-                                explorationProbabilityB=exec_strat.exploration_probability_b))
+        exec_strats.append({"customerCategory": exec_strat.customer_category,
+                            "explorationProbabilityA": exec_strat.exploration_probability_a,
+                            "explorationProbabilityB": exec_strat.exploration_probability_b})
 
     return {
         'processId': process_id,

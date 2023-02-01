@@ -24,7 +24,7 @@ def before_all():
 
 def test_get_winning_version_a():
     """ Check whether it returns winning version a when expected """
-    decision_list = [dict(customer_category="public", winning_version=Version.A)]
+    decision_list = [{"customer_category": "public", "winning_version": Version.A}]
     process.get_winning = MagicMock(return_value=decision_list)
     process.is_decision_made = MagicMock(return_value=True)
     assert controller.get_winning_version(38, "public") == Version.A
@@ -32,7 +32,7 @@ def test_get_winning_version_a():
 
 def test_get_winning_version_b():
     """ Check whether it returns winning version b when expected """
-    decision_list = [dict(customer_category="gov", winning_version=Version.B)]
+    decision_list = [{"customer_category": "gov", "winning_version": Version.B}]
     process.get_winning = MagicMock(return_value=decision_list)
     process.is_decision_made = MagicMock(return_value=True)
     assert controller.get_winning_version(4, "gov") == Version.B

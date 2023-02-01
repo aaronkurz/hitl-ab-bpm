@@ -37,4 +37,4 @@ def parse_version_str(version_str: str) -> Version:
         return Version.A
     if version_str == 'b':
         return Version.B
-    RuntimeError('Default version has to be "a" or "b"')
+    raise RuntimeError('Default version has to be "a" or "b"')

@@ -165,8 +165,8 @@ def get_winning(process_id: int) -> Optional[list[Version]]:
         relevant_process_entry = get_process_entry(process_id)
         winning_versions = []
         for customer_category in relevant_process_entry.customer_categories:
-            winning_versions.append(dict(customer_category=customer_category.name,
-                                         winning_version=customer_category.winning_version))
+            winning_versions.append({"customer_category": customer_category.name,
+                                     "winning_version": customer_category.winning_version})
     return winning_versions
 
 
